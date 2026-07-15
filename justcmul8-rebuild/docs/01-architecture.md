@@ -123,4 +123,4 @@ Each module has its own file in this folder, written as we build it:
 stays stable as we build. This file itself will be updated if the build order changes.)*
 
 ---
-Status: **Phases 0, 1 (Simulation Engine), and 2 (Authentication) complete.** Next: Phase 3 (Project Management).
+Status: **Phases 0, 1 (Simulation Engine), 2 (Authentication), and 3 (Project Management) complete.** Next: Phase 4 (Workspace Shell).
