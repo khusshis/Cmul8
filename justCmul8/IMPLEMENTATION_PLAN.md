@@ -1129,6 +1129,8 @@ All patterns are captured as reusable components. Any new page can compose from 
 | `<GlitchText>` | `src/components/ui/GlitchText.tsx` | `intensity`, `delay`, `active` |
 | `<GlassCard>` | `src/components/ui/GlassCard.tsx` | `heavy`, `notched`, `hover`, `accentColor`, `as` |
 | `<JustCmul8Icon>` | `src/components/ui/JustCmul8Icon.tsx` | `className` |
+| `<AuthDiagram>` | `src/components/ui/AuthDiagram.tsx` | *(none — self-contained animated diagram)* |
+| `<FloatingInput>` | `src/components/ui/FloatingInput.tsx` | `label`, `icon`, standard input props |
 | `<Navbar>` | `src/components/layout/Navbar.tsx` | *(none — fully self-contained, auth-aware)* |
 
 ### Global CSS Utility Classes

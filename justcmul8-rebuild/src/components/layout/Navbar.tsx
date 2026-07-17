@@ -95,16 +95,12 @@ export default function Navbar() {
           <div className="flex items-center h-14 px-6 gap-6">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="w-6 h-6 flex items-center justify-center text-accent">
-                <JustCmul8Icon className="w-full h-full" style={{ color: "var(--color-info)" }} />
-              </div>
-              <span
-                className="font-bold text-lg tracking-tight"
-                style={{ color: "var(--color-text-primary)" }}
-              >
-                JustCmul8
-              </span>
+            <Link href="/" className="flex items-center group flex-shrink-0 h-full relative w-40">
+              <img 
+                src="/logo-full-transparent.png" 
+                alt="JustCmul8 Logo" 
+                className="absolute left-0 top-1/2 -translate-y-1/2 h-[70px] md:h-[90px] w-auto object-contain origin-left"
+              />
             </Link>
 
             {/* Landing nav links (only on homepage) */}

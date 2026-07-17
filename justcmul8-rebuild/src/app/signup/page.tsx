@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Users, Layers, Server, Flag, CodeXml, Zap, Cloud } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Users, Layers, Server, Flag, CodeXml, Zap, Cloud, MailCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 
@@ -126,12 +127,12 @@ export default function SignupPage() {
         </div>
 
         {/* RIGHT PANEL - FORM */}
-        <div className="w-full md:h-full md:w-1/2 bg-transparent md:bg-white px-6 md:px-8 pb-10 md:py-8 lg:px-16 flex flex-col justify-start md:justify-center items-center overflow-y-visible md:overflow-y-auto rounded-none md:rounded-l-[48px] shadow-none md:shadow-[-30px_0_60px_-15px_rgba(0,0,0,0.08)] relative z-20">
+        <div className="w-full md:h-full md:w-1/2 bg-transparent md:bg-white px-6 md:px-8 pb-10 pt-8 md:pt-12 lg:pt-16 flex flex-col justify-start items-center overflow-y-visible md:overflow-y-auto rounded-none md:rounded-l-[48px] shadow-none md:shadow-[-30px_0_60px_-15px_rgba(0,0,0,0.08)] relative z-20">
           <motion.div 
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="w-full max-w-[420px] mt-2 md:my-auto"
+            className="w-full max-w-[420px]"
           >
             <motion.h2 variants={itemVariants} className="text-[28px] lg:text-[34px] font-bold text-[#111827] mb-1.5 md:mb-1.5 tracking-tight text-center md:text-left">
               Create an account
@@ -149,9 +150,11 @@ export default function SignupPage() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-4 py-8 bg-[#F8F7FC] rounded-2xl border border-[#E5E7EB]"
+                className="text-center space-y-4 pt-8 pb-4"
               >
-                <div className="text-5xl">✅</div>
+                <div className="mx-auto w-24 h-24 mb-6 bg-[#10B981]/10 rounded-full flex items-center justify-center">
+                  <MailCheck className="text-[#10B981] w-12 h-12" strokeWidth={2} />
+                </div>
                 <h3 className="font-bold text-xl text-[#10B981]">Check your email</h3>
                 <p className="text-[#6B7280] px-4">We sent you a confirmation link. Please verify your email address to continue.</p>
                 <Link href="/login" className="inline-flex justify-center items-center py-3 px-6 rounded-full text-white font-semibold mt-4 bg-gradient-to-r from-[#6C5CE7] to-[#5B4FE5] hover:opacity-90 transition-opacity shadow-sm">

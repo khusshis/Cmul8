@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ExternalLink, Clock, X, Edit2, Check } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, CheckCircle2, ArrowRight, FolderPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { getAllSimTypes } from "@/lib/simulation/simTypeRegistry";
@@ -197,45 +197,94 @@ export default function DashboardPage() {
       <AnimatePresence>
         {showModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
             onClick={() => setShowModal(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="card-surface p-8 w-full max-w-lg space-y-6 rounded-2xl" onClick={(e) => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-white p-5 md:p-6 w-full max-w-xl rounded-[24px] shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
               
-              <div className="flex items-center justify-between">
-                <h2 className="font-bold text-xl tracking-tight" style={{ color: "var(--color-text-primary)" }}>New Simulation</h2>
-                <button onClick={() => setShowModal(false)} className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors" style={{ color: "var(--color-text-secondary)" }}><X size={20} /></button>
-              </div>
+              {/* Close Button */}
+              <button onClick={() => setShowModal(false)} className="absolute top-5 right-5 p-1.5 rounded-xl bg-indigo-50 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600 transition-colors">
+                <X size={18} strokeWidth={2.5} />
+              </button>
 
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: "var(--color-text-primary)" }}>Project Name</label>
-                <input autoFocus className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2" 
-                  style={{ borderColor: "var(--color-border)", background: "var(--color-bg)", color: "var(--color-text-primary)" }}
-                  value={newName} onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g. Bank Teller Optimization" onKeyDown={(e) => e.key === "Enter" && createProject()} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-3" style={{ color: "var(--color-text-primary)" }}>Simulation Domain</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {simTypes.map((type) => (
-                    <button key={type.id} onClick={() => setNewType(type.id)}
-                      className="p-3 rounded-xl text-center transition-all space-y-1 border"
-                      style={{
-                        background: newType === type.id ? `${type.color}10` : "transparent",
-                        borderColor: newType === type.id ? type.color : "var(--color-border)",
-                      }}>
-                      <div className="text-2xl">{type.icon}</div>
-                      <div className="text-xs font-semibold" style={{ color: newType === type.id ? type.color : "var(--color-text-secondary)" }}>{type.label}</div>
-                    </button>
-                  ))}
+              {/* Header */}
+              <div className="flex items-center gap-1 mb-6 -ml-2">
+                <img src="/logo-transparent.png" alt="Logo" className="w-16 h-16 md:w-20 md:h-20 object-contain scale-[1.35]" />
+                <div className="-ml-1 md:-ml-3">
+                  <h2 className="font-bold text-2xl text-[#111827] tracking-tight">New Simulation</h2>
+                  <p className="text-[#6B7280] text-[14px]">Create a new simulation project</p>
                 </div>
               </div>
 
-              <button onClick={createProject} disabled={creating || !newName.trim()} className="w-full flex justify-center py-2.5 rounded-full text-white font-medium transition-opacity disabled:opacity-50" style={{ backgroundColor: "var(--color-info)" }}>
-                {creating ? "Creating..." : "Create Project"}
-              </button>
+              {/* Form Content */}
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[14px] font-bold text-[#111827] mb-1.5">Project Name</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400">
+                      <FolderPlus size={16} />
+                    </div>
+                    <input 
+                      autoFocus 
+                      className="w-full pl-12 pr-4 py-3 border-2 rounded-full focus:outline-none focus:ring-0 focus:border-[#5742FF] text-[#111827] placeholder-gray-400 font-medium transition-colors border-gray-200 text-sm" 
+                      value={newName} 
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="e.g. Bank Teller Optimization" 
+                      onKeyDown={(e) => e.key === "Enter" && newName.trim() && createProject()} 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2.5">
+                    <label className="block text-[14px] font-bold text-[#111827] mb-0.5">Simulation Domain</label>
+                    <p className="text-[13px] text-[#6B7280]">Select the domain that best matches your simulation.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { id: "human_queue", label: "HUMAN QUEUE", sub: "People, lines, service systems" },
+                      { id: "vehicle", label: "VEHICLE", sub: "Traffic, vehicles, transport systems" },
+                      { id: "liquid", label: "LIQUID / MATERIAL", sub: "Flow of liquids or materials" },
+                      { id: "manufacturing", label: "MANUFACTURING", sub: "Production lines, machines, operations" },
+                      { id: "logistics", label: "LOGISTICS", sub: "Warehousing, supply chain, distribution" },
+                      { id: "network_signal", label: "NETWORK / SIGNAL", sub: "Networks, signals, communication" }
+                    ].map((type) => {
+                      const isSelected = newType === type.id;
+                      return (
+                        <button 
+                          key={type.id} 
+                          onClick={() => setNewType(type.id)}
+                          className={`relative flex flex-col items-center justify-center p-4 rounded-[16px] transition-all border-2 text-center h-full min-h-[120px]
+                            ${isSelected ? "border-[#5742FF] bg-[#F5F3FF]" : "border-gray-100 hover:border-gray-200 bg-white"}`}
+                        >
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 text-[#5742FF] bg-white rounded-full">
+                              <CheckCircle2 size={16} fill="#5742FF" className="text-white" />
+                            </div>
+                          )}
+                          {/* Removing drop-shadow-sm and applying mix-blend-multiply to remove the white background */}
+                          <img src={`/icons/${type.id}.png`} alt={type.label} className="w-16 h-16 object-contain mb-2 mix-blend-multiply brightness-105 contrast-110" />
+                          <div className={`text-[12px] font-bold tracking-wide mb-0.5 ${isSelected ? "text-[#111827]" : "text-[#374151]"}`}>
+                            {type.label}
+                          </div>
+                          <div className="text-[11px] text-[#6B7280] leading-tight px-1">
+                            {type.sub}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button 
+                  onClick={createProject} 
+                  disabled={creating || !newName.trim()} 
+                  className="w-full flex items-center justify-center gap-2 py-3 mt-4 rounded-full text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[#5742FF] to-[#4531E5] hover:shadow-[0_8px_20px_-6px_rgba(87,66,255,0.4)]"
+                >
+                  <span className="text-[15px]">{creating ? "Creating..." : "Create Project"}</span>
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

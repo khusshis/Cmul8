@@ -39,7 +39,11 @@ The UI heavily utilizes Tailwind CSS utility classes with some custom hex colors
 - **Layout**: Switches from a two-panel side-by-side view to a stacked, single-column view on mobile screens.
 - **Form UI**: All inputs and primary buttons are perfectly pill-shaped (`rounded-full`).
 - **OAuth Buttons**: On mobile, the Google and GitHub OAuth buttons elegantly collapse into circular icons side-by-side to save vertical space. On desktop, they expand into full-width buttons with text labels.
-- **Parity**: The exact same layout, animations, and reusable components are cloned to the `/login` page to ensure a perfect 1:1 consistent experience.
+- **Parity**: The exact same layout, animations, and reusable components are cloned to the `/login`, `/forgot-password`, and `/update-password` pages to ensure a perfect 1:1 consistent experience.
+
+## Password Reset Flow
+- **`/forgot-password`**: Reuses the split-pane layout. Allows users to request a password reset email via `supabase.auth.resetPasswordForEmail()`. The UI elegantly shifts to a success state ("Check your email") upon a successful request. Gracefully handles rate-limiting ("Too Many Requests") by displaying a friendly message instead of a developer error.
+- **`/update-password`**: The destination route after clicking the reset link in the email. Displays an input for a new password and securely updates the user's password using `supabase.auth.updateUser()`.
 
 ## State Management (Preserved)
 No backend logic was modified. The UI securely binds to the existing React state for:

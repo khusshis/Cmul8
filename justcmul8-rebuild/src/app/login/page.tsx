@@ -174,6 +174,11 @@ function LoginPageInner() {
                     onChange={(e) => setPassword(e.target.value)}
                     icon={<Lock size={18} strokeWidth={1.5} />}
                   />
+                  <div className="flex justify-end mt-2">
+                    <Link href="/forgot-password" className="text-[13px] font-medium text-[#5742FF] hover:underline transition-all">
+                      Forgot password?
+                    </Link>
+                  </div>
                 </motion.div>
 
                 <motion.button 
