@@ -202,6 +202,7 @@ export default function WorkspacePage() {
     // Basic mapping, full RF node mapping in Phase 5
     const rfNodes = starter.nodes.map((n) => ({
       id: n.id,
+      type: "simNode",
       position: n.position,
       data: { label: n.label, nodeType: n.nodeType, params: n.params },
     }));

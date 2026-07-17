@@ -11,6 +11,7 @@ import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
 import type { SimTick, NodeStats } from "@/lib/simulation/types";
 import { AlertCircle } from "lucide-react";
+import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 
 // ─── Live Stats Context ───────────────────────────────────────────────────────
 const LiveStatsContext = createContext<{
@@ -18,7 +19,8 @@ const LiveStatsContext = createContext<{
   bottleneckId: string;
   simState: SimState;
   connectedHandles: Set<string>;
-}>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set() });
+  simType: string;
+}>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set(), simType: "human_queue" });
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
 const NODE_BASE_COLORS: Record<string, string> = {
@@ -160,11 +162,15 @@ function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
 
 // ─── SimNode ────────────────────────────────────────────────────────────────
 function SimNode({ data, selected, id }: { data: any; selected: boolean; id: string }) {
-  const { stats, bottleneckId, simState, connectedHandles } = useContext(LiveStatsContext);
+  const { stats, bottleneckId, simState, connectedHandles, simType } = useContext(LiveStatsContext);
   const nodeType = data.nodeType;
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
+
+  const simConfig = (SIM_TYPE_REGISTRY as any)[simType] || SIM_TYPE_REGISTRY.human_queue;
+  const paletteDef = simConfig.paletteNodes?.find((n: any) => n.type === nodeType);
+  const icon = paletteDef?.icon || "";
 
   const baseColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
   const { color: statusColor, isDimmed } = isRunning
@@ -195,7 +201,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   return (
     <div
-      className={`card-surface min-w-[140px] px-3 py-2 border-l-4 transition-all ${selected ? 'border-color-info shadow-md ring-1 ring-color-info/30' : 'border-border'}`}
+      className={`card-surface min-w-[180px] p-3 transition-all border-y border-r border-l-8 ${selected ? 'border-color-info shadow-md ring-1 ring-color-info/30' : 'border-y-border border-r-border'}`}
       style={{
         borderLeftColor: baseColor,
       }}
@@ -227,28 +233,37 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         </div>
       )}
 
-      <div className="text-xs font-semibold text-text-primary">{data.label}</div>
-      
-      {/* Static params or live stats */}
-      {statsBadge ? (
-        <div className="mt-1 flex items-center gap-1.5">
-          <div 
-            className="w-2 h-2 rounded-full flex-shrink-0 transition-colors" 
-            style={{ backgroundColor: statusColor, opacity: isDimmed ? 0.4 : 1 }} 
-          />
-          <div className="text-[10px] font-mono font-medium text-text-secondary truncate" style={{ color: !isDimmed ? statusColor : 'var(--color-text-secondary)' }}>
-            {statsBadge}
+      <div className="flex items-start gap-3">
+        {icon && (
+          <div className="mt-0.5 text-xl flex-shrink-0" style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
+            {icon}
           </div>
+        )}
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-text-primary leading-tight mb-1">{data.label}</div>
+          
+          {/* Static params or live stats */}
+          {statsBadge ? (
+            <div className="flex items-center gap-1.5">
+              <div 
+                className="w-2 h-2 rounded-full flex-shrink-0 transition-colors" 
+                style={{ backgroundColor: statusColor, opacity: isDimmed ? 0.4 : 1 }} 
+              />
+              <div className="text-[10px] font-mono font-medium text-text-secondary truncate" style={{ color: !isDimmed ? statusColor : 'var(--color-text-secondary)' }}>
+                {statsBadge}
+              </div>
+            </div>
+          ) : data.params && Object.keys(data.params).length > 0 ? (
+            <div className="text-[10px] text-text-muted font-mono truncate leading-tight">
+              {Object.entries(data.params || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(" | ")}
+            </div>
+          ) : (
+            <div className="text-[10px] text-text-muted font-mono leading-tight">
+              Double-click to config
+            </div>
+          )}
         </div>
-      ) : data.params && Object.keys(data.params).length > 0 ? (
-        <div className="text-[10px] text-text-muted font-mono mt-1 truncate">
-          {Object.entries(data.params || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(" | ")}
-        </div>
-      ) : (
-        <div className="text-[10px] text-text-muted font-mono mt-1">
-          Double-click to config
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -435,7 +450,7 @@ function NodeCanvasInner({
   }), []);
 
   return (
-    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles }}>
+    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue" }}>
       <div ref={reactFlowWrapper} className="w-full h-full workspace-canvas relative">
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes dashdraw {
