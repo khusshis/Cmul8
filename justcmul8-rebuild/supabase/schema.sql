@@ -81,6 +81,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert their own chat') THEN
         CREATE POLICY "Users can insert their own chat" ON public.chat_history FOR INSERT WITH CHECK (auth.uid() = user_id);
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can delete their own chat') THEN
+        CREATE POLICY "Users can delete their own chat" ON public.chat_history FOR DELETE USING (auth.uid() = user_id);
+    END IF;
 END $$;
 
 -- 6. Indexes for faster queries

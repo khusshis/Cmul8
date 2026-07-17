@@ -70,7 +70,11 @@ export default function DashboardPage() {
   }
 
   async function deleteProject(id: string) {
-    await supabase.from("projects").delete().eq("id", id);
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete project: " + error.message);
+      return;
+    }
     setProjects((p) => p.filter((x) => x.id !== id));
     setDeleteId(null);
   }
@@ -81,7 +85,11 @@ export default function DashboardPage() {
       return; 
     }
     
-    await supabase.from("projects").update({ name: renameValue.trim() }).eq("id", id);
+    const { error } = await supabase.from("projects").update({ name: renameValue.trim() }).eq("id", id);
+    if (error) {
+      alert("Failed to rename project: " + error.message);
+      return;
+    }
     setProjects((p) => p.map((x) => x.id === id ? { ...x, name: renameValue.trim() } : x));
     setRenamingId(null);
   }

@@ -163,7 +163,17 @@ the *generator* itself would be a logic change, not a restyle.
   `src/app/dashboard/project/[id]/page.tsx`, which is the only place a
   `PyodideSimEngine` instance is created.
 
-## 8. Database tables touched
+## 8. Engine-to-UI Integration (Phase 7)
+The lifecycle of running a simulation directly from the UI workspace is entirely controlled by `page.tsx`, following a strict sequence to prevent silent failures:
+
+1. **Connectivity Validation**: When the user clicks **RUN**, `validateGraphConnectivity()` is evaluated first. It checks for completely unlinked (orphaned) nodes or a completely empty graph. If validation fails, an alert is shown and execution halts immediately. (Note: It intentionally does *not* require a `source` or `sink` to exist; a loop without a sink will simply run until the simulation duration expires).
+2. **Graph Conversion**: The raw React Flow state (`nodes`, `edges`) contains layout details that the simulation engine does not need. The `graphToSimNodes()` converter maps the React Flow structure directly into the engine's strict `SimGraph` schema.
+3. **Engine Instantiation & Run**: `engine.start(simParams)` is called with the sanitized graph.
+4. **Live Ticks**: As the Web Worker generates events, `onTick` continuously fires, updating `simTick` in `page.tsx`. This flows directly to `NodeCanvas.tsx` to render the utilization-based status badges (`border-error`, `border-warning`, etc.) and the "live stats" tags (e.g., `85% util`, `waiting: 12`).
+5. **Completion**: When the duration concludes, `onComplete` is fired, storing the full `SimResult` object in state, which automatically slides open the `SimResultsPanel` (Module 7).
+6. **Engine Status**: A visual UI element in the header explicitly renders the engine's current state (`loading_runtime`, `ready`, or `error`/fallback), preventing a scenario where Pyodide silently fails and the user doesn't realize they are running the TS fallback engine.
+
+## 9. Database tables touched
 None directly — this module is pure computation, in-memory/in-worker only. Results
 are handed to the workspace page, which is responsible for any persistence (today:
 none — simulation results are **not saved to the database** at all, they exist only

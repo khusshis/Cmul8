@@ -25,13 +25,10 @@ replaces the canvas contents outright (also stopping any running simulation).
 
 This isn't necessarily wrong — it's a reasonable, space-efficient UI choice for a
 three-panel workspace layout — but for documentation/grading purposes it's
-important to be accurate: **Module 8 exists as data + a small UI section inside
-Module 3's component, not as its own module-level screen.** Decide with your
-supervisor whether the rebuild should (a) keep this integrated approach (simplest,
-matches original behavior exactly) or (b) split it into a genuinely separate
-"Template Gallery" screen/modal to more literally match the synopsis's module
-boundary — (a) is the 100%-correctness-preserving choice; (b) would be a
-structural change worth flagging explicitly if chosen.
+important to be accurate: **Module 8 originally existed as data + a small UI section inside
+Module 3's component, not as its own module-level screen.** 
+
+**Rebuild Decision (Option B):** We have chosen to decouple the Template Gallery into a genuinely separate standalone overlay component (`TemplateGallery.tsx`). This overlay is triggered strictly when `nodes.length === 0` (an empty canvas). This structurally fulfills the synopsis's module boundary better and provides a clearer, less-cramped UX for first-time users.
 
 ## 4. Algorithm / logic
 - Each of the 6 `SimTypeConfig` entries in the registry defines 2–3
@@ -55,11 +52,8 @@ structural change worth flagging explicitly if chosen.
   be a logic/content change requiring the same explicit-flagging rule as a bug fix.
 - Restyle scenario buttons using `.card-surface` with domain-appropriate node-type
   accent coloring instead of the neon cyan hover glow.
-- If choosing structural option (b) from Section 3 (a separate screen), this would
-  be the right time to also surface each scenario's `description` text more
-  prominently (currently a small subtext line) — but confirm this choice
-  explicitly before building, since it changes the module boundary from the
-  original.
+- Since we chose structural option (b) from Section 3 (a separate screen), we will
+  surface each scenario's `description` text more prominently (currently a small subtext line).
 
 ## 6. Connections to other modules
 - **Visual Graph Editor (Module 3)**: shares its host component (`NodePalette`)
