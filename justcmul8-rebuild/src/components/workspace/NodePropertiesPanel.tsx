@@ -269,7 +269,7 @@ function DecisionProperties({ params, nodeId, onUpdate }: any) {
         <div key={idx} className="flex gap-2 mb-2">
           <input type="text" value={route.targetId} onChange={(e) => {
             const r = [...routes]; r[idx].targetId = e.target.value; onUpdate(nodeId, { params: { ...params, routes: r } });
-          }} placeholder="Target Node ID" className={inputCls} />
+          }} placeholder="Target Block ID" className={inputCls} />
           <input type="number" min={0} max={1} step={0.1} value={route.probability} onChange={(e) => {
             const r = [...routes]; r[idx].probability = Number(e.target.value); onUpdate(nodeId, { params: { ...params, routes: r } });
           }} placeholder="Probability" className={inputCls} />
@@ -411,7 +411,7 @@ function WaitNodeProperties({ params, nodeId, onUpdate, title }: any) {
     <div className={sectionCls}>
       <SectionHeading icon={ShieldAlert}>{title} Settings</SectionHeading>
       <div>
-        <label className={labelCls}>Target Node ID to Trigger</label>
+        <label className={labelCls}>Target Block ID to Trigger</label>
         <input type="text" value={params.targetId || ""} onChange={(e) => onUpdate(nodeId, { params: { ...params, targetId: e.target.value } })} placeholder="Next Step ID" className={inputCls} />
       </div>
     </div>
@@ -424,7 +424,7 @@ function InterrupterProperties({ params, nodeId, onUpdate }: any) {
     <div className={sectionCls}>
       <SectionHeading icon={ShieldAlert}>Interrupt Settings</SectionHeading>
       <div>
-        <label className={labelCls}>Target Node ID to Interrupt</label>
+        <label className={labelCls}>Target Block ID to Interrupt</label>
         <input type="text" value={params.targetNodeId || ""} onChange={(e) => onUpdate(nodeId, { params: { ...params, targetNodeId: e.target.value } })} placeholder="e.g. Worker_1" className={inputCls} />
       </div>
       <div className="mt-3">
@@ -448,7 +448,7 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
       <div className="p-4 flex items-center gap-2 border-b border-border">
         <Settings size={16} className="text-text-secondary" />
         <span className="text-xs tracking-widest font-bold uppercase text-text-primary">
-          NODE PROPERTIES
+          BLOCK PROPERTIES
         </span>
       </div>
 
@@ -465,7 +465,7 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
             />
           </div>
           <div>
-            <label className={labelCls}>Node Type</label>
+            <label className={labelCls}>Block Type</label>
             <div className="text-sm px-3 py-2 bg-surface border border-border rounded mt-1 capitalize text-text-secondary">
               {nodeType?.replace(/_/g, " ")}
             </div>

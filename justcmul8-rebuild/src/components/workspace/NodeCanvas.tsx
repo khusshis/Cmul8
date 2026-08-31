@@ -24,39 +24,39 @@ const LiveStatsContext = createContext<{
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
 const NODE_BASE_COLORS: Record<string, string> = {
-  source:           "#2f6fed", // var(--color-info)
-  queue:            "#8b5cf6",
-  resource:         "#12a150", // var(--color-success)
-  service:          "#0ea5a5",
-  decision:         "#d9a400", // var(--color-warning)
-  sink:             "#6b6b7b", // var(--color-text-secondary)
-  priority_resource:"#059669",
-  container:        "#2563eb",
-  store:            "#7c3aed",
-  event_trigger:    "#db2777",
-  channel:          "#0891b2",
-  broadcaster:      "#ea580c",
-  any_of:           "#ca8a04",
-  all_of:           "#b45309",
-  interrupter:      "#dc2626", // var(--color-error)
+  source:           "Arrival Point", // var(--color-info)
+  queue:            "Waiting Line",
+  resource:         "Staff / Machine", // var(--color-success)
+  service:          "Processing Step",
+  decision:         "Split Path", // var(--color-warning)
+  sink:             "Exit Point", // var(--color-text-secondary)
+  priority_resource:"Priority Staff / Machine",
+  container:        "Tank / Reservoir",
+  store:            "Storage Buffer",
+  event_trigger:    "Condition Watcher",
+  channel:          "Transmission Link",
+  broadcaster:      "Broadcast Hub",
+  any_of:           "Wait For Any",
+  all_of:           "Wait For All",
+  interrupter:      "Interrupt Signal", // var(--color-error)
 };
 
 const NODE_LABELS: Record<string, string> = {
   source: "Arrival Point",
   queue: "Waiting Line",
   resource: "Staff / Machine",
-  service: "Service",
-  decision: "Decision",
-  sink: "Exit",
-  priority_resource: "Priority Resource",
-  container: "Container",
-  store: "Store",
-  event_trigger: "Event Trigger",
+  service: "Processing Step",
+  decision: "Split Path",
+  sink: "Exit Point",
+  priority_resource: "Priority Staff / Machine",
+  container: "Tank / Reservoir",
+  store: "Storage Buffer",
+  event_trigger: "Condition Watcher",
   channel: "Transmission Link",
   broadcaster: "Broadcast Hub",
   any_of: "Wait For Any",
   all_of: "Wait For All",
-  interrupter: "Interrupter",
+  interrupter: "Interrupt Signal",
 };
 
 // ─── Live Glow Color resolver (Exact Thresholds) ──────────────────────────────
@@ -235,8 +235,11 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
       <div className="flex items-start gap-3">
         {icon && (
-          <div className="mt-0.5 text-xl flex-shrink-0" style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
-            {icon}
+          <div className="mt-0.5 flex-shrink-0" style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
+            {(() => {
+              const IconComponent = icon as any;
+              return <IconComponent size={20} strokeWidth={2} />;
+            })()}
           </div>
         )}
         <div className="min-w-0">
@@ -281,13 +284,13 @@ export interface GraphValidationResult {
 
 export function validateGraphConnectivity(nodes: Node[], edges: Edge[]): GraphValidationResult {
   if (nodes.length === 0) {
-    return { valid: false, disconnectedNodes: [], message: "No nodes in the graph. Add nodes to build a simulation." };
+    return { valid: false, disconnectedNodes: [], message: "No blocks in the canvas. Add blocks to build a simulation." };
   }
   if (nodes.length === 1) {
-    return { valid: false, disconnectedNodes: [nodes[0].id], message: "Add more nodes and connect them to build a simulation." };
+    return { valid: false, disconnectedNodes: [nodes[0].id], message: "Add more blocks and connect them to build a simulation." };
   }
   if (edges.length === 0) {
-    return { valid: false, disconnectedNodes: nodes.map(n => n.id), message: "No edges found. Connect all nodes before running the simulation." };
+    return { valid: false, disconnectedNodes: nodes.map(n => n.id), message: "No connections found. Connect all blocks before running the simulation." };
   }
 
   // Build adjacency (undirected) to check connectivity
@@ -353,13 +356,7 @@ function NodeCanvasInner({
   const { fitView, setNodes, setEdges } = useReactFlow();
   const prevNodeCountRef = useRef(0);
 
-  // Sync selection state from parent
-  useEffect(() => {
-    setNodes(nds => nds.map(n => ({
-      ...n,
-      selected: n.id === selectedNodeId
-    })));
-  }, [selectedNodeId, setNodes]);
+  // Selection state is synced natively by ReactFlow's onNodesChange and applyNodeChanges
 
   // FitView when nodes change (e.g. scenario loaded)
   useEffect(() => {

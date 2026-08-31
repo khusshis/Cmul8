@@ -127,7 +127,7 @@ export default function SignupPage() {
         </div>
 
         {/* RIGHT PANEL - FORM */}
-        <div className="w-full md:h-full md:w-1/2 bg-transparent md:bg-white px-6 md:px-8 pb-10 pt-8 md:pt-12 lg:pt-16 flex flex-col justify-start items-center overflow-y-visible md:overflow-y-auto rounded-none md:rounded-l-[48px] shadow-none md:shadow-[-30px_0_60px_-15px_rgba(0,0,0,0.08)] relative z-20">
+        <div className="w-full md:h-full md:w-1/2 bg-transparent md:bg-white px-6 md:px-8 pb-10 md:py-8 lg:px-16 flex flex-col justify-start md:justify-center items-center overflow-y-visible md:overflow-y-auto no-scrollbar rounded-none md:rounded-l-[48px] shadow-none md:shadow-[-30px_0_60px_-15px_rgba(0,0,0,0.08)] relative z-20">
           <motion.div 
             variants={containerVariants}
             initial="hidden"

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import type { StarterGraph } from "@/lib/simulation/simTypeRegistry";
@@ -49,6 +49,10 @@ export default function WorkspacePage() {
   const [simTick, setSimTick] = useState<SimTick | null>(null);
   const [simResult, setSimResult] = useState<SimResult | null>(null);
   const [pyodideStatus, setPyodideStatus] = useState<PyodideStatus>({ phase: "idle" });
+
+  const [speed, setSpeed] = useState(5);
+  const [speedDropdownOpen, setSpeedDropdownOpen] = useState(false);
+  const speedOptions = [1, 2, 5, 10, 50];
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
   const engineRef = useRef<SimulationEngine | null>(null);
@@ -101,19 +105,21 @@ export default function WorkspacePage() {
   // Auto-save logic
   function onUpdateNodes(newNodes: any[] | ((n: any[]) => any[])) {
     setNodes((prev) => {
-      const updated = typeof newNodes === "function" ? newNodes(prev) : newNodes;
-      triggerAutoSave(updated, edges);
-      return updated;
+      return typeof newNodes === "function" ? newNodes(prev) : newNodes;
     });
   }
 
   function onUpdateEdges(newEdges: any[] | ((e: any[]) => any[])) {
     setEdges((prev) => {
-      const updated = typeof newEdges === "function" ? newEdges(prev) : newEdges;
-      triggerAutoSave(nodes, updated);
-      return updated;
+      return typeof newEdges === "function" ? newEdges(prev) : newEdges;
     });
   }
+
+  useEffect(() => {
+    if (project && (nodes.length > 0 || edges.length > 0)) {
+      triggerAutoSave(nodes, edges);
+    }
+  }, [nodes, edges]);
 
   function handleNodesChange(changes: NodeChange[]) {
     onUpdateNodes((prev) => applyNodeChanges(changes, prev));
@@ -171,7 +177,7 @@ export default function WorkspacePage() {
         graph: simGraph,
         simType: project.sim_type as SimTypeId,
         durationSeconds: 3600, // Default 1 hour simulation
-        speedMultiplier: 1,
+        speedMultiplier: speed,
         tickIntervalSeconds: 60,
       });
     }
@@ -219,8 +225,16 @@ export default function WorkspacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-surface-sunken">
-        <Loader2 className="w-8 h-8 animate-spin text-color-info" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F8F9FE]">
+        <div className="relative flex items-center justify-center mb-6">
+          {/* Subtle glowing pulse */}
+          <div className="absolute inset-0 bg-[#5742FF] rounded-[20px] blur-[20px] opacity-20 animate-pulse" />
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center relative z-10 border border-[#E5E0FF]">
+            <Loader2 className="w-7 h-7 animate-spin text-[#5742FF]" />
+          </div>
+        </div>
+        <h3 className="text-[#111827] font-extrabold tracking-tight text-xl mb-1.5">Preparing Workspace</h3>
+        <p className="text-gray-500 text-[13px]">Initializing your simulation environment...</p>
       </div>
     );
   }
@@ -230,65 +244,145 @@ export default function WorkspacePage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 h-14 flex items-center gap-4 px-4 border-b border-border bg-surface">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1 text-sm font-medium text-text-secondary hover:text-color-info transition-colors"
-        >
-          <ArrowLeft size={16} /> Dashboard
-        </Link>
-        <div className="w-px h-6 bg-border" />
-        <JustCmul8Icon width={20} height={20} className="text-color-info" />
-        <span className="font-semibold text-text-primary truncate max-w-xs">
-          {project?.name}
-        </span>
+      <div className="flex-shrink-0 h-[68px] flex items-center px-5 border-b border-gray-100 bg-white">
+        
+        {/* Logo Section */}
+        <div className="flex items-center gap-2 mr-5">
+          <img src="/logo-transparent.png" alt="JustCmul8" className="w-10 h-10 object-contain mix-blend-multiply" />
+          <div className="flex flex-col">
+            <span className="font-extrabold text-[16px] text-[#111827] leading-[1.1] tracking-tight">JustCmul8</span>
+            <span className="text-[10.5px] text-[#5742FF] font-medium leading-[1.1]">Model. Simulate. Optimize.</span>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-2 ml-4 text-xs font-mono text-text-muted">
-          {saved ? (
-            <span className="flex items-center gap-1"><Save size={12} /> Saved</span>
-          ) : (
-            <span className="flex items-center gap-1 animate-pulse"><Loader2 size={12} className="animate-spin" /> Saving...</span>
-          )}
+        {/* Divider */}
+        <div className="w-px h-8 bg-gray-200 mr-5" />
+
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-gray-400">
+          <Link href="/dashboard" className="flex items-center gap-1 hover:text-[#5742FF] transition-colors">
+            <Home size={15} /> Dashboard
+          </Link>
+          <ChevronRight size={14} className="text-gray-300" />
+          <Link href="/dashboard" className="hover:text-[#5742FF] transition-colors">
+            My Simulations
+          </Link>
+          <ChevronRight size={14} className="text-gray-300" />
+          <div className="flex items-center gap-1.5 text-[#111827] font-bold cursor-pointer group hover:text-[#5742FF] transition-colors">
+            {project?.name || "Loading..."}
+            <ChevronDown size={14} className="text-gray-400 group-hover:text-[#5742FF] transition-colors" />
+            <Edit2 size={13} className="text-gray-400 group-hover:text-[#5742FF] transition-colors ml-0.5" />
+          </div>
         </div>
 
         <div className="flex-1" />
 
-        {/* ── Engine Status ────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 mr-4 text-xs font-mono">
-          {pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy" ? (
-            <span className="text-color-warning flex items-center gap-1">
-              <Loader2 size={12} className="animate-spin" /> Loading Engine...
-            </span>
-          ) : pyodideStatus.phase === "error" ? (
-            <span className="text-color-error">Fallback Engine (JS)</span>
-          ) : pyodideStatus.phase === "ready" ? (
-            <span className="text-color-success">Engine Ready</span>
-          ) : null}
-        </div>
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
+          
+          {/* Saved Status */}
+          <div className="flex items-center gap-1.5 px-3 h-[34px] rounded-full bg-emerald-50 border border-emerald-100/60 text-emerald-600 text-[12.5px] font-bold shadow-sm">
+            {saved ? (
+              <>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                Saved just now
+              </>
+            ) : (
+              <>
+                <Loader2 size={12} className="animate-spin text-emerald-500" />
+                Saving...
+              </>
+            )}
+          </div>
 
-        {/* ── Sim Controls ──────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 bg-bg-surface-sunken p-1 rounded-lg border border-border">
-          <button
-            onClick={handleRun}
-            disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
-            className="btn-primary flex items-center gap-1 text-xs px-3 py-1.5 disabled:opacity-50"
-          >
-            <Play size={14} /> RUN
-          </button>
+          {/* Engine Status */}
+          <div className="flex items-center gap-1.5 px-3 h-[34px] rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold shadow-sm">
+            <span className="text-gray-400 font-semibold mr-0.5">Engine:</span>
+            {pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy" ? (
+              <span className="text-orange-500 flex items-center gap-1.5">
+                <Loader2 size={12} className="animate-spin" /> Loading
+              </span>
+            ) : pyodideStatus.phase === "error" ? (
+              <span className="text-red-500 flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-red-500" /> Error
+              </span>
+            ) : (
+              <span className="text-emerald-500 flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Ready
+              </span>
+            )}
+          </div>
+
+          {/* Run Button with Speed Control */}
+          <div className="relative flex items-center shadow-sm h-[34px]">
+            <button
+              onClick={handleRun}
+              disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
+              className="flex items-center h-full gap-1.5 pl-4 pr-3 rounded-l-full bg-[#5742FF] text-white text-[13.5px] font-bold hover:bg-[#4531E5] disabled:opacity-50 transition-colors border-r border-[#4531E5]"
+            >
+              <Play size={14} fill="currentColor" /> Run
+            </button>
+            <button
+              onClick={() => setSpeedDropdownOpen(!speedDropdownOpen)}
+              className="flex items-center justify-center h-full pl-2 pr-3 rounded-r-full bg-[#5742FF] text-white hover:bg-[#4531E5] transition-colors disabled:opacity-50"
+            >
+              <ChevronDown size={14} strokeWidth={2.5} />
+            </button>
+            
+            {/* Speed Dropdown */}
+            {speedDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setSpeedDropdownOpen(false)}></div>
+                <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                  <div className="px-3 py-1 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Speed</div>
+                  {speedOptions.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSpeed(s);
+                        if (engineRef.current) engineRef.current.updateSpeed(s);
+                        setSpeedDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-[13px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${speed === s ? 'text-[#5742FF]' : 'text-gray-600'}`}
+                    >
+                      {s}x
+                      {speed === s && <Check size={14} strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Pause */}
           <button
             onClick={handlePause}
             disabled={simState !== "running"}
-            className="btn-secondary flex items-center gap-1 text-xs px-3 py-1.5 disabled:opacity-50"
+            className="flex items-center justify-center h-[34px] gap-1.5 px-4 rounded-full bg-white border border-gray-200 text-[#111827] text-[13.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
           >
-            <Pause size={14} /> PAUSE
+            <Pause size={14} fill="currentColor" /> Pause
           </button>
+
+          {/* Stop */}
           <button
             onClick={handleStop}
             disabled={simState === "idle"}
-            className="btn-secondary flex items-center gap-1 text-xs px-3 py-1.5 disabled:opacity-50"
+            className="flex items-center justify-center h-[34px] gap-1.5 px-4 rounded-full bg-white border border-gray-200 text-[#111827] text-[13.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
           >
-            <Square size={14} /> STOP
+            <Square size={13} fill="currentColor" /> Stop
           </button>
+
+          {/* Right Divider */}
+          <div className="w-px h-8 bg-gray-200 ml-1" />
+
+          {/* Avatar */}
+          <div className="flex items-center gap-1.5 cursor-pointer group ml-1">
+            <div className="w-8 h-8 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+              M
+            </div>
+            <ChevronDown size={14} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+          </div>
+
         </div>
       </div>
 
