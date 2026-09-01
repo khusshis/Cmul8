@@ -347,12 +347,12 @@ export default function DashboardPage() {
                     
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {[
-                        { id: "human_queue", label: "HUMAN QUEUE", sub: "People, lines, service systems" },
-                        { id: "vehicle", label: "VEHICLE", sub: "Traffic, vehicles, transport systems" },
-                        { id: "liquid", label: "LIQUID / MATERIAL", sub: "Flow of liquids or materials" },
-                        { id: "manufacturing", label: "MANUFACTURING", sub: "Production lines, machines, operations" },
-                        { id: "logistics", label: "LOGISTICS", sub: "Warehousing, supply chain, distribution" },
-                        { id: "network_signal", label: "NETWORK / SIGNAL", sub: "Networks, signals, communication" }
+                        { id: "human_queue" as const, label: "HUMAN QUEUE", sub: "People, lines, service systems" },
+                        { id: "vehicle" as const, label: "VEHICLE", sub: "Traffic, vehicles, transport systems" },
+                        { id: "liquid" as const, label: "LIQUID / MATERIAL", sub: "Flow of liquids or materials" },
+                        { id: "manufacturing" as const, label: "MANUFACTURING", sub: "Production lines, machines, operations" },
+                        { id: "logistics" as const, label: "LOGISTICS", sub: "Warehousing, supply chain, distribution" },
+                        { id: "network_signal" as const, label: "NETWORK / SIGNAL", sub: "Networks, signals, communication" }
                       ].map((type) => {
                         const isSelected = newType === type.id;
                         return (

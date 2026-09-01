@@ -297,18 +297,12 @@ export default function Navbar() {
         className="fixed top-3 left-0 right-0 z-40 pointer-events-none flex justify-center px-4"
       >
         <div
-          className="w-full transition-all duration-500 rounded-full"
+          className={`w-full transition-all duration-500 rounded-full ${scrolled ? 'bg-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-100/50' : 'bg-white/50 border border-transparent'}`}
           style={{
             maxWidth: "1040px",
-            height: "56px",
-            background: scrolled
-              ? "rgba(var(--color-bg-rgb, 255, 255, 255), 0.9)"
-              : "rgba(var(--color-bg-rgb, 255, 255, 255), 0.7)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            boxShadow: scrolled
-              ? "0 4px 20px rgba(0,0,0,0.08), 0 0 0 1px var(--color-border)"
-              : "0 0 0 1px var(--color-border)",
+            height: "60px",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)"
           }}
         />
       </motion.div>
@@ -321,9 +315,9 @@ export default function Navbar() {
         aria-label="Main navigation"
       >
         <div className="w-full pointer-events-auto" style={{ maxWidth: "1040px" }}>
-          <div className="flex items-center h-14 px-6 gap-6">
+          <div className="flex items-center h-[60px] px-6 gap-6">
 
-            <Link href="/" className="flex items-center group flex-shrink-0 h-full relative w-40">
+            <Link href="/" className="flex items-center group flex-shrink-0 h-full relative w-40 mt-1">
               <img 
                 src="/logo-full-transparent.png" 
                 alt="JustCmul8 Logo" 
@@ -334,39 +328,37 @@ export default function Navbar() {
             {isLanding && (
               <>
                 <Divider />
-                <div className="hidden md:flex items-center gap-6 flex-1 justify-center">
+                <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
                   {navLinks.map((link) => (
                     <a
                       key={link.label}
                       href={link.href}
-                      className="text-sm font-medium transition-colors hover:opacity-80"
-                      style={{ color: "var(--color-text-secondary)" }}
+                      className="relative group text-[14.5px] font-bold text-gray-500 hover:text-indigo-600 transition-colors py-1"
                     >
                       {link.label}
+                      <span className="absolute left-0 -bottom-1 w-0 h-[2.5px] bg-gradient-to-r from-[#8b5cf6] to-[#f97316] transition-all duration-300 group-hover:w-full rounded-full" />
                     </a>
                   ))}
                 </div>
               </>
             )}
 
-            <div className="hidden md:flex items-center gap-4 flex-shrink-0 ml-auto">
+            <div className="hidden md:flex items-center gap-3 flex-shrink-0 ml-auto">
               {isLanding && <Divider />}
               {isAuthenticated ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="flex items-center gap-2 py-2.5 px-5 rounded-full text-white text-[14px] font-bold transition-all shadow-lg shadow-[#5742FF]/25 bg-[#5742FF] hover:bg-[#4531E5] hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <LayoutDashboard size={16} />
+                    <LayoutDashboard size={16} strokeWidth={2.5} />
                     Dashboard
                   </Link>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="flex items-center gap-2 text-[14px] font-bold text-gray-500 hover:text-red-500 transition-colors px-3 py-2 rounded-xl hover:bg-red-50"
                   >
-                    <LogOut size={16} />
+                    <LogOut size={16} strokeWidth={2.5} />
                     Logout
                   </button>
                 </>
@@ -374,18 +366,16 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="flex items-center gap-2 text-[14px] font-bold text-gray-500 hover:text-indigo-600 transition-colors px-3 py-2 rounded-xl hover:bg-indigo-50"
                   >
-                    <LogIn size={16} />
+                    <LogIn size={16} strokeWidth={2.5} />
                     Login
                   </Link>
                   <Link
                     href="/signup"
-                    className="flex items-center gap-2 py-1.5 px-4 rounded-full text-white font-medium transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: "var(--color-info)" }}
+                    className="flex items-center gap-2 py-2.5 px-5 rounded-full text-white text-[14px] font-bold transition-all shadow-lg shadow-[#5742FF]/25 bg-[#5742FF] hover:bg-[#4531E5] hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <UserPlus size={16} />
+                    <UserPlus size={16} strokeWidth={2.5} />
                     Get Started
                   </Link>
                 </>
@@ -433,13 +423,25 @@ export default function Navbar() {
                 <div className="flex flex-col gap-3 pt-2">
                   {isAuthenticated ? (
                     <>
-                      <Link href="/dashboard" className="py-2 text-center text-sm font-medium rounded" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }}>Dashboard</Link>
-                      <button onClick={logout} className="py-2 text-center text-sm font-medium rounded" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }}>Logout</button>
+                      <Link href="/dashboard" className="py-2.5 flex items-center justify-center gap-2 text-[14px] font-bold rounded-xl text-white shadow-lg shadow-[#5742FF]/25 bg-[#5742FF] hover:bg-[#4531E5] transition-colors">
+                        <LayoutDashboard size={16} strokeWidth={2.5} />
+                        Dashboard
+                      </Link>
+                      <button onClick={logout} className="py-2.5 flex items-center justify-center gap-2 text-[14px] font-bold rounded-xl text-red-500 bg-red-50 hover:bg-red-100 transition-colors">
+                        <LogOut size={16} strokeWidth={2.5} />
+                        Logout
+                      </button>
                     </>
                   ) : (
                     <>
-                      <Link href="/login" className="py-2 text-center text-sm font-medium rounded" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-primary)" }}>Login</Link>
-                      <Link href="/signup" className="py-2 text-center text-sm font-medium rounded text-white" style={{ backgroundColor: "var(--color-info)" }}>Get Started</Link>
+                      <Link href="/login" className="py-2.5 flex items-center justify-center gap-2 text-[14px] font-bold rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                        <LogIn size={16} strokeWidth={2.5} />
+                        Login
+                      </Link>
+                      <Link href="/signup" className="py-2.5 flex items-center justify-center gap-2 text-[14px] font-bold rounded-xl text-white shadow-lg shadow-[#5742FF]/25 bg-[#5742FF] hover:bg-[#4531E5] transition-colors">
+                        <UserPlus size={16} strokeWidth={2.5} />
+                        Get Started
+                      </Link>
                     </>
                   )}
                 </div>

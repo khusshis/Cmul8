@@ -24,7 +24,7 @@ export function FloatingInput({ label, icon, type, value, ...props }: FloatingIn
         />
         <label 
           htmlFor={props.id} 
-          className={`absolute left-[16px] px-1 pointer-events-none transition-all duration-200 ease-out origin-left z-30 bg-transparent ${hasValue ? '-top-6 translate-y-0 scale-[0.85] text-[#9CA3AF]' : 'left-[40px] top-1/2 -translate-y-1/2 text-[14px] text-[#9CA3AF]'} peer-focus:-top-6 peer-focus:translate-y-0 peer-focus:scale-[0.85] peer-focus:text-[#6C5CE7] peer-focus:left-[16px]`}
+          className="absolute px-1 pointer-events-none transition-all duration-200 ease-out origin-left z-30 bg-transparent -top-6 translate-y-0 scale-[0.85] left-[16px] text-[#9CA3AF] peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-placeholder-shown:left-[40px] peer-placeholder-shown:text-[14px] peer-focus:-top-6 peer-focus:translate-y-0 peer-focus:scale-[0.85] peer-focus:left-[16px] peer-focus:text-[#6C5CE7] peer-autofill:-top-6 peer-autofill:translate-y-0 peer-autofill:scale-[0.85] peer-autofill:left-[16px] peer-autofill:text-[#9CA3AF] peer-has-[autofill]:-top-6"
         >
           {label}
         </label>

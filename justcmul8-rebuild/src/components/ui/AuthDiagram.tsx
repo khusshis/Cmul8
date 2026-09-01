@@ -1,143 +1,136 @@
 "use client";
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Layers, Server, Flag } from 'lucide-react';
+import { Users, Shield, Ticket, Train } from 'lucide-react';
+
+const initialNodes = {
+  source: { x: 50, y: 150, title: 'Station Entrance', l1: 'rate: 150/min', icon: Users, col: 'text-purple-500', border: 'border-l-purple-500' },
+  queue: { x: 200, y: 80, title: 'Security Check', l1: 'capacity: 4 lines', icon: Shield, col: 'text-blue-500', border: 'border-l-blue-500' },
+  server: { x: 350, y: 220, title: 'Ticket Counter', l1: 'service: 30s', icon: Ticket, col: 'text-green-500', border: 'border-l-green-500' },
+  sink: { x: 500, y: 150, title: 'Platform Boarding', l1: 'status: waiting', icon: Train, col: 'text-indigo-500', border: 'border-l-indigo-500' },
+};
+
+const connections = [
+  { id: 'c1', from: 'source', to: 'queue' },
+  { id: 'c2', from: 'queue', to: 'server' },
+  { id: 'c3', from: 'server', to: 'sink' },
+];
 
 export function AuthDiagram() {
-  return (
-    <div className="relative flex-grow flex items-center justify-center min-h-[180px] w-full max-w-[500px] mx-auto z-10 my-2 lg:my-4">
-      {/* SVG Path - Continuously Moving (Marching Ants) */}
-      <svg 
-        className="absolute w-full h-full inset-0 pointer-events-none" 
-        style={{ top: '50%', transform: 'translateY(-50%)' }}
-        viewBox="0 0 100 100" 
-        preserveAspectRatio="none"
-      >
-         <motion.path 
-            animate={{ strokeDashoffset: [0, -12] }}
-            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-            d="M 10 50 Q 25 30, 40 50 T 70 50 T 90 50" 
-            fill="none" stroke="#A78BFA" strokeWidth="2" strokeDasharray="6,6" 
-            vectorEffect="non-scaling-stroke"
-         />
-      </svg>
-      {/* Pulsing connection dots as HTML elements */}
-      {[
-        { left: "10%", top: "50%", delay: 0 },
-        { left: "37%", top: "43%", delay: 0.4 },
-        { left: "65%", top: "57%", delay: 0.8 },
-        { left: "90%", top: "50%", delay: 1.2 }
-      ].map((dot, i) => (
-        <motion.div 
-           key={i}
-           className="absolute w-2 h-2 bg-[#A78BFA] rounded-full z-10"
-           style={{ left: dot.left, top: dot.top, x: '-50%', y: '-50%' }}
-           animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.3, 0.8] }}
-           transition={{ repeat: Infinity, duration: 2, delay: dot.delay, ease: "easeInOut" }}
-        />
-      ))}
+  const [nodes, setNodes] = useState(initialNodes);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const lastPos = useRef({ x: 0, y: 0 });
 
-      {/* Nodes Container */}
-      <div className="w-full flex justify-between items-center relative px-[5%] max-w-[500px]">
+  const handlePointerDown = (key: string) => (e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    setDraggedNode(key);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (draggedNode) {
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      
+      setNodes(prev => ({
+        ...prev,
+        [draggedNode]: {
+           ...prev[draggedNode as keyof typeof prev],
+           x: prev[draggedNode as keyof typeof prev].x + dx,
+           y: prev[draggedNode as keyof typeof prev].y + dy
+        }
+      }));
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (draggedNode) {
+      (e.target as Element).releasePointerCapture(e.pointerId);
+      setDraggedNode(null);
+    }
+  };
+
+  const bez = (p1: {x: number, y: number}, p2: {x: number, y: number}) => {
+    const dx = Math.abs(p2.x - p1.x);
+    const midX1 = p1.x + dx * 0.4;
+    const midX2 = p1.x + dx * 0.6;
+    return `M ${p1.x} ${p1.y} C ${midX1} ${p1.y}, ${midX2} ${p2.y}, ${p2.x} ${p2.y}`;
+  };
+
+  return (
+    <div 
+      className="relative flex-grow flex items-center justify-center w-full h-full min-h-[300px] max-w-[600px] mx-auto z-10 touch-none overflow-visible"
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+    >
+      <div className="relative w-[550px] h-[300px] origin-center scale-[0.6] sm:scale-[0.8] md:scale-90 lg:scale-100 transition-transform">
         
+        {/* Dynamic SVG Connections */}
+        <svg 
+          className="absolute inset-0 pointer-events-none" 
+          style={{ width: '100%', height: '100%', overflow: 'visible' }}
+        >
+          {connections.map(conn => {
+            const n1 = nodes[conn.from as keyof typeof nodes];
+            const n2 = nodes[conn.to as keyof typeof nodes];
+            return (
+              <motion.path 
+                key={conn.id}
+                animate={{ strokeDashoffset: [0, -12] }}
+                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                d={bez(n1, n2)} 
+                fill="none" 
+                stroke="#cbd5e1" 
+                strokeWidth="1.5" 
+                strokeDasharray="6,6" 
+              />
+            );
+          })}
+        </svg>
+        
+        {/* HTML Draggable Nodes */}
+        {Object.entries(nodes).map(([key, node]) => (
+          <div
+            key={key}
+            onPointerDown={handlePointerDown(key)}
+            className={`absolute -translate-x-1/2 -translate-y-1/2 w-[125px] sm:w-[135px] bg-white rounded-xl shadow-md border border-gray-200 border-l-4 ${node.border} p-2.5 flex gap-2.5 items-center z-20 hover:shadow-lg transition-shadow select-none ${draggedNode === key ? 'cursor-grabbing scale-105 shadow-xl z-50' : 'cursor-grab'}`}
+            style={{ left: `${node.x}px`, top: `${node.y}px`, touchAction: 'none' }}
+          >
+            <div className={node.col}><node.icon size={16} /></div>
+            <div className="pointer-events-none">
+              <h5 className="text-[10px] sm:text-[11px] font-bold text-gray-900 leading-tight">{node.title}</h5>
+              {node.l1 && <p className="text-[8px] sm:text-[9px] text-gray-500 mt-0.5">{node.l1}</p>}
+            </div>
+          </div>
+        ))}
+
         {/* Stat Card - Avg Wait Time */}
         <motion.div 
-          animate={{ y: [-5, 5] }}
+          drag
+          whileDrag={{ scale: 1.05, cursor: "grabbing", zIndex: 50 }}
+          animate={{ y: [-4, 4] }}
           transition={{ repeat: Infinity, repeatType: "mirror", duration: 3, ease: "easeInOut" }}
-          style={{ willChange: "transform" }}
-          className="absolute left-0 bottom-[-50px] bg-white p-2.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100 hidden md:flex flex-col w-[110px] z-20"
+          className="absolute left-[30px] bottom-[20px] bg-white p-2.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100 hidden md:flex flex-col w-[110px] z-30 cursor-grab"
         >
-          <span className="text-[9px] text-gray-500 font-medium mb-0.5 uppercase tracking-wider">Avg. Wait Time</span>
-          <span className="text-base font-bold text-[#111827]">4.2 min</span>
-          <span className="text-[10px] font-bold text-[#10B981] flex items-center">↓ 5.1%</span>
+          <span className="text-[9px] text-gray-500 font-medium mb-0.5 uppercase tracking-wider pointer-events-none">Avg. Wait Time</span>
+          <span className="text-base font-bold text-[#111827] pointer-events-none">4.2 min</span>
+          <span className="text-[10px] font-bold text-[#10B981] flex items-center pointer-events-none">↓ 5.1%</span>
         </motion.div>
-
-        {/* Source Node */}
-        <div className="flex flex-col items-center gap-1.5 z-10">
-          <motion.div 
-            animate={{ y: [-3, 3] }}
-            transition={{ repeat: Infinity, repeatType: "mirror", duration: 2.5, ease: "easeInOut", delay: 0.2 }}
-            style={{ willChange: "transform" }}
-            className="w-14 h-14 lg:w-16 lg:h-16 bg-[#8B7CF6] rounded-2xl shadow-[0_8px_16px_rgba(139,124,246,0.3)] flex items-center justify-center text-white"
-          >
-            <Users size={26} />
-          </motion.div>
-          <span className="text-[12px] font-semibold text-[#111827]">Source</span>
-        </div>
 
         {/* Stat Card - Throughput */}
         <motion.div 
-          animate={{ y: [5, -5] }}
+          drag
+          whileDrag={{ scale: 1.05, cursor: "grabbing", zIndex: 50 }}
+          animate={{ y: [4, -4] }}
           transition={{ repeat: Infinity, repeatType: "mirror", duration: 3.2, ease: "easeInOut", delay: 0.5 }}
-          style={{ willChange: "transform" }}
-          className="absolute right-[25%] top-[-45px] bg-white p-2.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100 hidden md:flex flex-col w-[110px] z-20"
+          className="absolute right-[30px] top-[20px] bg-white p-2.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100 hidden md:flex flex-col w-[110px] z-30 cursor-grab"
         >
-          <span className="text-[9px] text-gray-500 font-medium mb-0.5 uppercase tracking-wider">Throughput</span>
-          <span className="text-base font-bold text-[#111827]">1,240</span>
-          <span className="text-[10px] font-bold text-[#10B981] flex items-center">↑ 12.3%</span>
+          <span className="text-[9px] text-gray-500 font-medium mb-0.5 uppercase tracking-wider pointer-events-none">Throughput</span>
+          <span className="text-base font-bold text-[#111827] pointer-events-none">1,240</span>
+          <span className="text-[10px] font-bold text-[#10B981] flex items-center pointer-events-none">↑ 12.3%</span>
         </motion.div>
-
-        {/* Queue Node */}
-        <div className="flex flex-col items-center gap-1.5 z-10 translate-y-[-15px]">
-          <motion.div 
-            animate={{ y: [-3, 3] }}
-            transition={{ repeat: Infinity, repeatType: "mirror", duration: 2.7, ease: "easeInOut", delay: 0.6 }}
-            style={{ willChange: "transform" }}
-            className="w-14 h-14 lg:w-16 lg:h-16 bg-[#5B93F0] rounded-2xl shadow-[0_8px_16px_rgba(91,147,240,0.3)] flex items-center justify-center text-white"
-          >
-            <Layers size={26} />
-          </motion.div>
-          <span className="text-[12px] font-semibold text-[#111827]">Queue</span>
-        </div>
-
-        {/* Server Node */}
-        <div className="flex flex-col items-center gap-1.5 z-10 translate-y-[15px]">
-          <motion.div 
-            animate={{ y: [-3, 3] }}
-            transition={{ repeat: Infinity, repeatType: "mirror", duration: 2.4, ease: "easeInOut", delay: 1 }}
-            style={{ willChange: "transform" }}
-            className="w-14 h-14 lg:w-16 lg:h-16 bg-[#2FD1B4] rounded-2xl shadow-[0_8px_16px_rgba(47,209,180,0.3)] flex items-center justify-center text-white"
-          >
-            <Server size={26} />
-          </motion.div>
-          <span className="text-[12px] font-semibold text-[#111827]">Server</span>
-        </div>
-
-        {/* Stat Card - Utilization */}
-        <motion.div 
-          animate={{ y: [-4, 4] }}
-          transition={{ repeat: Infinity, repeatType: "mirror", duration: 3.5, ease: "easeInOut", delay: 1 }}
-          style={{ willChange: "transform" }}
-          className="absolute right-[5%] bottom-[-55px] bg-white p-2.5 rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100 hidden md:flex flex-col items-center justify-center w-[85px] h-[85px] lg:w-[95px] lg:h-[95px] z-20"
-        >
-          <span className="text-[8px] text-gray-500 font-medium mb-1 uppercase tracking-wider">Utilization</span>
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle cx="20" cy="20" r="16" fill="none" stroke="#E5E7EB" strokeWidth="4" />
-              {/* Pulsing ring */}
-              <motion.circle 
-                 animate={{ strokeDashoffset: [22, 10, 22] }}
-                 transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                 cx="20" cy="20" r="16" fill="none" stroke="#2FD1B4" strokeWidth="4" strokeDasharray="100" strokeLinecap="round" 
-              />
-            </svg>
-            <span className="absolute text-[12px] font-bold text-[#111827]">78%</span>
-          </div>
-        </motion.div>
-
-        {/* Sink Node */}
-        <div className="flex flex-col items-center gap-1.5 z-10">
-          <motion.div 
-            animate={{ y: [-3, 3] }}
-            transition={{ repeat: Infinity, repeatType: "mirror", duration: 2.8, ease: "easeInOut", delay: 1.4 }}
-            style={{ willChange: "transform" }}
-            className="w-14 h-14 lg:w-16 lg:h-16 bg-[#E4DEFB] rounded-2xl shadow-[0_8px_16px_rgba(228,222,251,0.5)] flex items-center justify-center text-[#6C5CE7]"
-          >
-            <Flag size={26} />
-          </motion.div>
-          <span className="text-[12px] font-semibold text-[#111827]">Sink</span>
-        </div>
-
       </div>
     </div>
   );

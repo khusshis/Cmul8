@@ -53,69 +53,70 @@ function LoginPageInner() {
   return (
     <div className="h-screen w-screen bg-[#F8F7FC] flex flex-col items-center justify-center font-sans text-[#111827] relative overflow-hidden">
         
-        {/* Continuous Subtle Background Gradient (Covers whole screen behind panels) */}
+        {/* Continuous Subtle Background Gradient */}
         <motion.div 
-          animate={{ 
-            backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-          }}
+          animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
           transition={{ repeat: Infinity, duration: 15, ease: 'linear' }}
-          className="fixed md:absolute inset-0 opacity-15 pointer-events-none z-0" 
+          className="fixed inset-0 opacity-15 pointer-events-none z-0" 
           style={{ 
             backgroundImage: 'radial-gradient(circle at 0% 40%, #C4B5FD 0%, transparent 50%), radial-gradient(circle at 100% 100%, #8B7CF6 0%, transparent 50%)',
             backgroundSize: '200% 200%'
           }} 
         />
 
-        {/* Outer Container (Full screen on normal devices, Centered Card on ultra-wide screens) */}
-        <div className="w-full h-full 2xl:h-[85vh] 2xl:w-[85vw] 2xl:max-w-[2400px] 2xl:rounded-[40px] 2xl:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] 2xl:border 2xl:border-white/50 flex flex-col justify-center md:flex-row overflow-y-auto md:overflow-hidden relative z-10 bg-transparent 2xl:bg-white/50 backdrop-blur-3xl">
+        {/* Outer Container */}
+        <div className="w-full h-full flex flex-col md:flex-row relative z-10">
 
           {/* LEFT PANEL */}
-          <div className="w-full h-auto md:h-full md:w-1/2 px-6 md:px-8 pt-8 pb-0 md:py-6 lg:px-12 lg:py-10 flex flex-col relative z-10 justify-start md:justify-between max-w-2xl mx-auto md:max-w-none 2xl:pl-16">
+          <div className="w-full h-auto md:h-full md:w-1/2 px-6 md:px-12 py-6 lg:py-8 flex flex-col relative z-10">
 
           {/* Logo & Headline */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative z-10 flex-shrink-0 mb-0 flex flex-col items-center text-center md:items-start md:text-left"
+            className="relative z-10 flex-shrink-0 mb-2 lg:mb-4 flex flex-col items-center text-center md:items-start md:text-left"
           >
-            <div className="mb-2 md:mb-2 lg:mb-4 md:-ml-6 md:-mt-6">
-              <img src="/logo_full.png" alt="JustCmul8 Logo" className="h-36 md:h-28 lg:h-40 w-auto object-contain md:object-left origin-center md:origin-left scale-125" />
+            <div className="mb-2 md:-ml-6 md:-mt-6">
+              <img src="/logo_full.png" alt="JustCmul8 Logo" className="h-28 md:h-32 lg:h-36 w-auto object-contain md:object-left origin-center md:origin-left" />
             </div>
-            <h1 className="text-[28px] md:text-[32px] lg:text-[40px] font-bold leading-[1.15] tracking-tight mb-2 lg:mb-3 text-[#111827] hidden md:block">
-              Welcome back <br className="hidden sm:block" />
+            <h1 className="text-[26px] md:text-[32px] lg:text-[40px] font-bold leading-[1.15] tracking-tight mb-1 lg:mb-2 text-[#111827] hidden md:block">
+              Welcome back <br className="hidden lg:block" />
               to <span className="text-[#6C5CE7]">JustCmul8.</span>
             </h1>
-            <p className="text-[#6B7280] text-[15px] lg:text-[16px] max-w-[380px] leading-relaxed hidden md:block">
+            <p className="text-[#6B7280] text-[14px] lg:text-[15px] max-w-[400px] leading-relaxed hidden md:block">
               Sign in to access your models, run simulations, and collaborate with your team.
             </p>
           </motion.div>
 
-          {/* Desktop Only: Diagram and Features */}
-          <div className="hidden md:flex flex-col flex-grow justify-between">
-            <AuthDiagram />
-
+          {/* Desktop Only: Diagram and Features Centered */}
+          <div className="hidden md:flex flex-col flex-grow justify-center relative min-h-0">
+            {/* The AuthDiagram will scale to fit available space */}
+            <div className="w-full flex-grow flex items-center justify-center min-h-[200px] max-h-[340px]">
+              <AuthDiagram />
+            </div>
+            
             {/* Feature Row */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8, duration: 0.5 }}
-              className="relative z-10 flex-shrink-0 pt-4 lg:pt-6 border-t border-[#E5E7EB]/50 grid grid-cols-3 gap-3"
+              className="relative z-10 flex-shrink-0 pt-4 lg:pt-6 border-t border-[#E5E7EB]/70 grid grid-cols-3 gap-4 mt-2 lg:mt-6"
             >
               {[
-                { icon: <CodeXml size={16} />, title: "No Code", sub: "Drag, drop, simulate." },
-                { icon: <Zap size={16} />, title: "Real-time", sub: "Instant results." },
-                { icon: <Cloud size={16} />, title: "Anywhere", sub: "All in browser." }
+                { icon: <CodeXml size={18} />, title: "No Code", sub: "Drag, drop, simulate." },
+                { icon: <Zap size={18} />, title: "Real-time", sub: "Instant results." },
+                { icon: <Cloud size={18} />, title: "Anywhere", sub: "All in browser." }
               ].map((f, idx) => (
                 <motion.div 
                   whileHover={{ y: -3, transition: { duration: 0.2 } }} 
                   key={idx} 
                   className="flex flex-col gap-1 cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#6C5CE7] mb-0.5 shadow-sm border border-gray-100">
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#6C5CE7] shadow-sm border border-gray-100">
                     {f.icon}
                   </div>
-                  <span className="font-bold text-[12px] lg:text-[13px] text-[#111827] leading-tight">{f.title}</span>
+                  <span className="font-bold text-[12px] lg:text-[13px] text-[#111827] leading-tight mt-0.5">{f.title}</span>
                   <span className="text-[11px] lg:text-[12px] text-[#6B7280] leading-tight">{f.sub}</span>
                 </motion.div>
               ))}
@@ -124,24 +125,25 @@ function LoginPageInner() {
         </div>
 
         {/* RIGHT PANEL - FORM */}
-        <div className="w-full md:h-full md:w-1/2 bg-transparent md:bg-white px-6 md:px-8 pb-10 md:py-8 lg:px-16 flex flex-col justify-start md:justify-center items-center overflow-y-visible md:overflow-y-auto no-scrollbar rounded-none md:rounded-l-[48px] shadow-none md:shadow-[-30px_0_60px_-15px_rgba(0,0,0,0.08)] relative z-20">
+        <div className="w-full h-auto md:h-full md:w-1/2 bg-white px-6 md:px-12 py-8 lg:py-12 flex flex-col justify-center items-center shadow-[-20px_0_40px_-10px_rgba(0,0,0,0.03)] relative z-20 overflow-y-auto no-scrollbar">
           <motion.div 
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="w-full max-w-[420px] mt-2 md:my-auto"
+            className="w-full max-w-[400px] my-auto"
           >
-            <motion.h2 variants={itemVariants} className="text-[28px] lg:text-[34px] font-bold text-[#111827] mb-1.5 md:mb-1.5 tracking-tight text-center md:text-left">
+            <motion.h2 variants={itemVariants} className="text-[26px] lg:text-[32px] font-bold text-[#111827] mb-1 tracking-tight text-center md:text-left">
               Welcome back
             </motion.h2>
             {/* Desktop Subtext */}
-            <motion.p variants={itemVariants} className="text-[#6B7280] text-[13px] lg:text-[15px] mb-6 lg:mb-8 leading-relaxed text-center md:text-left hidden md:block">
+            <motion.p variants={itemVariants} className="text-[#6B7280] text-[13px] lg:text-[14px] mb-5 lg:mb-6 leading-relaxed text-center md:text-left hidden md:block">
               Sign in to your account to continue building powerful simulations.
             </motion.p>
             {/* Mobile Subtext matching screenshot */}
-            <motion.p variants={itemVariants} className="text-[#6B7280] text-[14px] mb-8 leading-relaxed text-center md:hidden px-4">
+            <motion.p variants={itemVariants} className="text-[#6B7280] text-[13px] mb-6 leading-relaxed text-center md:hidden px-4">
               Sign in to your account.
             </motion.p>
+
 
             <div className="space-y-5 lg:space-y-6">
               {error && (

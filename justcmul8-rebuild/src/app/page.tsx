@@ -1,29 +1,58 @@
+"use client";
+
 import React from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import { ReactLenis } from "lenis/react";
 import Navbar from "@/components/layout/Navbar";
-import Link from "next/link";
+import HeroSection from "@/components/landing/HeroSection";
+import TickerSection from "@/components/landing/TickerSection";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import AISection from "@/components/landing/AISection";
+import EngineSection from "@/components/landing/EngineSection";
+import SimTypesSection from "@/components/landing/SimTypesSection";
+import SecurityPricingSection from "@/components/landing/SecurityPricingSection";
+import Footer from "@/components/layout/Footer";
+
+const PreLoader = dynamic(() => import("@/components/layout/PreLoader"), { ssr: false });
 
 export default function LandingPage() {
+  const [loaded, setLoaded] = React.useState(false);
+
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
-      <Navbar />
-      
-      <main className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6" style={{ color: "var(--color-text-primary)" }}>
-          JustCmul8
-        </h1>
-        <p className="text-lg md:text-xl max-w-2xl mb-10" style={{ color: "var(--color-text-secondary)" }}>
-          The actual Landing Page will be built in Phase 9. For now, please proceed to Authentication.
-        </p>
-        
-        <div className="flex gap-4">
-          <Link href="/signup" className="py-3 px-6 rounded-full text-white font-medium hover:opacity-90 transition-opacity" style={{ backgroundColor: "var(--color-info)" }}>
-            Sign Up
-          </Link>
-          <Link href="/login" className="py-3 px-6 rounded-full font-medium border hover:opacity-90 transition-opacity" style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)" }}>
-            Log In
-          </Link>
+    <ReactLenis root>
+      {!loaded && <PreLoader onComplete={() => setLoaded(true)} />}
+      <div
+        className="relative min-h-screen"
+        style={{ background: "var(--bg-primary)", opacity: loaded ? 1 : 0, transition: "opacity 0.5s ease" }}
+      >
+        {/* Global animated cyber-grid overlay */}
+        <div className="fixed inset-0 cyber-grid pointer-events-none z-0" />
+
+        {/* Global Fixed Cyberpunk Minimal Background */}
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <Image
+            src="/cyberpunk_fixed_bg.png"
+            alt="Cyberpunk Industrial Background"
+            fill
+            sizes="100vw"
+            className="object-cover opacity-50 mix-blend-screen"
+            priority
+          />
         </div>
-      </main>
-    </div>
+
+        <Navbar />
+        <main>
+          <HeroSection />
+          <TickerSection />
+          <FeaturesSection />
+          <AISection />
+          <EngineSection />
+          <SimTypesSection />
+          <SecurityPricingSection />
+        </main>
+        <Footer />
+      </div>
+    </ReactLenis>
   );
 }

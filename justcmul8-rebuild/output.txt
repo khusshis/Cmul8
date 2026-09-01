@@ -1,0 +1,30 @@
+JustCmul8
+A No-Code, Browser-Based Discrete Event Simulation Platform
+Project Synopsis | Final Year Project Proposal
+
+Khushi Singh 261713
+Mohit Gupta 261715
+#	Module Name	What it does
+1	User Authentication	Secure login, signup, Google/GitHub OAuth, session protection
+2	Project Management	Create, save, rename, delete simulation projects; cloud storage via Supabase
+3	Visual Graph Editor	Drag-and-drop node canvas; 13 node types; real-time edge routing
+4	Node Configuration Panel	Set properties for each node arrival rates, capacities, distributions
+5	Simulation Engine	Runs real Python SimPy in the browser via Pyodide WASM; Web Worker fallback
+6	AI Assistant	Type a description → Google Gemini generates the simulation graph automatically
+7	KPI Dashboard & Results	Live charts, utilization metrics, bottleneck detection, simulation logs
+8	Simulation Template Gallery	6 domain types × starter graphs; click to pre-populate canvas
+9	Export & Share Module	Download graph as JSON, results as CSV, shareable read-only project link
+10	User Profile & Settings	Profile management, rename projects, change sim type, password update
+11	Real-Time Collaboration	Multi-user editing with live cursors and presence — like Canva/Figma
+Category	Technology	Why we chose it
+Frontend Framework	Next.js 16 + React 19	Fast, modern web app with server-side rendering support
+Language	TypeScript	Type safety across the whole codebase fewer bugs
+Simulation Engine	Python SimPy via Pyodide	Real discrete event simulation runs Python inside the browser
+Node Graph Editor	React Flow (@xyflow)	Production-grade drag-and-drop canvas for node-based UIs
+AI / LLM	Google Gemini 2.0 Flash	Natural language to simulation graph generation
+Database & Auth	Supabase (Postgres + RLS)	User auth, project storage, real-time collaboration channel
+Charts & Graphs	Recharts	Interactive KPI charts for simulation results
+2D Visualization	Pixi.js	High-performance 2D canvas for animated simulation viewport
+Animations & UI	Framer Motion + Lenis	Smooth page transitions and scroll physics
+Styling	Tailwind CSS v4	Fast utility-first styling with cyberpunk theme
+State Management	Zustand	Lightweight global state for simulation and canvas data
