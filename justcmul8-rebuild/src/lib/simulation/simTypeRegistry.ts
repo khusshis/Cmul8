@@ -92,6 +92,24 @@ export interface SimTypeConfig {
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
+export const NODE_LABELS: Record<NodeType, string> = {
+  source: "Start Point",
+  queue: "Waiting Line",
+  resource: "Limited Counter",
+  service: "Counter",
+  decision: "Decision Block",
+  sink: "Exit Point",
+  priority_resource: "Priority Counter",
+  container: "Storage Tank",
+  store: "Storage Rack",
+  event_trigger: "Event Trigger",
+  channel: "Transport Channel",
+  broadcaster: "Broadcaster",
+  any_of: "Any-One Gate",
+  all_of: "Wait-for-All Gate",
+  interrupter: "Breakdown Block",
+};
+
 export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
 
   // ── 1. HUMAN QUEUE ──────────────────────────────────────────────────────────
@@ -123,17 +141,17 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
     },
 
     paletteNodes: [
-      { type: "source",   label: "Arrival Point",       icon: DoorOpen, color: "var(--neon-green)",  desc: "Where new customers, items, or requests enter the system",       spriteKey: "source" },
+      { type: "source",   label: "Start Point",       icon: DoorOpen, color: "var(--neon-green)",  desc: "Where new customers, items, or requests enter the system",       spriteKey: "source" },
       { type: "queue",    label: "Waiting Line",        icon: AlignJustify, color: "var(--neon-yellow)", desc: "A line where things wait their turn",                 spriteKey: "queue" },
-      { type: "resource", label: "Staff / Machine", icon: Monitor, color: "var(--neon-green)",  desc: "A worker or machine that serves one thing at a time", spriteKey: "resource" },
-      { type: "service",  label: "Processing Step", icon: Zap, color: "var(--neon-cyan)",   desc: "A step that takes a fixed or random amount of time",        spriteKey: "service" },
-      { type: "decision", label: "Split Path",        icon: Shuffle, color: "var(--neon-purple)", desc: "Sends each item down one of several paths, by chance",        spriteKey: "decision" },
+      { type: "resource", label: "Limited Counter", icon: Monitor, color: "var(--neon-green)",  desc: "A worker or machine that serves one thing at a time", spriteKey: "resource" },
+      { type: "service",  label: "Counter", icon: Zap, color: "var(--neon-cyan)",   desc: "A step that takes a fixed or random amount of time",        spriteKey: "service" },
+      { type: "decision", label: "Decision Block",        icon: Shuffle, color: "var(--neon-purple)", desc: "Sends each item down one of several paths, by chance",        spriteKey: "decision" },
       { type: "sink",     label: "Exit Point",         icon: DoorOpen, color: "var(--neon-red)",    desc: "Where things leave the system — results are counted here",spriteKey: "sink" },
-      { type: "store",    label: "Storage Buffer", icon: Package, color: "var(--neon-pink)",   desc: "Holds a limited number of items until they're needed",spriteKey: "source" },
-      { type: "any_of",   label: "Wait For Any",  icon: GitFork, color: "var(--neon-yellow)", desc: "Continues as soon as ONE of several things happens",  spriteKey: "decision" },
-      { type: "all_of",   label: "Wait For All", icon: LinkIcon, color: "var(--neon-yellow)", desc: "Continues only once ALL of several things have happened", spriteKey: "decision" },
-      { type: "interrupter", label: "Interrupt Signal", icon: AlertTriangle, color: "var(--neon-red)",    desc: "Stops another step partway through, on purpose",   spriteKey: "decision" },
-      { type: "event_trigger", label: "Condition Watcher",   icon: Bell, color: "var(--neon-orange)", desc: "Waits for a condition to become true, then fires an event",      spriteKey: "source" },
+      { type: "store",    label: "Storage Rack", icon: Package, color: "var(--neon-pink)",   desc: "Holds a limited number of items until they're needed",spriteKey: "source" },
+      { type: "any_of",   label: "Any-One Gate",  icon: GitFork, color: "var(--neon-yellow)", desc: "Continues as soon as ONE of several things happens",  spriteKey: "decision" },
+      { type: "all_of",   label: "Wait-for-All Gate", icon: LinkIcon, color: "var(--neon-yellow)", desc: "Continues only once ALL of several things have happened", spriteKey: "decision" },
+      { type: "interrupter", label: "Breakdown Block", icon: AlertTriangle, color: "var(--neon-red)",    desc: "Stops another step partway through, on purpose",   spriteKey: "decision" },
+      { type: "event_trigger", label: "Event Trigger",   icon: Bell, color: "var(--neon-orange)", desc: "Waits for a condition to become true, then fires an event",      spriteKey: "source" },
     ],
 
     subScenarios: [
@@ -232,13 +250,13 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
     },
 
     paletteNodes: [
-      { type: "source",   label: "Arrival Point",         icon: ArrowRight, color: "var(--neon-cyan)",   desc: "Where new customers, items, or requests enter the system",          spriteKey: "source" },
-      { type: "queue",    label: "Waiting Line",      icon: MoreVertical, color: "var(--neon-yellow)", desc: "A line where things wait their turn",                  spriteKey: "queue" },
-      { type: "resource", label: "Staff / Machine",        icon: Fuel, color: "var(--neon-cyan)",   desc: "A worker or machine that serves one thing at a time", spriteKey: "resource" },
-      { type: "service",  label: "Processing Step",           icon: Wrench, color: "var(--neon-green)",  desc: "A step that takes a fixed or random amount of time",    spriteKey: "service" },
-      { type: "decision", label: "Split Path",icon: Shuffle, color: "var(--neon-orange)", desc: "Sends each item down one of several paths, by chance",     spriteKey: "decision" },
-      { type: "priority_resource", label: "Priority Staff / Machine", icon: User, color: "var(--neon-yellow)", desc: "Like Staff/Machine, but urgent items go first", spriteKey: "priority_resource" },
-      { type: "sink",     label: "Exit Point",              icon: Flag, color: "var(--neon-red)",    desc: "Where things leave the system — results are counted here",               spriteKey: "sink" },
+      { type: "source",   label: "Start Point",         icon: ArrowRight, color: "var(--neon-cyan)",   desc: "Where new vehicles enter the system",          spriteKey: "source" },
+      { type: "queue",    label: "Waiting Line",      icon: MoreVertical, color: "var(--neon-yellow)", desc: "A lane where vehicles wait their turn",                  spriteKey: "queue" },
+      { type: "resource", label: "Service Bay (Limited)",        icon: Fuel, color: "var(--neon-cyan)",   desc: "A pump or bay that serves one vehicle at a time", spriteKey: "resource" },
+      { type: "service",  label: "Processing Block",           icon: Wrench, color: "var(--neon-green)",  desc: "A step that takes a fixed or random amount of time",    spriteKey: "service" },
+      { type: "decision", label: "Decision Block",icon: Shuffle, color: "var(--neon-orange)", desc: "Sends each vehicle down one of several paths (e.g. intersection)",     spriteKey: "decision" },
+      { type: "priority_resource", label: "Priority Bay", icon: User, color: "var(--neon-yellow)", desc: "Like a Service Bay, but urgent vehicles go first", spriteKey: "priority_resource" },
+      { type: "sink",     label: "Exit Point",              icon: Flag, color: "var(--neon-red)",    desc: "Where vehicles leave the system — results are counted here",               spriteKey: "sink" },
     ],
 
     subScenarios: [
@@ -325,11 +343,11 @@ Arrival rates are in vehicles/minute. Service times in minutes.`,
     },
 
     paletteNodes: [
-      { type: "source",    label: "Arrival Point",     icon: ArrowDownCircle, color: "var(--neon-purple)", desc: "Where new customers, items, or requests enter the system",  spriteKey: "source" },
-      { type: "container", label: "Tank / Reservoir",      icon: Database, color: "var(--neon-purple)", desc: "Holds a continuous amount of something (like liquid or stock)",       spriteKey: "container" },
-      { type: "service",   label: "Processing Step", icon: FlaskConical, color: "var(--neon-cyan)",   desc: "A step that takes a fixed or random amount of time",    spriteKey: "service" },
-      { type: "decision",  label: "Split Path",     icon: Wrench, color: "var(--neon-magenta)","desc": "Flow control valve",           spriteKey: "decision" },
-      { type: "store",     label: "Storage Buffer",     icon: Archive, color: "var(--neon-purple)", desc: "Holds a limited number of items until they're needed",           spriteKey: "store" },
+      { type: "source",    label: "Start Point",     icon: ArrowDownCircle, color: "var(--neon-purple)", desc: "Where liquid or batches enter the system",  spriteKey: "source" },
+      { type: "container", label: "Storage Tank",      icon: Database, color: "var(--neon-purple)", desc: "Holds a continuous amount of something (like liquid or stock)",       spriteKey: "container" },
+      { type: "service",   label: "Processing Unit", icon: FlaskConical, color: "var(--neon-cyan)",   desc: "A step that takes a fixed or random amount of time",    spriteKey: "service" },
+      { type: "decision",  label: "Valve / Splitter",     icon: Wrench, color: "var(--neon-magenta)", desc: "Flow control valve",           spriteKey: "decision" },
+      { type: "store",     label: "Storage Rack",     icon: Archive, color: "var(--neon-purple)", desc: "Holds a limited number of items until they're needed",           spriteKey: "store" },
       { type: "sink",      label: "Exit Point",    icon: ArrowDownCircle, color: "var(--neon-red)",    desc: "Where things leave the system — results are counted here",   spriteKey: "sink" },
     ],
 
@@ -396,12 +414,12 @@ Flow rates in units/minute. Tank capacity in units.`,
     },
 
     paletteNodes: [
-      { type: "source",   label: "Arrival Point",    icon: Download, color: "var(--neon-orange)", desc: "Where new customers, items, or requests enter the system",    spriteKey: "source" },
-      { type: "queue",    label: "Waiting Line",  icon: Package, color: "var(--neon-yellow)", desc: "A line where things wait their turn",      spriteKey: "queue" },
-      { type: "resource", label: "Staff / Machine",       icon: Settings, color: "var(--neon-orange)", desc: "A worker or machine that serves one thing at a time",spriteKey: "resource" },
-      { type: "service",  label: "Processing Step",  icon: Wrench, color: "var(--neon-orange)", desc: "A step that takes a fixed or random amount of time",        spriteKey: "service" },
-      { type: "decision", label: "Split Path",      icon: Search, color: "var(--neon-green)",  desc: "Sends each item down one of several paths, by chance",     spriteKey: "decision" },
-      { type: "sink",     label: "Exit Point",icon: CheckCircle, color: "var(--neon-red)",    desc: "Where things leave the system — results are counted here",        spriteKey: "sink" },
+      { type: "source",   label: "Start Point",    icon: Download, color: "var(--neon-orange)", desc: "Where raw parts enter the system",    spriteKey: "source" },
+      { type: "queue",    label: "Waiting Line",  icon: Package, color: "var(--neon-yellow)", desc: "A buffer where parts wait their turn",      spriteKey: "queue" },
+      { type: "resource", label: "Machine / Robot",       icon: Settings, color: "var(--neon-orange)", desc: "A machine that serves one part at a time",spriteKey: "resource" },
+      { type: "service",  label: "Assembly Step",  icon: Wrench, color: "var(--neon-orange)", desc: "A step that takes a fixed or random amount of time",        spriteKey: "service" },
+      { type: "decision", label: "Decision Block",      icon: Search, color: "var(--neon-green)",  desc: "Sends each item down one of several paths (e.g. QC check)",     spriteKey: "decision" },
+      { type: "sink",     label: "Exit Point",icon: CheckCircle, color: "var(--neon-red)",    desc: "Where finished goods leave the system",        spriteKey: "sink" },
     ],
 
     subScenarios: [
@@ -473,12 +491,12 @@ Arrival rates in parts/minute. Service times in minutes. QC failure route probab
     },
 
     paletteNodes: [
-      { type: "source",   label: "Arrival Point",   icon: Truck, color: "var(--neon-yellow)", desc: "Where new customers, items, or requests enter the system", spriteKey: "source" },
-      { type: "queue",    label: "Waiting Line",   icon: Archive, color: "var(--neon-yellow)", desc: "A line where things wait their turn",            spriteKey: "queue" },
-      { type: "resource", label: "Staff / Machine",      icon: Factory, color: "var(--neon-cyan)",   desc: "A worker or machine that serves one thing at a time",   spriteKey: "resource" },
-      { type: "service",  label: "Processing Step",  icon: ArrowRight, color: "var(--neon-yellow)", desc: "A step that takes a fixed or random amount of time",     spriteKey: "service" },
-      { type: "decision", label: "Split Path",    icon: Shuffle, color: "var(--neon-orange)", desc: "Sends each item down one of several paths, by chance",   spriteKey: "decision" },
-      { type: "sink",     label: "Exit Point",    icon: CheckCircle, color: "var(--neon-red)",    desc: "Where things leave the system — results are counted here",           spriteKey: "sink" },
+      { type: "source",   label: "Start Point",   icon: Truck, color: "var(--neon-yellow)", desc: "Where packages enter the system", spriteKey: "source" },
+      { type: "queue",    label: "Waiting Line",   icon: Archive, color: "var(--neon-yellow)", desc: "A storage zone where items wait",            spriteKey: "queue" },
+      { type: "resource", label: "Loading Dock",      icon: Factory, color: "var(--neon-cyan)",   desc: "A dock that processes one shipment at a time",   spriteKey: "resource" },
+      { type: "service",  label: "Conveyor Step",  icon: ArrowRight, color: "var(--neon-yellow)", desc: "A transport or scan step taking time",     spriteKey: "service" },
+      { type: "decision", label: "Decision Block",    icon: Shuffle, color: "var(--neon-orange)", desc: "Sorts packages down different paths",   spriteKey: "decision" },
+      { type: "sink",     label: "Exit Point",    icon: CheckCircle, color: "var(--neon-red)",    desc: "Where packages are shipped out",           spriteKey: "sink" },
     ],
 
     subScenarios: [
@@ -560,12 +578,12 @@ Arrival rates in packages/minute. Service times in minutes.`,
     },
 
     paletteNodes: [
-      { type: "source",      label: "Arrival Point",    icon: Upload, color: "var(--neon-magenta)", desc: "Where new customers, items, or requests enter the system",          spriteKey: "source" },
-      { type: "store",       label: "Storage Buffer", icon: Archive, color: "var(--neon-purple)", desc: "Holds a limited number of items until they're needed",           spriteKey: "store" },
-      { type: "channel",     label: "Transmission Link",      icon: Signal, color: "var(--neon-magenta)", desc: "Carries a signal or message with a travel delay",        spriteKey: "channel" },
-      { type: "decision",    label: "Split Path",       icon: Shuffle, color: "var(--neon-cyan)",   desc: "Sends each item down one of several paths, by chance",            spriteKey: "decision" },
-      { type: "broadcaster", label: "Broadcast Hub",  icon: Megaphone, color: "var(--neon-orange)", desc: "Copies one message out to every connected path at once",spriteKey: "broadcaster" },
-      { type: "sink",        label: "Exit Point",     icon: Download, color: "var(--neon-green)",  desc: "Where things leave the system — results are counted here",       spriteKey: "sink" },
+      { type: "source",      label: "Start Point",    icon: Upload, color: "var(--neon-magenta)", desc: "Where new messages enter the system",          spriteKey: "source" },
+      { type: "store",       label: "Storage Rack", icon: Archive, color: "var(--neon-purple)", desc: "Holds messages until they can be processed",           spriteKey: "store" },
+      { type: "channel",     label: "Transport Channel",      icon: Signal, color: "var(--neon-magenta)", desc: "Carries a signal or message with a travel delay",        spriteKey: "channel" },
+      { type: "decision",    label: "Decision Block",       icon: Shuffle, color: "var(--neon-cyan)",   desc: "Routes messages down different paths",            spriteKey: "decision" },
+      { type: "broadcaster", label: "Broadcaster",  icon: Megaphone, color: "var(--neon-orange)", desc: "Copies one message out to every connected path at once",spriteKey: "broadcaster" },
+      { type: "sink",        label: "Exit Point",     icon: Download, color: "var(--neon-green)",  desc: "Where messages leave the system",       spriteKey: "sink" },
     ],
 
     subScenarios: [

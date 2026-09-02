@@ -7,7 +7,7 @@ import {
 import { ChevronDown, ChevronUp, Activity, Users, Clock, AlertTriangle } from "lucide-react";
 import type { SimResult } from "@/lib/simulation/types";
 import type { SimTypeId } from "@/lib/simulation/types";
-import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 
 const THEME_COLORS = ["#2f6fed", "#8b5cf6", "#12a150", "#d9a400", "#ff6d5a", "#0ea5a5"];
 
@@ -202,7 +202,7 @@ export default function SimResultsPanel({ result, simType, onClose }: SimResults
                         {s.label.length > 14 ? s.label.substring(0, 14) + "…" : s.label}
                         {result.bottleneckNodeId === id && " 🔴"}
                       </td>
-                      <td className="py-1 px-2 text-[var(--color-text-secondary)]">{s.nodeType}</td>
+                      <td className="py-1 px-2 text-[var(--color-text-secondary)]">{NODE_LABELS[s.nodeType as any] || s.nodeType}</td>
                       <td className="py-1 px-2 font-mono text-[var(--color-info)]">{s.entitiesIn}</td>
                       <td className="py-1 px-2 font-mono text-[var(--color-success)]">{s.entitiesOut}</td>
                       <td className="py-1 px-2 font-mono" style={{ color: s.utilization && s.utilization > 0.8 ? "var(--color-error)" : s.utilization && s.utilization > 0.5 ? "var(--color-warning)" : "var(--color-success)" }}>

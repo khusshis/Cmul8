@@ -11,7 +11,7 @@ import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
 import type { SimTick, NodeStats } from "@/lib/simulation/types";
 import { AlertCircle } from "lucide-react";
-import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 
 // ─── Live Stats Context ───────────────────────────────────────────────────────
 const LiveStatsContext = createContext<{
@@ -41,23 +41,6 @@ const NODE_BASE_COLORS: Record<string, string> = {
   interrupter:      "var(--color-node-interrupter)",
 };
 
-const NODE_LABELS: Record<string, string> = {
-  source: "Arrival Point",
-  queue: "Waiting Line",
-  resource: "Staff / Machine",
-  service: "Processing Step",
-  decision: "Split Path",
-  sink: "Exit Point",
-  priority_resource: "Priority Staff / Machine",
-  container: "Tank / Reservoir",
-  store: "Storage Buffer",
-  event_trigger: "Condition Watcher",
-  channel: "Transmission Link",
-  broadcaster: "Broadcast Hub",
-  any_of: "Wait For Any",
-  all_of: "Wait For All",
-  interrupter: "Interrupt Signal",
-};
 
 // ─── Live Glow Color resolver (Exact Thresholds) ──────────────────────────────
 function resolveNodeGlowColor(nodeType: string, stats: NodeStats | undefined): {
