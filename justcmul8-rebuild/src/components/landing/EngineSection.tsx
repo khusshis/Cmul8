@@ -310,7 +310,7 @@ export default function EngineSection() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }} className="mb-4">
             <span className="text-[11px] font-bold tracking-[0.2em] text-[#5742FF] uppercase">SIMULATION ENGINE</span>
           </motion.div>
-          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.1 }} className="text-[2.5rem] md:text-[3.5rem] font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5">
+          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.1 }} className="text-[2.5rem] md:text-[3.5rem] font-space font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5">
             Speed & Precision <br className="md:hidden" />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5742FF] via-[#a855f7] to-[#f97316]">in Your Browser</span>
           </motion.h2>
@@ -324,28 +324,28 @@ export default function EngineSection() {
           
           <motion.div variants={itemVariants} className="group relative bg-white rounded-[2rem] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 p-6 md:p-8 flex flex-col h-[480px]">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6"><Code2 size={24} strokeWidth={2} /></div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">Pyodide & WebAssembly</h3>
+            <h3 className="text-xl font-space font-bold text-gray-900 mb-3 tracking-tight">Pyodide & WebAssembly</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1">Run full simulations in-browser using Pyodide + WebAssembly. Zero server costs, full Python/SimPy execution.</p>
             <Card1Code />
           </motion.div>
 
           <motion.div variants={itemVariants} className="group relative bg-white rounded-[2rem] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 p-6 md:p-8 flex flex-col h-[480px]">
             <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center mb-6"><BarChart3 size={24} strokeWidth={2} /></div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">Real-time KPI Dashboards</h3>
+            <h3 className="text-xl font-space font-bold text-gray-900 mb-3 tracking-tight">Real-time KPI Dashboards</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1">Live metrics and charts update as your simulation runs. Track throughput, utilization, wait time and more.</p>
             <Card2Kpi />
           </motion.div>
 
           <motion.div variants={itemVariants} className="group relative bg-white rounded-[2rem] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 p-6 md:p-8 flex flex-col h-[480px]">
             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-6"><AlertTriangle size={24} strokeWidth={2} /></div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">Bottleneck Detection</h3>
+            <h3 className="text-xl font-space font-bold text-gray-900 mb-3 tracking-tight">Bottleneck Detection</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1">Automatically detect the slowest resources and highlight bottlenecks as your simulation progresses.</p>
             <Card3Nodes />
           </motion.div>
 
           <motion.div variants={itemVariants} className="group relative bg-white rounded-[2rem] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 p-6 md:p-8 flex flex-col h-[480px]">
             <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mb-6"><Gauge size={24} strokeWidth={2} /></div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">Smart Speed Control</h3>
+            <h3 className="text-xl font-space font-bold text-gray-900 mb-3 tracking-tight">Smart Speed Control</h3>
             <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1">Control simulation speed with 1x, 10x, or max. Step through events or run freely to completion.</p>
             <Card4Speed />
           </motion.div>

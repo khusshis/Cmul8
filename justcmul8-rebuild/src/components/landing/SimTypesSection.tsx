@@ -7,34 +7,34 @@ import Link from "next/link";
 
 const simTypes = [
   { 
-    id: "human", name: "Human Queue", desc: "Bank, Hospital, Airport", 
-    hex: "#16a34a", bg: "bg-green-50", text: "text-green-600", border: "border-green-600", 
-    icon: User, examples: ["Bank tellers", "ER triage", "Passport control"] 
+    id: "human", name: "HUMAN QUEUE", desc: "People, lines, service systems", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/human_queue.png", examples: ["Bank tellers", "ER triage", "Passport control"] 
   },
   { 
-    id: "vehicle", name: "Vehicle", desc: "Gas Station, Traffic", 
-    hex: "#2563eb", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-600", 
-    icon: Car, examples: ["Fuel pumps", "Traffic lights", "Car wash"] 
+    id: "vehicle", name: "VEHICLE", desc: "Traffic, vehicles, transport systems", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/vehicle.png", examples: ["Fuel pumps", "Traffic lights", "Car wash"] 
   },
   { 
-    id: "liquid", name: "Liquid / Material", desc: "Water Treatment, Pipelines", 
-    hex: "#06b6d4", bg: "bg-cyan-50", text: "text-cyan-600", border: "border-cyan-500", 
-    icon: Droplet, examples: ["Water treatment", "Fuel storage", "Chemical flow"] 
+    id: "liquid", name: "LIQUID / MATERIAL", desc: "Flow of liquids or materials", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/liquid.png", examples: ["Water treatment", "Fuel storage", "Chemical flow"] 
   },
   { 
-    id: "mfg", name: "Manufacturing", desc: "Assembly Line, QC", 
-    hex: "#eab308", bg: "bg-yellow-50", text: "text-yellow-500", border: "border-yellow-500", 
-    icon: Factory, examples: ["Assembly line", "Quality control", "CNC machining"] 
+    id: "mfg", name: "MANUFACTURING", desc: "Production lines, machines, operations", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/manufacturing.png", examples: ["Assembly line", "Quality control", "CNC machining"] 
   },
   { 
-    id: "logistics", name: "Logistics", desc: "Warehouse, Sorting", 
-    hex: "#f97316", bg: "bg-orange-50", text: "text-orange-500", border: "border-orange-500", 
-    icon: Package, examples: ["Warehouse ops", "Sort centers", "Dock loading"] 
+    id: "logistics", name: "LOGISTICS", desc: "Warehousing, supply chain, distribution", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/logistics.png", examples: ["Warehouse ops", "Sort centers", "Dock loading"] 
   },
   { 
-    id: "network", name: "Network", desc: "Microservices, IoT", 
-    hex: "#ec4899", bg: "bg-pink-50", text: "text-pink-500", border: "border-pink-500", 
-    icon: Radio, examples: ["Process pipes", "Broadcast fan-out", "Event latency"] 
+    id: "network", name: "NETWORK / SIGNAL", desc: "Networks, signals, communication", 
+    hex: "#5742FF", bg: "bg-indigo-50", text: "text-indigo-600", border: "border-[#5742FF]", 
+    image: "/icons/network_signal.png", examples: ["Process pipes", "Broadcast fan-out", "Event latency"] 
   },
 ];
 
@@ -85,7 +85,7 @@ export default function SimTypesSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-[2.5rem] md:text-[3.5rem] font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5"
+            className="text-[2.5rem] md:text-[3.5rem] font-space font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5"
           >
             Visualize <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5742FF] to-[#f97316]">Any Industry</span>
           </motion.h2>
@@ -151,19 +151,19 @@ const Card = ({ type }: { type: any }) => {
       {/* Colored Top Border Indicator */}
       <div className={`absolute top-0 left-4 right-4 h-[4px] rounded-b-md ${type.bg} ${type.border} border-t-[4px] opacity-70 group-hover:opacity-100 transition-opacity`} />
       
-      <div className="p-6 flex flex-col h-full z-10 pt-8">
+      <div className="p-6 flex flex-col h-full z-10 pt-8 items-center text-center">
         
-        {/* Bouncing Icon */}
+        {/* Bouncing Image Icon */}
         <motion.div 
           animate={isHovered ? { y: [0, -6, 0] } : { y: 0 }}
           transition={{ duration: 1.5, repeat: isHovered ? Infinity : 0, ease: "easeInOut" }}
-          className={`w-14 h-14 rounded-2xl ${type.bg} ${type.text} flex items-center justify-center mb-5 shadow-inner`}
+          className={`w-28 h-28 flex items-center justify-center mb-5 mt-2`}
         >
-          <type.icon size={26} strokeWidth={2} />
+          <img src={type.image} alt={type.name} className="w-full h-full object-contain drop-shadow-sm" />
         </motion.div>
 
-        <h3 className="text-lg font-bold text-gray-900 mb-1.5 tracking-tight">{type.name}</h3>
-        <p className="text-[11px] text-gray-500 font-medium mb-6">{type.desc}</p>
+        <h3 className="text-[15px] font-space font-bold text-[#111827] mb-1.5 tracking-tight">{type.name}</h3>
+        <p className="text-[12px] text-[#6B7280] font-medium mb-6 px-2">{type.desc}</p>
         
         {/* Bullet Points with Staggered Hover Effect */}
         <ul className="space-y-3 w-full flex-1">

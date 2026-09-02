@@ -4,7 +4,7 @@ import React, { useCallback, createContext, useContext, useRef, useEffect } from
 import {
   ReactFlow, ReactFlowProvider,
   Background, Controls, MiniMap, addEdge, useReactFlow,
-  Handle, Position, BaseEdge, getSmoothStepPath, EdgeLabelRenderer,
+  Handle, Position, BaseEdge, getBezierPath, EdgeLabelRenderer,
   type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -24,21 +24,21 @@ const LiveStatsContext = createContext<{
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
 const NODE_BASE_COLORS: Record<string, string> = {
-  source:           "Arrival Point", // var(--color-info)
-  queue:            "Waiting Line",
-  resource:         "Staff / Machine", // var(--color-success)
-  service:          "Processing Step",
-  decision:         "Split Path", // var(--color-warning)
-  sink:             "Exit Point", // var(--color-text-secondary)
-  priority_resource:"Priority Staff / Machine",
-  container:        "Tank / Reservoir",
-  store:            "Storage Buffer",
-  event_trigger:    "Condition Watcher",
-  channel:          "Transmission Link",
-  broadcaster:      "Broadcast Hub",
-  any_of:           "Wait For Any",
-  all_of:           "Wait For All",
-  interrupter:      "Interrupt Signal", // var(--color-error)
+  source:           "var(--color-node-source)",
+  queue:            "var(--color-node-queue)",
+  resource:         "var(--color-node-resource)",
+  service:          "var(--color-node-service)",
+  decision:         "var(--color-node-decision)",
+  sink:             "var(--color-node-sink)",
+  priority_resource:"var(--color-node-priority-resource)",
+  container:        "var(--color-node-container)",
+  store:            "var(--color-node-store)",
+  event_trigger:    "var(--color-node-event-trigger)",
+  channel:          "var(--color-node-channel)",
+  broadcaster:      "var(--color-node-broadcaster)",
+  any_of:           "var(--color-node-any-of)",
+  all_of:           "var(--color-node-all-of)",
+  interrupter:      "var(--color-node-interrupter)",
 };
 
 const NODE_LABELS: Record<string, string> = {
@@ -92,13 +92,19 @@ function resolveNodeGlowColor(nodeType: string, stats: NodeStats | undefined): {
 }
 
 // ─── SimEdge (styled edge) ──────────────────────────────────────────────────
-function SimEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd, style, animated }: EdgeProps) {
-  const { setEdges } = useReactFlow();
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd, style, animated }: EdgeProps) {
+  const { setEdges, getNode } = useReactFlow();
+  const { simState } = useContext(LiveStatsContext);
+  const isRunning = simState === "running";
+  
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX, sourceY, targetX, targetY,
     sourcePosition, targetPosition,
-    borderRadius: 16,
   });
+
+  // Get edge color dynamically based on the source node type!
+  const sourceNode = getNode(source);
+  const edgeColor = NODE_BASE_COLORS[sourceNode?.data?.nodeType] || "var(--color-info)";
 
   return (
     <>
@@ -107,15 +113,22 @@ function SimEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targe
         path={edgePath}
         markerEnd={markerEnd}
         interactionWidth={20}
+        className={isRunning ? "animate-[dash_1s_linear_infinite]" : ""}
         style={{
-          stroke: selected ? "var(--color-info)" : "var(--color-border)",
+          stroke: selected ? "var(--color-info)" : edgeColor,
           strokeWidth: selected ? 2 : 1.5,
           transition: "stroke 0.3s ease, stroke-width 0.3s ease",
-          animation: animated ? "dashdraw 0.5s linear infinite" : "none",
-          strokeDasharray: animated ? "5 5" : "none",
+          strokeDasharray: isRunning ? "4 4" : "none",
+          opacity: 0.6,
           ...style,
         }}
       />
+
+      {isRunning && (
+        <circle r="4" fill={edgeColor}>
+          <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
+        </circle>
+      )}
 
       {/* Delete Button when selected */}
       {selected && (
@@ -151,6 +164,7 @@ const edgeTypes: EdgeTypes = { simEdge: SimEdge as any };
 // ─── Handle style helper ──────────────────────────────────────────────────────
 function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
   return {
+    opacity: 0, // Hidden visually but functional for connecting
     width: 10,
     height: 10,
     background: isConnected ? color : "var(--color-surface)",
@@ -201,7 +215,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   return (
     <div
-      className={`card-surface min-w-[180px] p-3 transition-all border-y border-r border-l-8 ${selected ? 'border-color-info shadow-md ring-1 ring-color-info/30' : 'border-y-border border-r-border'}`}
+      className={`relative w-[170px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center z-10 transition-all select-none ${selected ? 'scale-105 shadow-lg border-gray-300' : 'hover:shadow-md'}`}
       style={{
         borderLeftColor: baseColor,
       }}
@@ -233,39 +247,27 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         </div>
       )}
 
-      <div className="flex items-start gap-3">
-        {icon && (
-          <div className="mt-0.5 flex-shrink-0" style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
-            {(() => {
-              const IconComponent = icon as any;
-              return <IconComponent size={20} strokeWidth={2} />;
-            })()}
-          </div>
+      <div style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
+        {(() => {
+          const IconComponent = icon as any;
+          return IconComponent ? <IconComponent size={18} strokeWidth={2} /> : null;
+        })()}
+      </div>
+      <div className="pointer-events-none min-w-0 flex-1">
+        <h5 className="text-[11px] font-bold text-gray-900 leading-tight truncate">{data.label}</h5>
+        
+        {/* Static params or live stats */}
+        {statsBadge ? (
+          <p className="text-[9px] mt-0.5 truncate" style={{ color: !isDimmed ? statusColor : 'var(--color-text-secondary)' }}>
+            {statsBadge}
+          </p>
+        ) : data.params && Object.keys(data.params).length > 0 ? (
+          <p className="text-[9px] text-gray-500 mt-0.5 leading-tight truncate">
+            {Object.entries(data.params || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(", ")}
+          </p>
+        ) : (
+          <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">Double-click to config</p>
         )}
-        <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-text-primary leading-tight mb-1">{data.label}</div>
-          
-          {/* Static params or live stats */}
-          {statsBadge ? (
-            <div className="flex items-center gap-1.5">
-              <div 
-                className="w-2 h-2 rounded-full flex-shrink-0 transition-colors" 
-                style={{ backgroundColor: statusColor, opacity: isDimmed ? 0.4 : 1 }} 
-              />
-              <div className="text-[10px] font-mono font-medium text-text-secondary truncate" style={{ color: !isDimmed ? statusColor : 'var(--color-text-secondary)' }}>
-                {statsBadge}
-              </div>
-            </div>
-          ) : data.params && Object.keys(data.params).length > 0 ? (
-            <div className="text-[10px] text-text-muted font-mono truncate leading-tight">
-              {Object.entries(data.params || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(" | ")}
-            </div>
-          ) : (
-            <div className="text-[10px] text-text-muted font-mono leading-tight">
-              Double-click to config
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

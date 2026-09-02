@@ -55,12 +55,12 @@ export default function FeaturesSection() {
 
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-[3rem] md:text-[4.5rem] font-black leading-[1.05] text-[#111827] -tracking-[0.035em] mb-6"
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            className="text-[3rem] md:text-[4.5rem] font-space font-black leading-[1.05] text-[#111827] -tracking-[0.035em] mb-5"
           >
             Model Anything.<br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6366f1] via-[#a855f7] to-[#f97316]">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#f97316]">
               Code Nothing.
             </span>
           </motion.h2>
@@ -91,7 +91,7 @@ export default function FeaturesSection() {
                 <Layers size={28} strokeWidth={2} />
               </div>
               <div className="pt-1">
-                <h3 className="font-bold text-gray-900 text-xl tracking-tight">Core Primitives</h3>
+                <h3 className="font-space font-bold text-gray-900 text-xl tracking-tight">Core Primitives</h3>
                 <p className="text-[#64748b] text-[13px] md:text-[14px] mt-1 font-medium">The building blocks of every simulation.</p>
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function FeaturesSection() {
                 <Box size={28} strokeWidth={2} />
               </div>
               <div className="pt-1">
-                <h3 className="font-bold text-gray-900 text-xl tracking-tight">Advanced Logic Blocks</h3>
+                <h3 className="font-space font-bold text-gray-900 text-xl tracking-tight">Advanced Logic Blocks</h3>
                 <p className="text-[#64748b] text-[13px] md:text-[14px] mt-1 font-medium">Powerful components for complex scenarios.</p>
               </div>
             </div>

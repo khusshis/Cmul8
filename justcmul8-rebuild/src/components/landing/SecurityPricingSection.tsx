@@ -39,7 +39,7 @@ export default function SecurityPricingSection() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }} className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-orange-50 mb-6 border border-orange-100">
               <span className="text-[10px] font-bold tracking-[0.2em] text-orange-600 uppercase">SECURITY & SCALE</span>
             </motion.div>
-            <motion.h2 initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.1 }} className="text-[2.5rem] md:text-[3.5rem] font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5 uppercase">
+            <motion.h2 initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.1 }} className="text-[2.5rem] md:text-[3.5rem] font-space font-black leading-[1.1] text-[#111827] -tracking-[0.03em] mb-5 uppercase">
               Built for <span className="text-gray-900">Security</span>.<br className="md:hidden" /> Ready for <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-red-500">Scale</span>.
             </motion.h2>
             <motion.p initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ duration: 0.5, delay: 0.2 }} className="max-w-2xl text-[1.1rem] text-[#64748b] font-medium leading-relaxed">
@@ -111,7 +111,7 @@ export default function SecurityPricingSection() {
                 <Activity size={26} strokeWidth={2.5} />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Scales with You</h3>
+                <h3 className="text-xl font-space font-bold text-gray-900 mb-2">Scales with You</h3>
                 <p className="text-[13px] text-gray-500 leading-relaxed max-w-md">
                   From a single project to millions of simulations — our architecture is built to scale without compromising on security or performance.
                 </p>
@@ -150,7 +150,7 @@ export default function SecurityPricingSection() {
               <span className="text-[11px] font-black tracking-[0.25em] text-[#5742FF] uppercase">PRICING</span>
             </motion.div>
             <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-center font-black text-[#111827] text-4xl md:text-5xl lg:text-6xl tracking-tight mb-6">
+              className="text-center font-space font-black text-[#111827] text-4xl md:text-5xl lg:text-6xl tracking-tight mb-6">
               Choose your <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#8b5cf6] via-[#d946ef] to-[#f97316]">tier</span>
             </motion.h2>
             <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-center text-[#64748b] text-[1.1rem] max-w-lg leading-relaxed font-medium">
@@ -280,7 +280,7 @@ function SecurityCard({ color, title, desc, Icon, tags, delay, inView }: any) {
           <Icon size={26} strokeWidth={2} />
         </motion.div>
         
-        <h3 className="font-bold text-[15px] tracking-wider text-gray-900 mb-3">{title}</h3>
+        <h3 className="font-space font-bold text-[15px] tracking-wider text-gray-900 mb-3">{title}</h3>
         <p className="text-[13px] leading-relaxed text-gray-500 mb-8">{desc}</p>
       </div>
 

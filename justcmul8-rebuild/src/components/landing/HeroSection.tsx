@@ -274,7 +274,7 @@ export default function HeroSection() {
             transition={{ duration: 0.8, delay: 0.1, type: "spring", bounce: 0.4 }}
             className="text-center max-w-4xl mx-auto mb-4 md:mb-6 relative z-30 pointer-events-none"
           >
-            <h1 className="text-[3.5rem] sm:text-[4rem] lg:text-[5rem] 2xl:text-[6rem] font-black leading-[1.05] text-[#161622] -tracking-[0.035em]">
+            <h1 className="text-[3.5rem] sm:text-[4rem] lg:text-[5rem] 2xl:text-[6rem] font-space font-black leading-[1.05] text-[#161622] -tracking-[0.035em]">
               Build Simulations.<br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#8b5cf6] to-[#6366f1]">
                 No Limits.

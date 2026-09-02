@@ -78,3 +78,12 @@ input[type="password"]::-ms-clear {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+@layer utilities {
+  .font-space {
+    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  }
+  .font-script {
+    font-family: var(--font-great-vibes), cursive;
+  }
+}

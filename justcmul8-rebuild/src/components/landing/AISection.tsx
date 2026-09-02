@@ -46,6 +46,7 @@ export default function AISection() {
   
   const [nodes, setNodes] = useState(initialNodes);
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -56,26 +57,6 @@ export default function AISection() {
     throughput: 0, 
     util: 0 
   });
-
-  // Native wheel event for touchpad pan/zoom
-  useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault(); // Prevent page scroll while interacting with canvas
-      if (e.ctrlKey || e.metaKey) {
-        // Pinch-to-zoom
-        setScale(s => Math.min(Math.max(s - e.deltaY * 0.005, 0.4), 2));
-      } else {
-        // Two-finger pan
-        setPan(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
-      }
-    };
-
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, []);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -108,9 +89,16 @@ export default function AISection() {
     }
   };
 
-  const handlePointerDown = (key: string) => (e: React.PointerEvent) => {
+  const handlePointerDownNode = (key: string) => (e: React.PointerEvent) => {
+    e.stopPropagation(); // Prevent panning when clicking a node
     (e.target as Element).setPointerCapture(e.pointerId);
     setDraggedNode(key);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerDownBg = (e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    setIsPanning(true);
     lastPos.current = { x: e.clientX, y: e.clientY };
   };
 
@@ -128,14 +116,18 @@ export default function AISection() {
            y: prev[draggedNode as keyof typeof prev].y + dy
         }
       }));
+    } else if (isPanning) {
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      setPan(p => ({ x: p.x + dx, y: p.y + dy }));
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (draggedNode) {
-      (e.target as Element).releasePointerCapture(e.pointerId);
-      setDraggedNode(null);
-    }
+    (e.target as Element).releasePointerCapture(e.pointerId);
+    setDraggedNode(null);
+    setIsPanning(false);
   };
 
   const bez = (p1: {x: number, y: number}, p2: {x: number, y: number}) => {
@@ -174,7 +166,7 @@ export default function AISection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-[3rem] md:text-[4.5rem] font-black leading-[1.05] text-[#111827] -tracking-[0.035em] mb-5"
+            className="text-[3rem] md:text-[4.5rem] font-space font-black leading-[1.05] text-[#111827] -tracking-[0.035em] mb-5"
           >
             Describe it. <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#f97316]">We simulate it.</span>
           </motion.h2>
@@ -301,7 +293,8 @@ export default function AISection() {
             {/* Canvas Area */}
             <div 
               ref={canvasRef}
-              className="flex-1 w-full relative min-h-[300px] mb-8 bg-[#fafafa] rounded-[1.5rem] border border-gray-100 overflow-hidden cursor-crosshair touch-none"
+              className={`flex-1 w-full relative min-h-[300px] mb-8 bg-[#fafafa] rounded-[1.5rem] border border-gray-100 overflow-hidden touch-none select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+              onPointerDown={handlePointerDownBg}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerUp}
@@ -343,7 +336,7 @@ export default function AISection() {
                   {Object.entries(nodes).map(([key, node]) => (
                     <div 
                       key={key}
-                      onPointerDown={handlePointerDown(key)}
+                      onPointerDown={handlePointerDownNode(key)}
                       className={`absolute -translate-x-1/2 -translate-y-1/2 w-[150px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 ${node.border} p-3 flex gap-3 items-center z-10 hover:shadow-md transition-shadow select-none ${draggedNode === key ? 'cursor-grabbing scale-105 shadow-lg' : 'cursor-grab'}`} 
                       style={{ left: `${node.x}px`, top: `${node.y}px`, touchAction: 'none' }}
                     >
@@ -411,7 +404,7 @@ export default function AISection() {
                 <cap.icon size={20} strokeWidth={2} />
               </div>
               <div>
-                <h4 className="font-bold text-[14px] text-gray-900 mb-0.5">{cap.title}</h4>
+                <h4 className="font-space font-bold text-[14px] text-gray-900 mb-0.5">{cap.title}</h4>
                 <p className="text-[12px] text-gray-500 leading-tight">{cap.desc}</p>
               </div>
             </motion.div>
