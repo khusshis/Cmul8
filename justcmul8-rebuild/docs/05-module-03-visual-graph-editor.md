@@ -20,10 +20,11 @@ The editor is encapsulated primarily in the `NodeCanvas.tsx` component within th
 3. **Connectivity**: Users connect blocks by dragging from a source handle to a target handle. React Flow manages the `Edge` creation.
 4. **Validation**: The canvas implements `validateGraphConnectivity()` to ensure that the constructed graph is topologically valid for simulation.
 
-## Visual Styling (Professional Light Theme)
+## Visual Styling (Premium 3D-Inspired Theme)
 - **Background**: The canvas features a calm, light dotted grid background (`var(--color-surface-sunken)`).
-- **Block Nodes**: Each block is rendered as a clean, white card (`var(--color-surface)`) with a soft drop shadow (`var(--shadow-card)`). A small left-edge color accent denotes its category (e.g., Blue for Sources, Violet for Queues, Gray for Sinks) rather than full glowing borders.
-- **Edges**: Connections are rendered cleanly. When the simulation runs, these edges can be animated to represent entity flow.
+- **Block Nodes**: Nodes are styled to match the premium 3D-inspired aesthetic of the Landing Page, featuring a sleek, wider profile (`170px`) with completely hidden connection handles for seamless aesthetics. Active or selected nodes display a crisp drop shadow (`shadow-lg scale-105`) and the left border color dynamically mirrors the node's domain base color.
+- **Edges**: Connections utilize smooth Bezier curves (`getBezierPath`). Nodes automatically color their outgoing edges to match their own base color, creating an intuitive multi-colored visual flow. When the simulation runs, edges are animated with flowing dash-patterns based on throughput.
+- **Terminology**: The UI exclusively uses plain-language terms (e.g., "Start Point", "Waiting Line", "Counter") abstracted away from raw SimPy terms via the central `NODE_LABELS` registry.
 - **Minimap & Controls**: Styled with matching light backgrounds and professional accents.
 
 ## Interaction with Other Modules

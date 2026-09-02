@@ -21,6 +21,7 @@ The module utilizes **Recharts**, a composable charting library built on React c
 
 4. **Block Stats (Tabular Data)**
    - A raw data table displaying exact metrics: "In", "Out", "Util%", and "Wait".
+   - The "Type" column abstracts technical node types (e.g., `queue`, `resource`) into their respective Plain-Language UI Terms (e.g., "Waiting Line", "Counter") using the `NODE_LABELS` mapping.
    - **Bottleneck Highlighting**: If the simulation engine identified a specific block as the system's bottleneck, that row is highlighted.
 
 5. **Top-Level KPI Pills**

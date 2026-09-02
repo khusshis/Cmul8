@@ -25,21 +25,21 @@ where this glossary is actually enforced in code.
 
 | Technical term (code / SimPy) | UI Term (what the user sees) | Plain-language description shown to user |
 |---|---|---|
-| `source` | **Arrival Point** | "Where new customers, items, or requests enter the system" |
+| `source` | **Start Point** | "Where new customers, items, or requests enter the system" |
 | `queue` | **Waiting Line** | "A line where things wait their turn" |
-| `resource` | **Staff / Machine** | "A worker or machine that serves one thing at a time" |
-| `service` | **Processing Step** | "A step that takes a fixed or random amount of time" |
-| `decision` | **Split Path** | "Sends each item down one of several paths, by chance" |
+| `resource` | **Limited Counter** | "A worker or machine that serves one thing at a time" |
+| `service` | **Counter** | "A step that takes a fixed or random amount of time" |
+| `decision` | **Decision Block** | "Sends each item down one of several paths, by chance" |
 | `sink` | **Exit Point** | "Where things leave the system — results are counted here" |
-| `container` | **Tank / Reservoir** | "Holds a continuous amount of something (like liquid or stock)" |
-| `store` | **Storage Buffer** | "Holds a limited number of items until they're needed" |
-| `event_trigger` | **Condition Watcher** | "Waits for a condition to become true, then fires an event" |
-| `priority_resource` | **Priority Staff / Machine** | "Like Staff/Machine, but urgent items go first" |
-| `channel` | **Transmission Link** | "Carries a signal or message with a travel delay" |
-| `broadcaster` | **Broadcast Hub** | "Copies one message out to every connected path at once" |
-| `any_of` | **Wait For Any** | "Continues as soon as ONE of several things happens" |
-| `all_of` | **Wait For All** | "Continues only once ALL of several things have happened" |
-| `interrupter` | **Interrupt Signal** | "Stops another step partway through, on purpose" |
+| `container` | **Storage Tank** | "Holds a continuous amount of something (like liquid or stock)" |
+| `store` | **Storage Rack** | "Holds a limited number of items until they're needed" |
+| `event_trigger` | **Event Trigger** | "Waits for a condition to become true, then fires an event" |
+| `priority_resource` | **Priority Counter** | "Like Staff/Machine, but urgent items go first" |
+| `channel` | **Transport Channel** | "Carries a signal or message with a travel delay" |
+| `broadcaster` | **Broadcaster** | "Copies one message out to every connected path at once" |
+| `any_of` | **Any-One Gate** | "Continues as soon as ONE of several things happens" |
+| `all_of` | **Wait-for-All Gate** | "Continues only once ALL of several things have happened" |
+| `interrupter` | **Breakdown Block** | "Stops another step partway through, on purpose" |
 
 > Synopsis note: the synopsis (Section 5, Module 3) states "13 node types." The actual
 > registry defines 15 (table above). We are keeping all 15 for 100% functional parity
