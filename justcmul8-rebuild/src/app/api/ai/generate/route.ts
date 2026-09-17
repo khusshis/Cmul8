@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createClient } from "@/lib/supabase/server";
+import { AIRouterError, extractJSON, generateJSON } from "@/lib/ai/modelRouter";
+import { normalizeAIResponse, applyAIOps } from "@/lib/ai/graphOps";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { SimTypeId } from "@/lib/simulation/types";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const BASE_SYSTEM_PROMPT = `You are a system architecture AI. Your job is to convert the user's plain English description of a process into a valid JustCmul8 JSON graph.
 
@@ -49,32 +49,82 @@ Rules:
 2. ONLY output valid JSON.
 `;
 
+export const maxDuration = 120;
+
+/**
+ * Plain-English description -> complete graph. No UI calls this today; it is kept
+ * working (and now authenticated, on the shared model router) because it is a
+ * public endpoint that spends the same paid quota as the chat route.
+ */
 export async function POST(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
+  let body: any;
   try {
-    const body = await req.json();
-    const { prompt, simType, currentNodesCount } = body;
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+  if (!prompt || prompt.length > 4_000) {
+    return NextResponse.json({ error: "prompt must be 1-4000 characters" }, { status: 400 });
+  }
 
-    const domainPrompt = SIM_TYPE_REGISTRY[simType as SimTypeId]?.aiSystemPrompt || "";
-    
-    const fullSystemPrompt = `${BASE_SYSTEM_PROMPT}\n\nDOMAIN CONTEXT:\n${domainPrompt}`;
+  const domainPrompt = SIM_TYPE_REGISTRY[body?.simType as SimTypeId]?.aiSystemPrompt || "";
+  const fullSystemPrompt = `${BASE_SYSTEM_PROMPT}
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
+DOMAIN CONTEXT:
+${domainPrompt}`;
+  const currentNodesCount = Number(body?.currentNodesCount) || 0;
+
+  try {
+    const generation = await generateJSON({
       systemInstruction: fullSystemPrompt,
+      prompt: `The current graph has ${currentNodesCount} nodes. User request: ${prompt}`,
     });
-
-    const contextualPrompt = `The current graph has ${currentNodesCount} nodes. User request: ${prompt}`;
-
-    const result = await model.generateContent(contextualPrompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    return NextResponse.json(JSON.parse(text));
-  } catch (error: any) {
-    console.error("AI Generate Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const parsed = extractJSON(generation.text);
+    if (!parsed) {
+      return NextResponse.json({ error: "The model returned invalid JSON" }, { status: 502 });
+    }
+    // Same validation as the chat route: unknown block types, dangling links and
+    // bad routing are repaired or dropped rather than passed through.
+    const { ops, warnings } = normalizeAIResponse(
+      { actionType: "REPLACE_GRAPH", graph: { nodes: parsed.nodes, edges: parsed.edges } },
+      0,
+      prompt
+    );
+    if (!ops.replaceGraph) {
+      return NextResponse.json({ error: "The model produced no valid blocks", warnings }, { status: 502 });
+    }
+    const applied = applyAIOps([], [], ops);
+    const positions = new Map(
+      (Array.isArray(parsed.nodes) ? parsed.nodes : []).map((n: any) => [n?.id, n?.position])
+    );
+    return NextResponse.json({
+      nodes: applied.nodes.map((n) => ({
+        id: n.id,
+        nodeType: n.data.nodeType,
+        label: n.data.label,
+        position: positions.get(n.id) ?? n.position,
+        params: n.data.params,
+      })),
+      edges: applied.edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+      warnings: [...warnings, ...applied.warnings],
+    });
+  } catch (err) {
+    if (err instanceof AIRouterError) {
+      return NextResponse.json(
+        { error: err.userMessage, errorCode: err.code, retryable: err.retryable },
+        { status: err.httpStatus }
+      );
+    }
+    console.error("[api/ai/generate] unexpected error", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

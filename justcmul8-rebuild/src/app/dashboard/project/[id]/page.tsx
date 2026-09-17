@@ -720,6 +720,10 @@ export default function WorkspacePage() {
                 project={{ id: project?.id || "", name: project?.name || "", sim_type: project?.sim_type || "human_queue" }}
                 nodes={nodes}
                 edges={edges}
+                selectedNodeId={selectedNodeId}
+                simResult={simResult}
+                simState={simState}
+                onSelectNode={(nodeId) => setSelectedNodeId(nodeId)}
                 onApplyChanges={(newNodes, newEdges) => {
                   setNodes(newNodes);
                   setEdges(newEdges);

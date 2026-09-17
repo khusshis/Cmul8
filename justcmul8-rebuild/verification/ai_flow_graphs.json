@@ -1,0 +1,76 @@
+{
+  "mm2_chain": {
+    "note": "M/M/2, lambda=0.5, 3s service -> rho 0.75",
+    "nodes": [
+      { "id": "src", "nodeType": "source", "label": "Walk-ins", "params": { "arrivalRate": 0.5, "distribution": "exponential" } },
+      { "id": "q", "nodeType": "queue", "label": "Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "bar", "nodeType": "resource", "label": "Baristas", "params": { "capacity": 2, "serviceTimeMean": 3, "serviceDistribution": "exponential" } },
+      { "id": "k", "nodeType": "sink", "label": "Exit", "params": {} }
+    ],
+    "edges": [
+      { "id": "e1", "source": "src", "target": "q" },
+      { "id": "e2", "source": "q", "target": "bar" },
+      { "id": "e3", "source": "bar", "target": "k" }
+    ]
+  },
+  "triage_split": {
+    "note": "decision 70/30 into two stations",
+    "nodes": [
+      { "id": "src", "nodeType": "source", "label": "Walk-ins", "params": { "arrivalRate": 1.2, "distribution": "exponential" } },
+      { "id": "q_tri", "nodeType": "queue", "label": "Triage Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "triage", "nodeType": "resource", "label": "Triage Desk", "params": { "capacity": 2, "serviceTimeMean": 1.2, "serviceDistribution": "exponential" } },
+      { "id": "dec", "nodeType": "decision", "label": "Severity", "params": { "routes": [ { "targetId": "q_min", "probability": 0.7 }, { "targetId": "q_maj", "probability": 0.3 } ] } },
+      { "id": "q_min", "nodeType": "queue", "label": "Minor Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "minor", "nodeType": "resource", "label": "Minor Care", "params": { "capacity": 3, "serviceTimeMean": 2.5, "serviceDistribution": "exponential" } },
+      { "id": "q_maj", "nodeType": "queue", "label": "Major Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "major", "nodeType": "resource", "label": "Major Care", "params": { "capacity": 1, "serviceTimeMean": 2, "serviceDistribution": "exponential" } },
+      { "id": "kA", "nodeType": "sink", "label": "Out A", "params": {} },
+      { "id": "kB", "nodeType": "sink", "label": "Out B", "params": {} }
+    ],
+    "edges": [
+      { "id": "e1", "source": "src", "target": "q_tri" },
+      { "id": "e2", "source": "q_tri", "target": "triage" },
+      { "id": "e3", "source": "triage", "target": "dec" },
+      { "id": "e4", "source": "dec", "target": "q_min" },
+      { "id": "e5", "source": "dec", "target": "q_maj" },
+      { "id": "e6", "source": "q_min", "target": "minor" },
+      { "id": "e7", "source": "q_maj", "target": "major" },
+      { "id": "e8", "source": "minor", "target": "kA" },
+      { "id": "e9", "source": "major", "target": "kB" }
+    ]
+  },
+  "rework_loop": {
+    "note": "10% of QA output returns to QA -> lambda 1/(1-0.1)",
+    "nodes": [
+      { "id": "src", "nodeType": "source", "label": "Parts", "params": { "arrivalRate": 0.3, "distribution": "exponential" } },
+      { "id": "q_qa", "nodeType": "queue", "label": "QA Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "qa", "nodeType": "resource", "label": "QA Station", "params": { "capacity": 2, "serviceTimeMean": 4, "serviceDistribution": "exponential" } },
+      { "id": "dec", "nodeType": "decision", "label": "Pass or Rework", "params": { "routes": [ { "targetId": "q_qa", "probability": 0.1 }, { "targetId": "k", "probability": 0.9 } ] } },
+      { "id": "k", "nodeType": "sink", "label": "Shipped", "params": {} }
+    ],
+    "edges": [
+      { "id": "e1", "source": "src", "target": "q_qa" },
+      { "id": "e2", "source": "q_qa", "target": "qa" },
+      { "id": "e3", "source": "qa", "target": "dec" },
+      { "id": "e4", "source": "dec", "target": "q_qa" },
+      { "id": "e5", "source": "dec", "target": "k" }
+    ]
+  },
+  "round_robin_split": {
+    "note": "a queue with two outputs splits evenly",
+    "nodes": [
+      { "id": "src", "nodeType": "source", "label": "In", "params": { "arrivalRate": 0.8, "distribution": "exponential" } },
+      { "id": "q", "nodeType": "queue", "label": "Line", "params": { "capacity": -1, "discipline": "FIFO" } },
+      { "id": "a", "nodeType": "resource", "label": "Desk A", "params": { "capacity": 1, "serviceTimeMean": 2, "serviceDistribution": "exponential" } },
+      { "id": "b", "nodeType": "resource", "label": "Desk B", "params": { "capacity": 1, "serviceTimeMean": 2, "serviceDistribution": "exponential" } },
+      { "id": "k", "nodeType": "sink", "label": "Out", "params": {} }
+    ],
+    "edges": [
+      { "id": "e1", "source": "src", "target": "q" },
+      { "id": "e2", "source": "q", "target": "a" },
+      { "id": "e3", "source": "q", "target": "b" },
+      { "id": "e4", "source": "a", "target": "k" },
+      { "id": "e5", "source": "b", "target": "k" }
+    ]
+  }
+}
