@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 
+import { formatTimeFriendly } from "../SimResultsPanel";
+
 const STATE_COLORS = {
   busy: "#6366F1",
   starved: "#F59E0B",
@@ -208,7 +210,7 @@ export default function DeepAnalyticsTab({
 
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={percentileChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <AreaChart data={percentileChartData} margin={{ top: 10, right: 10, left: -5, bottom: 0 }}>
                 <defs>
                   <linearGradient id="spectrumAreaGrad2" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.4} />
@@ -218,7 +220,14 @@ export default function DeepAnalyticsTab({
                 </defs>
                 <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
+                <YAxis
+                  domain={[0, (dataMax: number) => (dataMax <= 1 ? Math.max(0.1, dataMax) : Math.ceil(dataMax * 1.1))]}
+                  tickFormatter={formatTimeFriendly}
+                  width={46}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
+                />
                 <Tooltip cursor={{ stroke: "#8B5CF6", strokeWidth: 1.5, strokeDasharray: "4 4" }} content={<SleekAnalyticsTooltip />} />
                 <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
                 <Area

@@ -300,6 +300,7 @@ export interface SimLog {
 }
 
 export interface PercentileStats {
+  p25: number;
   p50: number;
   p75: number;
   p90: number;
@@ -378,6 +379,9 @@ export interface SimResult {
   timeline: Array<{ simTime: number; completed: number; depth: Record<string, number>; wip?: number }>;
   logs: SimLog[];
   
+  /** Which engine produced this result: pyodide (SimPy) or legacy fallback */
+  engine?: "pyodide" | "legacy";
+
   // Enhanced Analytics (Calculated or cached)
   littlesLaw?: LittlesLawVerification;
   cycleTimePercentiles?: PercentileStats;
@@ -437,6 +441,7 @@ export interface PyodideStatus {
   phase: "idle" | "loading_runtime" | "loading_simpy" | "ready" | "error";
   message?: string;
   progress?: number;
+  fallbackActive?: boolean;
 }
 
 export interface SimulationRunRecord {

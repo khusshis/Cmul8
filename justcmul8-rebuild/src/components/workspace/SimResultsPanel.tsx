@@ -57,30 +57,64 @@ interface SimResultsPanelProps {
   onExpand: () => void;
 }
 
+// ─── Human-Friendly Time & Number Formatters for Non-Technical Users ─────────────
+export function formatTimeFriendly(seconds: number | undefined | null): string {
+  if (seconds === undefined || seconds === null || isNaN(seconds) || seconds <= 0) return "0s";
+  if (seconds < 60) {
+    return Number.isInteger(seconds) ? `${seconds}s` : `${seconds.toFixed(1)}s`;
+  }
+  if (seconds < 3600) {
+    const mins = seconds / 60;
+    return Number.isInteger(mins) ? `${mins} min` : `${mins.toFixed(1)} min`;
+  }
+  const hrs = seconds / 3600;
+  return Number.isInteger(hrs) ? `${hrs} hr` : `${hrs.toFixed(1)} hr`;
+}
+
+export function formatCompactNumber(val: number | undefined | null): string {
+  if (val === undefined || val === null || isNaN(val) || val <= 0) return "0";
+  if (val >= 1_000_000) {
+    const m = val / 1_000_000;
+    return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`;
+  }
+  if (val >= 1_000) {
+    const k = val / 1_000;
+    return k % 1 === 0 ? `${k}k` : `${k.toFixed(1)}k`;
+  }
+  return Number.isInteger(val) ? val.toString() : val.toFixed(1);
+}
+
 // ─── Ultra-Sleek Floating Pill Tooltip ─────────────────────────
 function UltraModernTooltip({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
+  const displayLabel = typeof label === "number" ? formatTimeFriendly(label) : label;
   return (
-    <div className="pointer-events-none z-50 bg-[#0F172A]/95 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.4)] text-white text-[12px] space-y-1.5 min-w-[140px]">
+    <div className="pointer-events-none z-50 bg-[#0F172A]/95 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.4)] text-white text-[12px] space-y-1.5 min-w-[150px]">
       <div className="font-extrabold text-gray-300 border-b border-white/10 pb-1 text-[10.5px] uppercase tracking-wider flex items-center justify-between">
-        <span>{label}</span>
+        <span>{displayLabel}</span>
         <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] animate-pulse" />
       </div>
-      {payload.map((item: any, i: number) => (
-        <div key={i} className="flex items-center justify-between gap-4 text-[11.5px]">
-          <span className="flex items-center gap-1.5 text-gray-400 font-medium">
-            <span
-              className="w-2 h-2 rounded-full shadow-sm"
-              style={{ backgroundColor: item.color || item.fill }}
-            />
-            {item.name}
-          </span>
-          <span className="font-black text-white tabular-nums">
-            {typeof item.value === "number" ? item.value.toFixed(1) : item.value}
-            {item.unit || "s"}
-          </span>
-        </div>
-      ))}
+      {payload.map((item: any, i: number) => {
+        const val = typeof item.value === "number" ? item.value : 0;
+        const displayVal =
+          item.dataKey === "wip" || item.name?.includes("Active")
+            ? `${Math.round(val)} active in line`
+            : formatTimeFriendly(val);
+        return (
+          <div key={i} className="flex items-center justify-between gap-4 text-[11.5px]">
+            <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+              <span
+                className="w-2 h-2 rounded-full shadow-sm"
+                style={{ backgroundColor: item.color || item.fill }}
+              />
+              {item.name}
+            </span>
+            <span className="font-black text-white tabular-nums">
+              {displayVal}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -172,41 +206,74 @@ export default function SimResultsPanel({
       : 100;
 
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
-  const healthScore = result.healthScore ?? 85;
+  const healthScore = result.healthScore;
   const waitP = result.waitTimePercentiles;
   const cycleP = result.cycleTimePercentiles;
 
-  // Build percentile data for spectrum chart (using plain English labels & fallback values)
+  // Build percentile data for spectrum chart (using plain English labels & verified percentiles)
   const percentileData = [
-    { name: "Normal Day", wait: waitP?.p50 ?? 0, total: Math.max(0.1, cycleP?.p50 ?? 0) },
-    { name: "Slight Rush", wait: waitP?.p75 ?? 0, total: Math.max(0.1, cycleP?.p75 ?? 0) },
-    { name: "Peak Busy", wait: waitP?.p90 ?? 0, total: Math.max(0.1, cycleP?.p90 ?? 0) },
-    { name: "Heavy Delay", wait: waitP?.p95 ?? 0, total: Math.max(0.1, cycleP?.p95 ?? 0) },
-    { name: "Worst-Case", wait: waitP?.p99 ?? 0, total: Math.max(0.1, cycleP?.p99 ?? 0) },
+    { name: "Fast Visit (25%)", wait: waitP?.p25 ?? 0, total: Math.max(0.1, cycleP?.p25 ?? 0) },
+    { name: "Average Customer", wait: waitP?.p50 ?? 0, total: Math.max(0.1, cycleP?.p50 ?? 0) },
+    { name: "Busy Hour (75%)", wait: waitP?.p75 ?? 0, total: Math.max(0.1, cycleP?.p75 ?? 0) },
+    { name: "Peak Rush (90%)", wait: waitP?.p90 ?? 0, total: Math.max(0.1, cycleP?.p90 ?? 0) },
+    { name: "Worst-Case (99%)", wait: waitP?.p99 ?? 0, total: Math.max(0.1, cycleP?.p99 ?? 0) },
   ];
 
   // Calculate maximum active workload
   const maxWip = useMemo(() => {
-    return Math.max(
-      1,
-      ...(result.timeline?.map((t) => {
-        const depthObj = t.depth || {};
-        return t.wip ?? Object.values(depthObj).reduce((a, b) => a + b, 0);
-      }) || [1])
-    );
-  }, [result.timeline]);
+    if (result.timeline && result.timeline.length > 0) {
+      return Math.max(
+        1,
+        ...result.timeline.map((t) => {
+          const depthObj = t.depth || {};
+          return t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
+        })
+      );
+    }
+    return Math.max(1, result.totalArrived - result.totalCompleted);
+  }, [result.timeline, result.totalArrived, result.totalCompleted]);
 
-  // Build WIP timeline data
-  const wipTimelineData =
-    result.timeline?.map((t) => {
+  // Build WIP timeline data (downsample to <= 180 points if large, preserving peak)
+  const wipChartData = useMemo(() => {
+    if (!result.timeline || result.timeline.length === 0) {
+      return [];
+    }
+
+    const raw = result.timeline.map((t) => {
       const depthObj = t.depth || {};
-      const sumWip = t.wip ?? Object.values(depthObj).reduce((a, b) => a + b, 0);
+      const sumWip = t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
       return {
-        simTime: `${Math.round(t.simTime)}s`,
+        simTime: t.simTime,
         wip: sumWip,
         completed: t.completed,
       };
-    }) || [];
+    });
+
+    if (raw.length <= 180) {
+      return raw;
+    }
+
+    const maxWipPoint = raw.reduce((max, p) => (p.wip > max.wip ? p : max), raw[0]);
+    const step = Math.ceil(raw.length / 180);
+    const sampled: typeof raw = [];
+
+    for (let i = 0; i < raw.length; i += step) {
+      sampled.push(raw[i]);
+    }
+
+    if (!sampled.some((p) => p.simTime === maxWipPoint.simTime)) {
+      sampled.push(maxWipPoint);
+      sampled.sort((a, b) => a.simTime - b.simTime);
+    }
+
+    const lastPoint = raw[raw.length - 1];
+    if (sampled[sampled.length - 1].simTime !== lastPoint.simTime) {
+      sampled.push(lastPoint);
+      sampled.sort((a, b) => a.simTime - b.simTime);
+    }
+
+    return sampled;
+  }, [result.timeline]);
 
   return (
     <div
@@ -234,30 +301,45 @@ export default function SimResultsPanel({
           onClick={() => setCollapsed((c) => !c)}
         >
           <div className="relative flex items-center justify-center">
-            {healthScore < 80 && (
+            {healthScore !== undefined && healthScore < 80 && (
               <span className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-amber-400 opacity-40" />
             )}
             <div
               className={`w-7 h-7 rounded-xl flex items-center justify-center font-black shadow-xs ${
-                healthScore >= 80
+                healthScore === undefined
+                  ? "bg-indigo-50 text-[#5742FF] border border-indigo-200"
+                  : healthScore >= 80
                   ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
                   : healthScore >= 60
                   ? "bg-amber-50 text-amber-600 border border-amber-200"
                   : "bg-rose-50 text-rose-600 border border-rose-200"
               }`}
             >
-              {healthScore >= 80 ? <ShieldCheck size={15} /> : <AlertTriangle size={15} />}
+              {healthScore === undefined ? (
+                <Activity size={15} />
+              ) : healthScore >= 80 ? (
+                <ShieldCheck size={15} />
+              ) : (
+                <AlertTriangle size={15} />
+              )}
             </div>
           </div>
 
           <div className="flex items-baseline gap-2">
             <span className="text-[13px] font-black text-gray-900 tracking-tight group-hover:text-[#5742FF] transition-colors">
-              {healthScore >= 80
+              {healthScore === undefined
+                ? "Simulation Completed"
+                : healthScore >= 80
                 ? "Smooth Flow (Grade A)"
                 : healthScore >= 60
                 ? "Minor Congestion (Grade B)"
                 : "Traffic Jam Alert (Grade C)"}
             </span>
+            {result.engine === "legacy" && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200" title="Analytical Approximation Fallback">
+                Approximate
+              </span>
+            )}
             <span className="text-[11px] font-semibold text-gray-400 hidden sm:inline">
               • <AnimatedNumber value={result.totalCompleted} /> / <AnimatedNumber value={result.totalArrived} /> finished ({efficiencyRate}%)
             </span>
@@ -268,12 +350,12 @@ export default function SimResultsPanel({
         {!collapsed && (
           <div className="hidden md:flex items-center gap-1 bg-[#F1F0FB] rounded-full p-1 border border-indigo-100/60 overflow-x-auto max-w-[620px] scrollbar-none">
             {[
-              { id: "overview", label: "Executive Grid", icon: Activity },
-              { id: "analytics", label: "Flow Balance", icon: Scale },
-              { id: "timeline", label: "Line Buildup", icon: TrendingUp },
-              { id: "blocks", label: "Station Telemetry", icon: Table2 },
-              { id: "entities", label: "Journey Tracer", icon: User },
-              { id: "logs", label: "Live Event Logs", icon: ScrollText },
+              { id: "overview", label: "Summary", icon: Activity },
+              { id: "analytics", label: "Detailed Charts", icon: Scale },
+              { id: "timeline", label: "Queue Timeline", icon: TrendingUp },
+              { id: "blocks", label: "Station Details", icon: Table2 },
+              { id: "entities", label: "Customer Trips", icon: User },
+              { id: "logs", label: "Event History", icon: ScrollText },
             ].map((t) => {
               const isActive = activeTab === t.id;
               return (
@@ -360,7 +442,9 @@ export default function SimResultsPanel({
                 {/* ── 1. Hero AI Diagnosis Banner ── */}
                 <div
                   className={`rounded-2xl p-4 border relative overflow-hidden backdrop-blur-md shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                    healthScore >= 80
+                    healthScore === undefined
+                      ? "bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border-indigo-200/80"
+                      : healthScore >= 80
                       ? "bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border-emerald-200/80"
                       : healthScore >= 60
                       ? "bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-amber-200/80"
@@ -370,31 +454,35 @@ export default function SimResultsPanel({
                   <div className="flex items-start sm:items-center gap-3.5">
                     <div
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-[20px] shadow-sm ${
-                        healthScore >= 80
+                        healthScore === undefined
+                          ? "bg-indigo-100 text-[#5742FF]"
+                          : healthScore >= 80
                           ? "bg-emerald-100 text-emerald-700"
                           : healthScore >= 60
                           ? "bg-amber-100 text-amber-700"
                           : "bg-rose-100 text-rose-700"
                       }`}
                     >
-                      {healthScore >= 80 ? "🚀" : healthScore >= 60 ? "⚠️" : "🛑"}
+                      {healthScore === undefined ? "📊" : healthScore >= 80 ? "🚀" : healthScore >= 60 ? "⚠️" : "🛑"}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="text-[14.5px] font-black text-gray-900 leading-tight">
-                          {result.aiDiagnosis?.title || (healthScore >= 80 ? "Optimal Operational Flow" : "Congestion Bottleneck Detected")}
+                          {result.aiDiagnosis?.title || (healthScore !== undefined && healthScore < 60 ? "Congestion Bottleneck Detected" : "Operational Summary")}
                         </h4>
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                            healthScore >= 80
-                              ? "bg-emerald-100 text-emerald-800"
-                              : healthScore >= 60
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-rose-100 text-rose-800"
-                          }`}
-                        >
-                          {healthScore >= 80 ? "Grade A" : healthScore >= 60 ? "Grade B" : "Grade C"}
-                        </span>
+                        {healthScore !== undefined && (
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                              healthScore >= 80
+                                ? "bg-emerald-100 text-emerald-800"
+                                : healthScore >= 60
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}
+                          >
+                            {healthScore >= 80 ? "Grade A" : healthScore >= 60 ? "Grade B" : "Grade C"}
+                          </span>
+                        )}
                       </div>
                       <p className="text-[12.5px] text-gray-600 mt-1 leading-relaxed max-w-3xl">
                         {result.aiDiagnosis?.summary ||
@@ -431,7 +519,7 @@ export default function SimResultsPanel({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
-                        Completion Yield
+                        Finished Customers
                       </span>
                       <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
                         <CheckCircle2 size={15} />
@@ -454,7 +542,7 @@ export default function SimResultsPanel({
                     </div>
                     <div className="flex items-center justify-between text-[11px] font-bold">
                       <span className="text-emerald-600">{efficiencyRate}% Finished</span>
-                      <span className="text-gray-400">{result.totalArrived - result.totalCompleted} in-flight</span>
+                      <span className="text-gray-400">{result.totalArrived - result.totalCompleted} still waiting in line</span>
                     </div>
                   </motion.div>
 
@@ -465,7 +553,7 @@ export default function SimResultsPanel({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
-                        Typical Wait Time
+                        Average Time in Line
                       </span>
                       <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
                         <Clock size={15} />
@@ -473,17 +561,17 @@ export default function SimResultsPanel({
                     </div>
                     <div className="my-2.5">
                       <div className="text-[26px] font-black text-gray-900 leading-none tabular-nums">
-                        <AnimatedNumber value={waitP?.p50 ?? 0} decimals={1} suffix="s" />
+                        {formatTimeFriendly(waitP?.p50 ?? 0)}
                       </div>
                       <div className="text-[11.5px] font-extrabold text-amber-700 mt-1.5 flex items-center gap-1">
-                        <span>Rush Delay:</span>
+                        <span>Worst Delay:</span>
                         <span className="bg-amber-100/80 px-1.5 py-0.5 rounded font-black">
-                          {(waitP?.p95 ?? 0).toFixed(1)}s
+                          {formatTimeFriendly(waitP?.p95 ?? 0)}
                         </span>
                       </div>
                     </div>
                     <div className="text-[11px] font-medium text-gray-400">
-                      Door-to-Door: {(cycleP?.p50 ?? 0).toFixed(1)}s
+                      Total Visit Duration: {formatTimeFriendly(cycleP?.p50 ?? 0)}
                     </div>
                   </motion.div>
 
@@ -494,7 +582,7 @@ export default function SimResultsPanel({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
-                        Choke Point
+                        Biggest Bottleneck
                       </span>
                       <div className="w-7 h-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
                         <Flame size={15} />
@@ -505,11 +593,11 @@ export default function SimResultsPanel({
                         {bottleneck ? bottleneck.label : "Even Distribution"}
                       </div>
                       <div className="text-[12px] font-extrabold text-rose-600 mt-1">
-                        {bottleneck ? `${Math.round((bottleneck.utilization || 0) * 100)}% Station Load` : "Zero bottlenecks"}
+                        {bottleneck ? `${Math.round((bottleneck.utilization || 0) * 100)}% Overloaded` : "Zero Line Jams"}
                       </div>
                     </div>
                     <div className="text-[11px] font-medium text-gray-400 truncate">
-                      {bottleneck ? `Queue Wait: ${bottleneck.avgWaitTime.toFixed(1)}s` : "Smooth across all steps"}
+                      {bottleneck ? `Average Delay: ${formatTimeFriendly(bottleneck.avgWaitTime)}` : "Smooth across all steps"}
                     </div>
                   </motion.div>
 
@@ -520,7 +608,7 @@ export default function SimResultsPanel({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600">
-                        Smart AI Tip
+                        Smart AI Suggestion
                       </span>
                       <div className="w-7 h-7 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center font-bold">
                         <Sparkles size={15} />
@@ -535,7 +623,7 @@ export default function SimResultsPanel({
                       </p>
                     </div>
                     <div className="text-[10.5px] font-extrabold text-[#5742FF] truncate">
-                      Impact: {result.aiDiagnosis?.recommendations?.[0]?.impact || "High stability"}
+                      Impact: {result.aiDiagnosis?.recommendations?.[0]?.impact || "Smooth operations"}
                     </div>
                   </motion.div>
                 </div>
@@ -550,9 +638,9 @@ export default function SimResultsPanel({
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-[11px] font-semibold text-gray-400">
-                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Optimal (&lt;60%)</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Smooth (&lt;60%)</span>
                       <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> Moderate (60-85%)</span>
-                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Congested (&gt;85%)</span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Heavy Jam (&gt;85%)</span>
                     </div>
                   </div>
 
@@ -594,19 +682,19 @@ export default function SimResultsPanel({
                         <div key={id} className="flex items-center gap-2.5 shrink-0">
                           <motion.div
                             whileHover={{ scale: 1.03 }}
-                            className={`px-4 py-2.5 rounded-2xl border ${statusColor} text-center min-w-[135px] transition-all`}
+                            className={`px-4 py-2.5 rounded-2xl border ${statusColor} text-center min-w-[145px] transition-all`}
                           >
                             <div className="flex items-center justify-center gap-1.5 mb-1">
                               <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                              <span className="text-[12px] font-black text-gray-900 truncate max-w-[105px]">
+                              <span className="text-[12px] font-black text-gray-900 truncate max-w-[115px]">
                                 {s.label}
                               </span>
                             </div>
                             <div className="text-[11px] font-extrabold text-gray-600">
                               {util !== null ? `${util}% Busy` : "Router"}
                             </div>
-                            <div className="text-[10px] font-medium text-gray-400 mt-0.5">
-                              {(s.avgWaitTime ?? 0).toFixed(1)}s Queue
+                            <div className="text-[10.5px] font-medium text-gray-500 mt-0.5">
+                              {formatTimeFriendly(s.avgWaitTime ?? 0)} line
                             </div>
                           </motion.div>
                           {i < statsEntries.length - 1 && (
@@ -636,10 +724,10 @@ export default function SimResultsPanel({
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <span className="text-[12px] font-black text-gray-900 uppercase tracking-wider">
-                          Active Workload Over Simulation Clock
+                          People / Workload Inside Over Time
                         </span>
                         <span className="text-[10.5px] font-medium text-gray-400 block">
-                          Flat curve = stable equilibrium • Upward slope = queue accumulation
+                          Flat curve = smooth flow • Upward rise = lines backing up
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -650,43 +738,57 @@ export default function SimResultsPanel({
                     </div>
 
                     <div className="flex-1 min-h-0 mt-1">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={wipTimelineData as any[]} margin={{ top: 10, right: 10, bottom: 0, left: -25 }}>
-                          <defs>
-                            <linearGradient id="neonWipGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6366F1" stopOpacity={0.4} />
-                              <stop offset="60%" stopColor="#8B5CF6" stopOpacity={0.12} />
-                              <stop offset="100%" stopColor="#6366F1" stopOpacity={0.0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
-                          <XAxis
-                            dataKey="simTime"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                          />
-                          <Tooltip
-                            cursor={{ stroke: "#6366F1", strokeWidth: 1.5, strokeDasharray: "4 4" }}
-                            content={<UltraModernTooltip />}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="wip"
-                            name="Active Inside"
-                            stroke="#6366F1"
-                            strokeWidth={3}
-                            fill="url(#neonWipGrad)"
-                            dot={false}
-                            activeDot={{ r: 6, fill: "#6366F1", stroke: "#FFFFFF", strokeWidth: 2.5 }}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      {wipChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={wipChartData} margin={{ top: 10, right: 10, bottom: 0, left: -5 }}>
+                            <defs>
+                              <linearGradient id="neonWipGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6366F1" stopOpacity={0.4} />
+                                <stop offset="60%" stopColor="#8B5CF6" stopOpacity={0.12} />
+                                <stop offset="100%" stopColor="#6366F1" stopOpacity={0.0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
+                            <XAxis
+                              dataKey="simTime"
+                              type="number"
+                              domain={["dataMin", "dataMax"]}
+                              tickFormatter={formatTimeFriendly}
+                              tickCount={5}
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
+                            />
+                            <YAxis
+                              domain={[0, (dataMax: number) => (dataMax <= 4 ? Math.max(1, Math.ceil(dataMax)) : Math.ceil(dataMax * 1.1))]}
+                              allowDecimals={false}
+                              tickFormatter={formatCompactNumber}
+                              width={40}
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
+                            />
+                            <Tooltip
+                              cursor={{ stroke: "#6366F1", strokeWidth: 1.5, strokeDasharray: "4 4" }}
+                              content={<UltraModernTooltip />}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="wip"
+                              name="Active Inside"
+                              stroke="#6366F1"
+                              strokeWidth={3}
+                              fill="url(#neonWipGrad)"
+                              dot={false}
+                              activeDot={{ r: 6, fill: "#6366F1", stroke: "#FFFFFF", strokeWidth: 2.5 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-xs text-gray-400 font-medium">
+                          No timeline data recorded for this run
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -695,10 +797,10 @@ export default function SimResultsPanel({
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <span className="text-[12px] font-black text-gray-900 uppercase tracking-wider">
-                          Wait Time Distribution Spectrum
+                          Customer Wait Time Comparison
                         </span>
                         <span className="text-[10.5px] font-medium text-gray-400 block">
-                          Comparing typical customer wait vs peak unlucky spike
+                          From quick lucky visits to worst-case rush hours
                         </span>
                       </div>
 
@@ -732,7 +834,7 @@ export default function SimResultsPanel({
                     <div className="flex-1 min-h-0 mt-1">
                       <ResponsiveContainer width="100%" height="100%">
                         {chartViewMode === "curve" ? (
-                          <AreaChart data={percentileData} margin={{ top: 10, right: 10, bottom: 0, left: -25 }}>
+                          <AreaChart data={percentileData} margin={{ top: 10, right: 10, bottom: 0, left: -5 }}>
                             <defs>
                               <linearGradient id="spectrumAreaGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.45} />
@@ -748,6 +850,9 @@ export default function SimResultsPanel({
                               tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
                             />
                             <YAxis
+                              domain={[0, (dataMax: number) => (dataMax <= 1 ? Math.max(0.1, dataMax) : Math.ceil(dataMax * 1.1))]}
+                              tickFormatter={formatTimeFriendly}
+                              width={46}
                               axisLine={false}
                               tickLine={false}
                               tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
@@ -778,7 +883,7 @@ export default function SimResultsPanel({
                         ) : (
                           <BarChart
                             data={percentileData}
-                            margin={{ top: 10, right: 10, bottom: 0, left: -25 }}
+                            margin={{ top: 10, right: 10, bottom: 0, left: -5 }}
                             barGap={6}
                           >
                             <defs>
@@ -799,6 +904,9 @@ export default function SimResultsPanel({
                               tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
                             />
                             <YAxis
+                              domain={[0, (dataMax: number) => (dataMax <= 1 ? Math.max(0.1, dataMax) : Math.ceil(dataMax * 1.1))]}
+                              tickFormatter={formatTimeFriendly}
+                              width={46}
                               axisLine={false}
                               tickLine={false}
                               tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}

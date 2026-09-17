@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, createContext, useContext, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ReactFlow, ReactFlowProvider,
   Background, Controls, MiniMap, addEdge, useReactFlow,
@@ -20,7 +21,8 @@ const LiveStatsContext = createContext<{
   simState: SimState;
   connectedHandles: Set<string>;
   simType: string;
-}>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set(), simType: "human_queue" });
+  upstreamQueueDepth: Record<string, number>;
+}>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set(), simType: "human_queue", upstreamQueueDepth: {} });
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
 export const NODE_BASE_COLORS: Record<string, string> = {
@@ -228,11 +230,128 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
   }
 }
 
+// ─── Detailed Spec Formatter for Sleek Hover Tooltip ───────────
+function getNodeDetailedSpecs(
+  nodeType: string,
+  params: Record<string, any> = {}
+): { label: string; value: string }[] {
+  switch (nodeType) {
+    case "source":
+      return [
+        { label: "Arrival Rate", value: `${params.arrivalRate ?? 1} entities/sec` },
+        {
+          label: "Flow Pattern",
+          value:
+            params.distribution === "deterministic"
+              ? "Fixed Spacing"
+              : params.distribution === "poisson"
+              ? "Burst Spikes"
+              : params.distribution === "normal"
+              ? "Clustered Avg"
+              : "Natural Random",
+        },
+        { label: "Item Type", value: params.entityClass || "Standard" },
+        ...(params.priorityLevel && params.priorityLevel !== "standard"
+          ? [
+              {
+                label: "Priority Tier",
+                value: params.priorityLevel === "urgent" ? "🚨 VIP Urgent" : "⚡ Fast-Track",
+              },
+            ]
+          : []),
+      ];
+    case "queue":
+      return [
+        {
+          label: "Max Line Size",
+          value:
+            params.capacity === undefined || params.capacity === -1 || params.capacity === ""
+              ? "♾️ Unlimited"
+              : `${params.capacity} in line`,
+        },
+        {
+          label: "Queue Discipline",
+          value:
+            params.discipline === "PRIORITY"
+              ? "⭐ VIP & Urgent First"
+              : params.discipline === "LIFO"
+              ? "📦 Most Recent First"
+              : "🚶 First Come, First Served",
+        },
+        ...(params.patienceDistribution && params.patienceDistribution !== "none"
+          ? [
+              {
+                label: "Patience Timeout",
+                value: `⏱️ Leaves after ${params.patienceTimeout ?? 5}s`,
+              },
+            ]
+          : []),
+      ];
+    case "resource":
+    case "priority_resource":
+      return [
+        { label: "Station Staff", value: `${params.capacity ?? 1} parallel counter(s)` },
+        { label: "Avg Service Time", value: `${params.serviceTimeMean ?? 1} seconds` },
+        {
+          label: "Duration Pattern",
+          value: params.serviceDistribution === "deterministic" ? "Fixed constant" : "Random duration",
+        },
+        ...(params.isPreemptive ? [{ label: "Fast-Track Override", value: "⚡ Can interrupt" }] : []),
+        ...(params.meanTimeBetweenFailures
+          ? [
+              {
+                label: "Breakdowns",
+                value: `Every ~${params.meanTimeBetweenFailures}s (Fix: ${params.repairTimeMean ?? 1}s)`,
+              },
+            ]
+          : []),
+      ];
+    case "service":
+      return [
+        { label: "Processing Duration", value: `${params.durationMean ?? 1} seconds` },
+        {
+          label: "Speed Consistency",
+          value: params.distribution === "deterministic" ? "Fixed duration" : "Random duration",
+        },
+      ];
+    case "decision":
+      return [
+        { label: "Routing Paths", value: `${params.routes?.length ?? 2} branches` },
+        { label: "Split Method", value: "Probabilistic branch" },
+      ];
+    case "sink":
+      return [
+        { label: "KPI Collection", value: params.collectKPIs !== false ? "✅ Active" : "Disabled" },
+        { label: "Role", value: "Simulation completion" },
+      ];
+    case "store":
+      return [
+        {
+          label: "Storage Limit",
+          value:
+            params.capacity === undefined || params.capacity === -1
+              ? "♾️ Unlimited capacity"
+              : `Max ${params.capacity} units`,
+        },
+      ];
+    case "container":
+      return [{ label: "Tank Capacity", value: `${params.capacity ?? 100} fluid units` }];
+    default:
+      return Object.entries(params || {})
+        .filter(([k]) => !k.startsWith("_"))
+        .slice(0, 3)
+        .map(([k, v]) => ({ label: k, value: String(v) }));
+  }
+}
+
 // ─── SimNode ────────────────────────────────────────────────────────────────
 function SimNode({ data, selected, id }: { data: any; selected: boolean; id: string }) {
   const [showDeleteBtn, setShowDeleteBtn] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const { setNodes, setEdges } = useReactFlow();
-  const { stats, bottleneckId, simState, connectedHandles, simType } = useContext(LiveStatsContext);
+  const { stats, bottleneckId, simState, connectedHandles, simType, upstreamQueueDepth } = useContext(LiveStatsContext);
   const nodeType = data.nodeType;
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
@@ -243,6 +362,17 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
       setShowDeleteBtn(false);
     }
   }, [selected]);
+
+  const handleMouseEnter = () => {
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovered(true);
+    }, 120);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setIsHovered(false);
+  };
 
   const simConfig = (SIM_TYPE_REGISTRY as any)[simType] || SIM_TYPE_REGISTRY.human_queue;
   const paletteDef = simConfig.paletteNodes?.find((n: any) => n.type === nodeType);
@@ -264,8 +394,18 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
   // Stats badge content
   let statsBadge: string | null = null;
   if (isRunning && liveStats) {
-    if (nodeType === "resource" || nodeType === "priority_resource" || nodeType === "service") {
-      statsBadge = `${Math.round((liveStats.utilization ?? 0) * 100)}% util | Wait: ${liveStats.currentDepth ?? 0} | Proc: ${liveStats.entitiesOut ?? 0}`;
+    if (nodeType === "resource" || nodeType === "priority_resource") {
+      const cap = Number(data.params?.capacity) || 1;
+      const depth = liveStats.currentDepth ?? 0;
+      const serving = Math.min(depth, cap);
+      const queued = (upstreamQueueDepth[id] ?? 0) + Math.max(0, depth - cap);
+      statsBadge = `${Math.round((liveStats.utilization ?? 0) * 100)}% util | Serving: ${serving}/${cap} | Queue: ${queued}`;
+    } else if (nodeType === "service") {
+      // A service node is a pure delay with UNBOUNDED concurrency (the engine spawns
+      // one timeout per entity, with no resource contention) and no capacity param.
+      // Everything in it is in service, nothing is queued, and there is no server to
+      // be busy — so neither a capacity ratio nor a utilisation figure is meaningful.
+      statsBadge = `${liveStats.currentDepth ?? 0} in progress | Proc: ${liveStats.entitiesOut ?? 0}`;
     } else if (nodeType === "queue" || nodeType === "store") {
       statsBadge = `${liveStats.currentDepth ?? 0} waiting | Proc: ${liveStats.entitiesOut ?? 0}`;
     } else if (nodeType === "source") {
@@ -275,19 +415,75 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
     }
   }
 
+  const specs = getNodeDetailedSpecs(nodeType, data.params || {});
+
   return (
     <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onDoubleClick={(e) => {
         e.stopPropagation();
         setShowDeleteBtn((prev) => !prev);
       }}
-      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center z-10 transition-all select-none cursor-pointer ${
+      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center transition-all select-none cursor-pointer ${
+        isHovered ? "z-[9999]" : "z-10"
+      } ${
         selected ? "scale-105 shadow-lg border-gray-300 ring-2 ring-indigo-500/20" : "hover:shadow-md"
       }`}
       style={{
         borderLeftColor: baseColor,
+        zIndex: isHovered ? 9999 : selected ? 50 : 1,
       }}
     >
+      {/* ── Sleek Light Theme Hover Details Tooltip ── */}
+      <AnimatePresence>
+        {isHovered && !showDeleteBtn && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 3, scale: 0.96 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none w-52 bg-white/98 text-gray-900 backdrop-blur-md border border-gray-200/90 rounded-xl p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.14)] text-left"
+          >
+            {/* Header with Category Badge & ID */}
+            <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
+              <span
+                className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border"
+                style={{
+                  backgroundColor: `${baseColor}15`,
+                  borderColor: `${baseColor}30`,
+                  color: baseColor,
+                }}
+              >
+                {nodeType.replace("_", " ")}
+              </span>
+              <span className="text-[9.5px] font-bold text-gray-400 truncate max-w-[85px]">{data.label}</span>
+            </div>
+
+            {/* Config Specs */}
+            <div className="space-y-1">
+              {specs.map((spec, i) => (
+                <div key={i} className="flex items-center justify-between text-[10px] leading-tight">
+                  <span className="text-gray-500 font-medium">{spec.label}</span>
+                  <span className="text-gray-900 font-bold truncate max-w-[115px]">{spec.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Live Stats Row if Running */}
+            {isRunning && liveStats && (
+              <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[9.5px] font-bold text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-lg border border-emerald-100/60">
+                <span className="flex items-center gap-1">⚡ Live Status</span>
+                <span>{liveStats.entitiesOut ?? 0} finished</span>
+              </div>
+            )}
+
+            {/* Triangular pointer notch */}
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-white border-r border-b border-gray-200/90 shadow-xs" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Circular Red X Delete Button on Double-Click ── */}
       {showDeleteBtn && (
         <button
@@ -537,6 +733,19 @@ function NodeCanvasInner({
   // Live stats from the current tick
   const liveStats = simTick?.nodeStats ?? {};
 
+  // Waiting entities live on the upstream Queue/Store node, not on the resource.
+  const upstreamQueueDepth = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of edges) {
+      const src = liveStats[e.source];
+      if (!src) continue;
+      if (src.nodeType === "queue" || src.nodeType === "store") {
+        map[e.target] = (map[e.target] ?? 0) + (src.currentDepth ?? 0);
+      }
+    }
+    return map;
+  }, [edges, liveStats]);
+
   // Build set of connected handles for visual feedback
   const connectedHandles = React.useMemo(() => {
     const set = new Set<string>();
@@ -564,7 +773,7 @@ function NodeCanvasInner({
   }), []);
 
   return (
-    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue" }}>
+    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue", upstreamQueueDepth }}>
       <div ref={reactFlowWrapper} className="w-full h-full workspace-canvas relative">
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes dashdraw {

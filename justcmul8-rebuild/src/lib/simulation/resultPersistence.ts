@@ -26,7 +26,27 @@ export function toSimulationRunRow(
     total_arrived: result.totalArrived,
     total_completed: result.totalCompleted,
     bottleneck_node: result.bottleneckNodeId || null,
-    result_json: result,
+    // U-7: store a summary, not the whole enriched object. `entityJourneys` and
+    // `topSlowestEntities` are reconstructable from `logs_json` via
+    // reconstructEntityJourneys(), and `logs` would otherwise be persisted twice —
+    // once inside result_json and once as logs_json. On a long run that is several
+    // MB per insert. Rehydrate with:
+    //   enrichSimResult({ ...row.result_json, logs: row.logs_json })
+    result_json: stripReconstructable(result),
     logs_json: result.logs,
   };
+}
+
+/**
+ * Removes the fields that can be rebuilt from the raw log stream, so a persisted
+ * run stays small. Everything the CSV export and the results panels read directly
+ * (nodeStats, timeline, percentiles, littlesLaw, healthScore, aiDiagnosis, …) is
+ * retained.
+ */
+function stripReconstructable(result: SimResult): SimResult {
+  const { entityJourneys, topSlowestEntities, logs, ...summary } = result;
+  void entityJourneys;
+  void topSlowestEntities;
+  void logs;
+  return summary as SimResult;
 }

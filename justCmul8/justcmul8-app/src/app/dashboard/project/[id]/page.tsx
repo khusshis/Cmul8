@@ -242,14 +242,20 @@ export default function WorkspacePage() {
     setValidationError(null);
 
     setSimResult(null);
-    setSimTick(null);
-    setBottleneckNodeId("");
+    const unitMultipliers: Record<string, number> = {
+      seconds: 1,
+      minutes: 60,
+      hours: 3600,
+      days: 86400,
+    };
+    const totalDurationSeconds = Math.max(1, (duration || 1) * (unitMultipliers[timeUnit] || 60));
+    const tickInterval = Math.max(0.1, totalDurationSeconds / 100);
 
     const graph = graphToSimNodes(nodes, edges);
     engineRef.current.start({
       simType: (project?.sim_type || "human_queue") as SimTypeId,
-      durationSeconds: duration,
-      tickIntervalSeconds: 0.1,
+      durationSeconds: totalDurationSeconds,
+      tickIntervalSeconds: tickInterval,
       speedMultiplier: speed,
       graph,
     });
@@ -259,7 +265,14 @@ export default function WorkspacePage() {
   const speedOptions = [1, 2, 5, 10, 50];
 
   // ── Sim clock display ────────────────────────────────────────────────────
-  const simTimeDisplay = simTick ? simTick.simTime.toFixed(1) : "0.0";
+  const unitMultipliers: Record<string, number> = {
+    seconds: 1,
+    minutes: 60,
+    hours: 3600,
+    days: 86400,
+  };
+  const unitDivisor = unitMultipliers[timeUnit] || 1;
+  const simTimeDisplay = simTick ? (simTick.simTime / unitDivisor).toFixed(1) : "0.0";
   const arrivedDisplay = simTick?.totalArrived ?? 0;
   const completedDisplay = simTick?.totalCompleted ?? 0;
   const inFlight = Math.max(0, arrivedDisplay - completedDisplay);

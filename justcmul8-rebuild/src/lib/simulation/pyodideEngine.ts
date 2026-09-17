@@ -38,19 +38,22 @@ export class PyodideSimEngine implements SimulationEngine {
         break;
       case "complete":
         this.running = false;
-        this.onCompleteCallbacks.forEach(cb => cb(msg.data));
+        this.onCompleteCallbacks.forEach(cb => cb({ ...msg.data, engine: "pyodide" }));
         break;
       case "error":
         this.running = false;
         this.onErrorCallbacks.forEach(cb => cb(msg.message));
         break;
-      case "status":
+      case "status": {
+        const statusMsg = { ...msg };
         if (msg.phase === "error") {
           console.warn("[PyodideSimEngine] Falling back to legacy TS engine due to pyodide init error");
           this.useFallback = true;
+          statusMsg.fallbackActive = true;
         }
-        this.onStatusCallbacks.forEach(cb => cb(msg));
+        this.onStatusCallbacks.forEach(cb => cb(statusMsg));
         break;
+      }
     }
   }
 
@@ -59,7 +62,7 @@ export class PyodideSimEngine implements SimulationEngine {
       console.log("Using legacy fallback engine");
       const legacy = new ClientSimEngine();
       legacy.onTick(tick => this.onTickCallbacks.forEach(cb => cb(tick)));
-      legacy.onComplete(res => this.onCompleteCallbacks.forEach(cb => cb(res)));
+      legacy.onComplete(res => this.onCompleteCallbacks.forEach(cb => cb({ ...res, engine: "legacy" })));
       legacy.onError(err => this.onErrorCallbacks.forEach(cb => cb(err)));
       legacy.start(params);
       return;

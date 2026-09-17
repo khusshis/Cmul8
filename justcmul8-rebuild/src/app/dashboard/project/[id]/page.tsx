@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -61,11 +61,22 @@ export default function WorkspacePage() {
   const [simTick, setSimTick] = useState<SimTick | null>(null);
   const [simResult, setSimResult] = useState<SimResult | null>(null);
   const [pyodideStatus, setPyodideStatus] = useState<PyodideStatus>({ phase: "idle" });
+  const [fallbackBannerDismissed, setFallbackBannerDismissed] = useState(false);
   const [runSavedPulse, setRunSavedPulse] = useState(false);
 
   const [speed, setSpeed] = useState(5);
   const [speedDropdownOpen, setSpeedDropdownOpen] = useState(false);
   const speedOptions = [1, 2, 5, 10, 50];
+
+  const [durationValue, setDurationValue] = useState(100);
+  const [durationUnit, setDurationUnit] = useState<"secs" | "mins" | "hrs" | "days">("mins");
+  const [durationUnitOpen, setDurationUnitOpen] = useState(false);
+  const unitMultipliers: Record<string, number> = {
+    secs: 1,
+    mins: 60,
+    hrs: 3600,
+    days: 86400,
+  };
 
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
   const engineRef = useRef<SimulationEngine | null>(null);
@@ -230,6 +241,18 @@ export default function WorkspacePage() {
       return;
     }
 
+    const unitMultipliers: Record<string, number> = {
+      secs: 1,
+      mins: 60,
+      hrs: 3600,
+      days: 86400,
+    };
+    const totalDurationSeconds = Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60));
+    // F-6: 100 ticks is too coarse to integrate WIP (~11% error, ~8% low bias on
+    // M/M/1) and short runs could not even reach 100 samples -- Math.round meant a
+    // 5 s run produced 5 ticks. 1000 samples lands within 0.5% of the true value.
+    const tickInterval = Math.max(0.05, totalDurationSeconds / 1000);
+
     const simGraph = graphToSimNodes(nodes, edges);
     if (engineRef.current && project) {
       setSimTick(null);
@@ -239,9 +262,9 @@ export default function WorkspacePage() {
       engineRef.current.start({
         graph: simGraph,
         simType: project.sim_type as SimTypeId,
-        durationSeconds: 3600, // Default 1 hour simulation
+        durationSeconds: totalDurationSeconds,
         speedMultiplier: speed,
-        tickIntervalSeconds: 60,
+        tickIntervalSeconds: tickInterval,
       });
     }
   }
@@ -379,6 +402,67 @@ export default function WorkspacePage() {
             )}
           </div>
 
+          {/* Simulation Duration Control Pill */}
+          <div className="relative flex items-center h-[34px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-sm px-2 text-[12.5px] font-bold">
+            <div className="flex items-center gap-1.5 pl-1 pr-1.5 text-gray-400">
+              <Clock size={13} strokeWidth={2.3} className="text-[#5742FF]" />
+            </div>
+
+            <input
+              type="number"
+              min={1}
+              max={99999}
+              value={durationValue}
+              onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
+              disabled={simState === "running"}
+              className="w-12 h-6 px-1 text-center font-extrabold text-[12.5px] text-[#111827] bg-gray-50 rounded-md border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50"
+              title="Simulation Duration Value"
+            />
+
+            <div className="relative ml-1">
+              <button
+                type="button"
+                onClick={() => setDurationUnitOpen((o) => !o)}
+                disabled={simState === "running"}
+                className="flex items-center gap-1 px-2 py-1 text-[12px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                <span>{durationUnit}</span>
+                <ChevronDown size={12} strokeWidth={2.5} className="text-gray-400" />
+              </button>
+
+              {durationUnitOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setDurationUnitOpen(false)} />
+                  <div className="absolute top-full right-0 mt-2 w-28 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50">
+                    <div className="px-3 py-1 text-[9.5px] font-extrabold text-gray-400 uppercase tracking-widest">
+                      Unit
+                    </div>
+                    {[
+                      { id: "secs", label: "secs" },
+                      { id: "mins", label: "mins" },
+                      { id: "hrs", label: "hrs" },
+                      { id: "days", label: "days" },
+                    ].map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setDurationUnit(u.id as any);
+                          setDurationUnitOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-1.5 text-[12px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${
+                          durationUnit === u.id ? "text-[#5742FF] bg-indigo-50/60" : "text-gray-700"
+                        }`}
+                      >
+                        <span>{u.label}</span>
+                        {durationUnit === u.id && <Check size={13} strokeWidth={3} />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Run Button with Speed Control */}
           <div className="relative flex items-center shadow-sm h-[34px]">
             <button
@@ -438,6 +522,33 @@ export default function WorkspacePage() {
             <Square size={13} fill="currentColor" /> Stop
           </button>
 
+          {/* Live Simulation Clock & Progress HUD */}
+          {(simState === "running" || simState === "paused" || simTick) && (() => {
+            const unitMult = unitMultipliers[durationUnit] || 60;
+            const currentSecs = simTick?.simTime ?? (simResult?.totalSimTime ?? 0);
+            const totalSecs = Math.max(1, (durationValue || 1) * unitMult);
+            const currentVal = (currentSecs / unitMult).toFixed(1);
+            const pct = Math.min(100, Math.round((currentSecs / totalSecs) * 100));
+            return (
+              <div className="flex items-center gap-2.5 h-[34px] px-3.5 rounded-full bg-[#F5F3FF] border border-indigo-100 text-[#1E1B4B] text-[12px] font-bold shadow-sm">
+                <div className="flex items-center gap-1.5 text-[#5742FF]">
+                  <Clock size={13} strokeWidth={2.5} />
+                  <span>{currentVal} / {durationValue} {durationUnit}</span>
+                </div>
+                <span className="text-indigo-200">|</span>
+                <span className="text-emerald-600 font-extrabold" title="Total Entities Arrived">↑{simTick?.totalArrived ?? 0}</span>
+                <span className="text-[#5742FF] font-extrabold" title="Total Entities Completed">↓{simTick?.totalCompleted ?? 0}</span>
+                <div className="w-12 h-1.5 bg-indigo-200/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#5742FF] rounded-full transition-all duration-200"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-extrabold text-gray-500">{pct}%</span>
+              </div>
+            );
+          })()}
+
           {remoteUsers.length > 0 && (
             <div className="flex items-center -space-x-2">
               {remoteUsers.slice(0, 4).map((u) => (
@@ -473,6 +584,22 @@ export default function WorkspacePage() {
 
         </div>
       </div>
+
+      {/* ── Fallback Engine Warning Banner ── */}
+      {pyodideStatus.fallbackActive && !fallbackBannerDismissed && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between text-[12px] text-amber-900 font-medium z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-amber-800">⚠️ Approximate engine in use:</span>
+            <span>The SimPy runtime could not load, so this run used the built-in fallback engine. Results are indicative. Reload to retry full engine.</span>
+          </div>
+          <button
+            onClick={() => setFallbackBannerDismissed(true)}
+            className="text-amber-700 hover:text-amber-950 font-bold ml-3 text-xs"
+          >
+            ✕ Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── Main Workspace Row (Palette + Canvas + Config Panel) ─────────── */}
       <div className="flex-1 min-h-0 flex overflow-hidden relative">

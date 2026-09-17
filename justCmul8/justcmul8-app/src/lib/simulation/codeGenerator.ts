@@ -39,6 +39,7 @@ import simpy
 import random
 import json
 import logging
+import copy
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 DURATION = {DURATION}
@@ -46,8 +47,10 @@ TICK_INTERVAL = {TICK_INTERVAL}
 NODE_CONFIG = json.loads(r"""{NODE_CONFIG_JSON}""")
 EDGES = json.loads(r"""{EDGES_JSON}""")
 
-# ── Log Buffer ─────────────────────────────────────────────────────────────────
+# ── Log Buffer & History ────────────────────────────────────────────────────────
 log_buffer = []
+all_logs = []
+timeline_history = []
 entity_counter = [0]
 stats = {}
 active_processes_by_node = {}
@@ -58,13 +61,16 @@ def next_entity_id():
     return entity_counter[0]
 
 def log_event(sim_time, entity_id, node_id, node_label, event):
-    log_buffer.append({
-        "simTime": sim_time,
+    entry = {
+        "simTime": round(sim_time, 2),
         "entityId": entity_id,
         "nodeId": node_id,
         "nodeLabel": node_label,
         "event": event
-    })
+    }
+    log_buffer.append(entry)
+    if len(all_logs) < 20000:
+        all_logs.append(entry)
 
 # ── Distributions ──────────────────────────────────────────────────────────────
 def sample(dist_type, mean, std=None):
@@ -134,22 +140,39 @@ def init_stats():
             "entitiesOut": 0,
             "currentDepth": 0,
             "busyCount": 0,
+            "busy_seconds": 0.0,
+            "last_busy_change": 0.0,
             "capacity": cfg["params"].get("capacity", 1),
             "waits": [],
             "services": [],
+            "latencies": [],
             "utilization": 0.0,
             "avgWaitTime": 0.0,
             "avgServiceTime": 0.0,
             "renegeCount": 0,
+            "droppedCount": 0,
         }
 
 def snapshot_stats(env):
     snap = {}
     for nid, s in stats.items():
-        util = s["busyCount"] / max(1, s["capacity"]) if s["capacity"] > 0 else 0
+        # G19 fix: compute time-weighted utilization, not instantaneous
+        busy_so_far = s["busy_seconds"]
+        if s["busyCount"] > 0:
+            busy_so_far += (env.now - s["last_busy_change"]) * s["busyCount"]
+        elapsed = env.now if env.now > 0 else 1
+        util = busy_so_far / (elapsed * max(1, s["capacity"])) if s["capacity"] > 0 else 0
+        
+        node_type = s["nodeType"]
+        if node_type == "container":
+            con = resources.get(nid)
+            level = con.level if con else 0
+        else:
+            level = s.get("level")
+
         snap[nid] = {
             "nodeId": nid,
-            "nodeType": s["nodeType"],
+            "nodeType": node_type,
             "label": s["label"],
             "entitiesIn": s["entitiesIn"],
             "entitiesOut": s["entitiesOut"],
@@ -158,7 +181,11 @@ def snapshot_stats(env):
             "avgWaitTime": sum(s["waits"]) / len(s["waits"]) if s["waits"] else 0,
             "avgServiceTime": sum(s["services"]) / len(s["services"]) if s["services"] else 0,
             "renegeCount": s.get("renegeCount", 0),
+            "droppedCount": s.get("droppedCount", 0),
+            "level": level,
         }
+        if s["latencies"]:
+            snap[nid]["avgLatency"] = sum(s["latencies"]) / len(s["latencies"])
     return snap
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -167,6 +194,10 @@ def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at):
     label = cfg["label"]
     wait_time = env.now - queued_at
     s["waits"].append(wait_time)
+    # G19 fix: accumulate busy-time before changing busyCount
+    if s["busyCount"] > 0:
+        s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+    s["last_busy_change"] = env.now
     s["busyCount"] += 1
     svc_time = sample(
         params.get("serviceDistribution", "exponential"),
@@ -175,6 +206,9 @@ def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at):
     log_event(env.now, eid, node_id, label, "service_start")
     yield env.timeout(svc_time)
     s["services"].append(svc_time)
+    # G19 fix: accumulate busy-time before decrementing
+    s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+    s["last_busy_change"] = env.now
     s["busyCount"] -= 1
     log_event(env.now, eid, node_id, label, "service_end")
     s["currentDepth"] -= 1
@@ -311,6 +345,14 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
     elif node_type == "store":
         store = resources.get(node_id)
         params = cfg["params"]
+        
+        if store.capacity != float('inf') and len(store.items) >= store.capacity:
+            s["droppedCount"] += 1
+            s["entitiesOut"] += 1
+            s["currentDepth"] -= 1
+            log_event(env.now, eid, node_id, label, "dropped")
+            return
+
         if isinstance(store, simpy.PriorityStore):
             item = simpy.PriorityItem(entity_attrs.get("priority", 3), entity_attrs)
         else:
@@ -333,6 +375,63 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             got = yield store.get()
 
         s["currentDepth"] = len(store.items)
+        s["entitiesOut"] += 1
+        next_id = get_next_target(node_id)
+        if next_id:
+            yield env.process(entity_process(env, eid, next_id, resources, entity_attrs))
+
+    elif node_type == "channel":
+        store = resources.get(node_id)
+        params = cfg["params"]
+        
+        if store.capacity != float('inf') and len(store.items) >= store.capacity:
+            s["droppedCount"] += 1
+            s["entitiesOut"] += 1
+            s["currentDepth"] -= 1
+            log_event(env.now, eid, node_id, label, "dropped")
+            return
+            
+        yield store.put(entity_attrs)
+        s["currentDepth"] = len(store.items)
+        
+        delay = sample(params.get("delayDistribution", "deterministic"), params.get("propagationDelay", 0))
+        log_event(env.now, eid, node_id, label, "transmitted")
+        
+        yield env.timeout(delay)
+        
+        yield store.get() # free capacity
+        s["currentDepth"] = len(store.items)
+        
+        s["entitiesOut"] += 1
+        s["latencies"].append(delay)
+        log_event(env.now, eid, node_id, label, "received")
+        
+        next_id = get_next_target(node_id)
+        if next_id:
+            yield env.process(entity_process(env, eid, next_id, resources, entity_attrs))
+            
+    elif node_type == "broadcaster":
+        log_event(env.now, eid, node_id, label, "broadcast")
+        s["currentDepth"] -= 1
+        s["entitiesOut"] += 1
+        targets = get_next_targets(node_id, "broadcast")
+        for tgt in targets:
+            cloned_attrs = copy.deepcopy(entity_attrs)
+            env.process(entity_process(env, eid, tgt, resources, cloned_attrs))
+            
+    elif node_type == "container":
+        params = cfg["params"]
+        con = resources.get(node_id)
+        fill_rate = params.get("fillRate", 1)
+        
+        if con.level + fill_rate <= con.capacity:
+            yield con.put(fill_rate)
+        else:
+            # Drop or just try to put? In legacy JS it waits via putQ if it exceeds capacity.
+            # SimPy Container put() blocks until there is enough capacity.
+            yield con.put(fill_rate)
+            
+        s["currentDepth"] -= 1
         s["entitiesOut"] += 1
         next_id = get_next_target(node_id)
         if next_id:
@@ -455,6 +554,19 @@ def tick_emitter(env, resources, total_arrived):
         recent = list(log_buffer)
         log_buffer.clear()
         
+        depth_map = {}
+        for nid, s in snap.items():
+            depth_map[nid] = s["currentDepth"]
+        total_wip = sum(depth_map.values())
+        
+        timeline_history.append({
+            "simTime": round(env.now, 2),
+            "completed": stats_total_completed(snap),
+            "arrived": total_arrived[0],
+            "wip": total_wip,
+            "depth": depth_map,
+        })
+        
         tick = {
             "type": "tick",
             "data": {
@@ -476,6 +588,7 @@ def stats_total_completed(snap):
 
 def run_simulation():
     env = simpy.Environment()
+    global resources
     resources = {}
     total_arrived = [0]
 
@@ -499,6 +612,14 @@ def run_simulation():
                 resources[nid] = simpy.FilterStore(env, capacity=c)
             else:
                 resources[nid] = simpy.Store(env, capacity=c)
+        elif n_type == "channel":
+            cap = cfg["params"].get("bufferCapacity", -1)
+            c = max(1, cap) if cap > 0 else float('inf')
+            resources[nid] = simpy.Store(env, capacity=c)
+        elif n_type == "container":
+            cap = cfg["params"].get("capacity", 1000)
+            init_level = cfg["params"].get("initialLevel", 0)
+            resources[nid] = simpy.Container(env, capacity=cap, init=init_level)
         elif n_type in ("event_trigger", "any_of", "all_of"):
             global_events[nid] = env.event()
 
@@ -511,7 +632,16 @@ def run_simulation():
     env.run(until=DURATION)
 
     snap = snapshot_stats(env)
-    remaining_logs = list(log_buffer)
+    
+    # Push final snapshot to timeline
+    depth_map = {nid: s["currentDepth"] for nid, s in snap.items()}
+    timeline_history.append({
+        "simTime": round(env.now, 2),
+        "completed": stats_total_completed(snap),
+        "arrived": total_arrived[0],
+        "wip": sum(depth_map.values()),
+        "depth": depth_map,
+    })
 
     bottleneck_id = ""
     bottleneck_label = ""
@@ -526,15 +656,15 @@ def run_simulation():
     result = {
         "type": "complete",
         "data": {
-            "simType": "human_queue", # Extracted correctly ideally, but fine for Bank Tellers
+            "simType": "human_queue",
             "totalSimTime": env.now,
             "totalArrived": total_arrived[0],
             "totalCompleted": stats_total_completed(snap),
             "bottleneckNodeId": bottleneck_id,
             "bottleneckLabel": bottleneck_label,
             "nodeStats": snap,
-            "timeline": [],
-            "logs": remaining_logs,
+            "timeline": timeline_history,
+            "logs": all_logs if all_logs else list(log_buffer),
         }
     }
     

@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { SimResult } from "@/lib/simulation/types";
 import { buildThroughputSeries, buildDepthSeries } from "@/lib/simulation/timelineSelectors";
+import { formatCompactNumber } from "../SimResultsPanel";
 
 const SERIES_COLORS = ["#6366F1", "#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#0EA5E9", "#EC4899"];
 
@@ -35,7 +36,7 @@ function SleekTimelineTooltip({ active, payload, label }: any) {
             {item.name}
           </span>
           <span className="font-black text-white tabular-nums">
-            {typeof item.value === "number" ? item.value.toFixed(1) : item.value}
+            {typeof item.value === "number" ? Math.round(item.value) : item.value}
           </span>
         </div>
       ))}
@@ -58,18 +59,9 @@ export default function TimelineTab({ result }: { result: SimResult }) {
     };
   }) || [];
 
-  if (throughput.length === 0 && wipSeries.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-        <TrendingUp size={36} className="mb-2 opacity-50" />
-        <p className="text-[14px] font-bold">No timeline telemetry recorded for this run.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* ── Active Items Inside vs Total Finished Over Time ── */}
+      {/* ── Active Workload Flow Curve ── */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -77,9 +69,9 @@ export default function TimelineTab({ result }: { result: SimResult }) {
       >
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <Activity size={18} className="text-[#5742FF]" />
+            <TrendingUp size={18} className="text-[#5742FF]" />
             <h3 className="text-[15px] font-black text-gray-900 tracking-tight">
-              Active Items Inside vs. Total Finished Over Time
+              Total In-Flight Load & Completion Rate
             </h3>
           </div>
           <span className="text-[11px] font-bold text-gray-400">Live Simulation Clock</span>
@@ -90,7 +82,7 @@ export default function TimelineTab({ result }: { result: SimResult }) {
 
         <div style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={(wipSeries.length > 0 ? wipSeries : throughput) as any[]} margin={{ top: 10, right: 15, bottom: 0, left: -25 }}>
+            <AreaChart data={(wipSeries.length > 0 ? wipSeries : throughput) as any[]} margin={{ top: 10, right: 15, bottom: 0, left: -5 }}>
               <defs>
                 <linearGradient id="wipGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#6366F1" stopOpacity={0.4} />
@@ -103,7 +95,15 @@ export default function TimelineTab({ result }: { result: SimResult }) {
               </defs>
               <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
               <XAxis dataKey="simTime" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
+              <YAxis
+                domain={[0, (dataMax: number) => (dataMax <= 4 ? Math.max(1, Math.ceil(dataMax)) : Math.ceil(dataMax * 1.1))]}
+                allowDecimals={false}
+                tickFormatter={formatCompactNumber}
+                width={40}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
+              />
               <Tooltip cursor={{ stroke: "#6366F1", strokeWidth: 1.5, strokeDasharray: "4 4" }} content={<SleekTimelineTooltip />} />
               <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
               <Area
@@ -149,10 +149,18 @@ export default function TimelineTab({ result }: { result: SimResult }) {
 
         <div style={{ height: 260 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={depthSeries} margin={{ top: 10, right: 15, bottom: 0, left: -25 }}>
+            <AreaChart data={depthSeries} margin={{ top: 10, right: 15, bottom: 0, left: -5 }}>
               <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
               <XAxis dataKey="simTime" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
+              <YAxis
+                domain={[0, (dataMax: number) => (dataMax <= 4 ? Math.max(1, Math.ceil(dataMax)) : Math.ceil(dataMax * 1.1))]}
+                allowDecimals={false}
+                tickFormatter={formatCompactNumber}
+                width={40}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
+              />
               <Tooltip cursor={{ stroke: "#8B5CF6", strokeWidth: 1.5, strokeDasharray: "4 4" }} content={<SleekTimelineTooltip />} />
               <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
               {nodeLabels.map((label, i) => (

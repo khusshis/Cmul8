@@ -47,8 +47,10 @@ TICK_INTERVAL = {TICK_INTERVAL}
 NODE_CONFIG = json.loads(r"""{NODE_CONFIG_JSON}""")
 EDGES = json.loads(r"""{EDGES_JSON}""")
 
-# ── Log Buffer ─────────────────────────────────────────────────────────────────
+# ── Log Buffer & History ────────────────────────────────────────────────────────
 log_buffer = []
+all_logs = []
+timeline_history = []
 entity_counter = [0]
 stats = {}
 active_processes_by_node = {}
@@ -58,14 +60,47 @@ def next_entity_id():
     entity_counter[0] += 1
     return entity_counter[0]
 
+# F-9: the old cap kept the FIRST 20000 log entries, i.e. a prefix of the run.
+# Every distribution statistic was therefore computed on the warm-up transient
+# (p99 came out ~15% low on a 10-hour run). We now reservoir-sample whole
+# ENTITIES instead -- whole, because a journey needs all of its events to be
+# reconstructable -- giving a uniform sample of the entire run at bounded memory.
+LOG_ENTITY_CAP = 4000
+sampled_logs = {}        # entityId -> [entries]
+sampled_order = []       # parallel list of entityIds, for O(1) random eviction
+entities_considered = [0]
+# Dedicated RNG so that logging never perturbs the simulation's random stream.
+log_rng = random.Random(987654321)
+
+def consider_entity_for_logging(eid):
+    entities_considered[0] += 1
+    if len(sampled_order) < LOG_ENTITY_CAP:
+        sampled_order.append(eid)
+        sampled_logs[eid] = []
+        return
+    j = log_rng.randrange(entities_considered[0])
+    if j < LOG_ENTITY_CAP:
+        del sampled_logs[sampled_order[j]]
+        sampled_order[j] = eid
+        sampled_logs[eid] = []
+
+def collect_sampled_logs():
+    out = [e for bucket in sampled_logs.values() for e in bucket]
+    out.sort(key=lambda x: x["simTime"])
+    return out
+
 def log_event(sim_time, entity_id, node_id, node_label, event):
-    log_buffer.append({
-        "simTime": sim_time,
+    entry = {
+        "simTime": round(sim_time, 2),
         "entityId": entity_id,
         "nodeId": node_id,
         "nodeLabel": node_label,
         "event": event
-    })
+    }
+    log_buffer.append(entry)
+    bucket = sampled_logs.get(entity_id)
+    if bucket is not None:
+        bucket.append(entry)
 
 # ── Distributions ──────────────────────────────────────────────────────────────
 def sample(dist_type, mean, std=None):
@@ -208,9 +243,11 @@ def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at):
     log_event(env.now, eid, node_id, label, "service_end")
     s["currentDepth"] -= 1
     s["entitiesOut"] += 1
-    next_id = get_next_target(node_id)
-    if next_id:
-        yield env.process(entity_process(env, eid, next_id, resources))
+    # F-5: do NOT route downstream from here. This generator runs inside the
+    # caller's "with res.request()" block, so recursing would keep the server
+    # seized for the entity's entire remaining journey (blocking-after-service).
+    # Hand the next hop back instead and let the caller release first.
+    return get_next_target(node_id)
 
 # ── SimPy Processes ────────────────────────────────────────────────────────────
 def entity_process(env, eid, node_id, resources, entity_attrs=None):
@@ -250,8 +287,16 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             
             queued_at = env.now
             res_s["entitiesIn"] += 1
-            res_s["currentDepth"] += 1
-            
+            # F-1/F-15: log the wait against the RESOURCE too. entity_process is
+            # never entered for a queue-fed resource, so without this the journey
+            # reconstructor never closes a step and every served entity reports a
+            # wait of zero.
+            log_event(queued_at, eid, res_node_id, res_cfg["label"], "queued")
+            # F-2: the queue node already counts this entity while it waits.
+            # Incrementing the resource depth here as well double-counts WIP and
+            # breaks Little's Law, so the resource is credited at service start.
+            next_after_service = None
+
             with res.request() as req:
                 if dist != "none":
                     if dist == "uniform":
@@ -271,18 +316,28 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
                     if req in results:
                         s["currentDepth"] -= 1
                         s["entitiesOut"] += 1
-                        yield env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                        res_s["currentDepth"] += 1
+                        svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                        yield svc
+                        next_after_service = svc.value
                     else:
                         log_event(env.now, eid, node_id, label, "reneged")
                         s["currentDepth"] -= 1
                         s["renegeCount"] = s.get("renegeCount", 0) + 1
-                        res_s["currentDepth"] -= 1
+                        res_s["entitiesIn"] -= 1
                         return
                 else:
                     yield req
                     s["currentDepth"] -= 1
                     s["entitiesOut"] += 1
-                    yield env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                    res_s["currentDepth"] += 1
+                    svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                    yield svc
+                    next_after_service = svc.value
+            # Server released here -- only now do we move downstream (F-5),
+            # carrying the entity attributes with us (F-11).
+            if next_after_service:
+                yield env.process(entity_process(env, eid, next_after_service, resources, entity_attrs))
         else:
             s["currentDepth"] -= 1
             s["entitiesOut"] += 1
@@ -293,9 +348,15 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
         res = resources[node_id]
         queued_at = env.now
         log_event(env.now, eid, node_id, label, "queued")
+        next_after_service = None
         with res.request() as req:
             yield req
-            yield env.process(do_resource_service(env, eid, node_id, cfg, s, resources, queued_at))
+            svc = env.process(do_resource_service(env, eid, node_id, cfg, s, resources, queued_at))
+            yield svc
+            next_after_service = svc.value
+        # Server released here before routing downstream (F-5).
+        if next_after_service:
+            yield env.process(entity_process(env, eid, next_after_service, resources, entity_attrs))
 
     elif node_type == "service":
         params = cfg["params"]
@@ -419,13 +480,18 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
         con = resources.get(node_id)
         fill_rate = params.get("fillRate", 1)
         
-        if con.level + fill_rate <= con.capacity:
-            yield con.put(fill_rate)
-        else:
-            # Drop or just try to put? In legacy JS it waits via putQ if it exceeds capacity.
-            # SimPy Container put() blocks until there is enough capacity.
-            yield con.put(fill_rate)
-            
+        # F-16: nothing in the graph ever drains a Container, so once it tops out
+        # con.put() blocks forever and every later entity is lost silently. The
+        # original branch was dead code -- both arms did the same put(). Drop on
+        # overflow instead, consistent with store/channel behaviour.
+        if con.level + fill_rate > con.capacity:
+            s["droppedCount"] += 1
+            s["entitiesOut"] += 1
+            s["currentDepth"] -= 1
+            log_event(env.now, eid, node_id, label, "dropped")
+            return
+        yield con.put(fill_rate)
+
         s["currentDepth"] -= 1
         s["entitiesOut"] += 1
         next_id = get_next_target(node_id)
@@ -494,6 +560,7 @@ def source_process(env, node_id, resources, total_arrived):
 
     def spawn_entity():
         eid = next_entity_id()
+        consider_entity_for_logging(eid)
         total_arrived[0] += 1
         # Attach attributes to entity (stored in a context dict for downstream use)
         entity_attrs = {
@@ -503,6 +570,11 @@ def source_process(env, node_id, resources, total_arrived):
             "arrivalTime": env.now,
         }
         log_event(env.now, eid, node_id, cfg["label"], "arrived")
+        # F-3: entity_process is never entered for the source itself, so its
+        # counters have to be maintained here or the node reports zero forever.
+        s_src = stats[node_id]
+        s_src["entitiesIn"] += 1
+        s_src["entitiesOut"] += 1
         targets = get_next_targets(node_id, routing_mode)
         for target_id in targets:
             env.process(entity_process(env, eid, target_id, resources, entity_attrs))
@@ -528,12 +600,21 @@ def source_process(env, node_id, resources, total_arrived):
                     count += 1
             if not schedule_recurring:
                 break
-            # For recurring, advance period by the last entry's simTime
-            last_period_offset += max(e["simTime"] for e in schedule)
+            # For recurring, advance period by the last entry's simTime.
+            # F-8: a period of zero never advances sim time, so the loop spins
+            # forever and env.run(until=...) can never stop it -- an unkillable
+            # tight loop inside the Web Worker. Stop instead of repeating.
+            period = max(e["simTime"] for e in schedule)
+            if period <= 0:
+                break
+            last_period_offset += period
     else:
         # ── Rate-based arrivals ──────────────────────────────────────────────
+        # F-7: a rate of zero means "this source is off", not "one per second".
+        if arrival_rate <= 0:
+            return
         while True:
-            inter_arrival = sample(distribution, 1.0 / arrival_rate if arrival_rate > 0 else 1.0)
+            inter_arrival = sample(distribution, 1.0 / arrival_rate)
             yield env.timeout(inter_arrival)
             if env.now > DURATION:
                 break
@@ -549,6 +630,19 @@ def tick_emitter(env, resources, total_arrived):
         recent = list(log_buffer)
         log_buffer.clear()
         
+        depth_map = {}
+        for nid, s in snap.items():
+            depth_map[nid] = s["currentDepth"]
+        total_wip = sum(depth_map.values())
+        
+        timeline_history.append({
+            "simTime": round(env.now, 2),
+            "completed": stats_total_completed(snap),
+            "arrived": total_arrived[0],
+            "wip": total_wip,
+            "depth": depth_map,
+        })
+        
         tick = {
             "type": "tick",
             "data": {
@@ -563,10 +657,10 @@ def tick_emitter(env, resources, total_arrived):
         emit_sim_tick(json.dumps(tick))
 
 def stats_total_completed(snap):
-    for nid, s in snap.items():
-        if NODE_CONFIG[nid]["nodeType"] == "sink":
-            return s["entitiesOut"]
-    return 0
+    # F-4: sum every sink. Returning the first one halves the reported output of
+    # any graph that fans out to more than one sink.
+    return sum(s["entitiesOut"] for nid, s in snap.items()
+               if NODE_CONFIG[nid]["nodeType"] == "sink")
 
 def run_simulation():
     env = simpy.Environment()
@@ -614,7 +708,16 @@ def run_simulation():
     env.run(until=DURATION)
 
     snap = snapshot_stats(env)
-    remaining_logs = list(log_buffer)
+    
+    # Push final snapshot to timeline
+    depth_map = {nid: s["currentDepth"] for nid, s in snap.items()}
+    timeline_history.append({
+        "simTime": round(env.now, 2),
+        "completed": stats_total_completed(snap),
+        "arrived": total_arrived[0],
+        "wip": sum(depth_map.values()),
+        "depth": depth_map,
+    })
 
     bottleneck_id = ""
     bottleneck_label = ""
@@ -629,15 +732,15 @@ def run_simulation():
     result = {
         "type": "complete",
         "data": {
-            "simType": "human_queue", # Extracted correctly ideally, but fine for Bank Tellers
+            "simType": "human_queue",
             "totalSimTime": env.now,
             "totalArrived": total_arrived[0],
             "totalCompleted": stats_total_completed(snap),
             "bottleneckNodeId": bottleneck_id,
             "bottleneckLabel": bottleneck_label,
             "nodeStats": snap,
-            "timeline": [],
-            "logs": remaining_logs,
+            "timeline": timeline_history,
+            "logs": collect_sampled_logs() or list(log_buffer),
         }
     }
     
