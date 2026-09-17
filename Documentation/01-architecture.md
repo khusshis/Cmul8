@@ -123,7 +123,4 @@ Each module has its own file in this folder, written as we build it:
 stays stable as we build. This file itself will be updated if the build order changes.)*
 
 ---
-Status: **Module 0 (scaffold) complete.** Next: Module 5 first in the *build sequence*
-(Simulation Engine is built before Auth/Dashboard because the Workspace depends on it —
-see roadmap message in chat), though it's numbered "05" here to match the synopsis's
-own module numbering, not the build order.
+Status: **Modules 1–8 functionally complete.** Modules 9–11 (Export & Share, Profile & Settings, Real-Time Collaboration) were built and integrated in the final Phase 3 pass.

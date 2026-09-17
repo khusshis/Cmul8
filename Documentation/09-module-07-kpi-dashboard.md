@@ -83,3 +83,19 @@ accounted for when Module 9 is built, rather than discovered mid-implementation.
 ## 7. Database tables touched
 None today (see Section 4's gap). Would touch `simulation_runs` if result
 persistence is added.
+
+## 8. Advanced Results Dashboard (this plan)
+
+### Purpose
+Surfaces data that the simulation engine already produces but the compact panel never showed (`timeline` and `logs`), providing a full-screen, high-fidelity analytical view of simulation runs. It is designed to look modern and animated without introducing unnecessary dependencies.
+
+### Files Owned
+- `src/components/workspace/AdvancedResultsDashboard.tsx`
+- `src/components/workspace/results-dashboard/` (OverviewTab, TimelineTab, BlocksTab, LogsTab)
+- `src/lib/hooks/useCountUp.ts`
+- `src/lib/simulation/timelineSelectors.ts`
+
+### Logic & Scaling Limits
+- **No new libraries**: Entirely built on existing `recharts` and `framer-motion` capabilities to prevent bundle bloat.
+- **Count-up animations**: `useCountUp` animates hero metrics across renders, maintaining a premium feel even during live updates.
+- **Log Pagination Limit**: The event log (LogsTab) intentionally uses a simple client-side "Load more" pager instead of virtualization to keep complexity low. This is a known, deliberate limit; virtualization (e.g. `react-window`) should only be considered if real usage regularly exceeds ~5,000 logs and the pager becomes a bad experience.

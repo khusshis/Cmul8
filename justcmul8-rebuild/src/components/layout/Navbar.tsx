@@ -206,21 +206,33 @@ export default function Navbar() {
                       {/* Links List */}
                       <div className="flex flex-col gap-1 mb-5 relative z-10">
                         {[
-                          { icon: User, title: "Profile Settings", sub: "Update your personal information" },
-                          { icon: Settings, title: "Account Settings", sub: "Manage your account preferences" },
-                          { icon: CreditCard, title: "Billing & Subscription", sub: "View invoices and payment methods" },
-                          { icon: HelpCircle, title: "Help & Support", sub: "Get help and view documentation" }
+                          { icon: User, title: "Profile Settings", sub: "Update your personal information", href: "/settings" },
+                          { icon: Settings, title: "Account Settings", sub: "Manage your account preferences", href: "/settings" },
+                          { icon: CreditCard, title: "Billing & Subscription", sub: "View invoices and payment methods", href: null },
+                          { icon: HelpCircle, title: "Help & Support", sub: "Get help and view documentation", href: null }
                         ].map((item, idx) => (
-                          <button key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group text-left">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:shadow-sm transition-all">
-                              <item.icon size={16} strokeWidth={2} />
-                            </div>
-                            <div className="flex-1">
-                              <h6 className="font-bold text-[#111827] text-[13px]">{item.title}</h6>
-                              <p className="text-[11px] text-gray-500">{item.sub}</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
-                          </button>
+                          item.href ? (
+                            <Link key={idx} href={item.href} onClick={() => setProfileOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group text-left">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                <item.icon size={16} strokeWidth={2} />
+                              </div>
+                              <div className="flex-1">
+                                <h6 className="font-bold text-[#111827] text-[13px]">{item.title}</h6>
+                                <p className="text-[11px] text-gray-500">{item.sub}</p>
+                              </div>
+                              <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+                            </Link>
+                          ) : (
+                            <button key={idx} disabled className="flex items-center gap-4 p-3 rounded-xl opacity-50 cursor-not-allowed text-left">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                <item.icon size={16} strokeWidth={2} />
+                              </div>
+                              <div className="flex-1">
+                                <h6 className="font-bold text-gray-500 text-[13px]">{item.title}</h6>
+                                <p className="text-[11px] text-gray-400">Coming soon</p>
+                              </div>
+                            </button>
+                          )
                         ))}
                       </div>
 

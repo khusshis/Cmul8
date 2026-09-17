@@ -4,10 +4,11 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, CheckCircle2, ArrowRight, FolderPlus, MoreVertical, Loader2 } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, CheckCircle2, ArrowRight, FolderPlus, MoreVertical, Loader2, Calendar, Users, Car, Droplet, Factory, Package, Radio, Box, BarChart3, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { getAllSimTypes } from "@/lib/simulation/simTypeRegistry";
+import { toast } from "@/components/ui/Toast";
 
 interface Project {
   id: string;
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
+  const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     loadData();
@@ -39,7 +41,15 @@ export default function DashboardPage() {
     // Listen for custom event from Navbar
     const handleOpenModal = () => setShowModal(true);
     window.addEventListener('open-new-sim-modal', handleOpenModal);
-    return () => window.removeEventListener('open-new-sim-modal', handleOpenModal);
+
+    // Close options dropdown on outside click
+    const handleOutsideClick = () => setMenuOpenId(null);
+    window.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('open-new-sim-modal', handleOpenModal);
+      window.removeEventListener('click', handleOutsideClick);
+    };
   }, []);
 
   async function loadData() {
@@ -70,10 +80,11 @@ export default function DashboardPage() {
     if (!error && data) {
       setShowModal(false);
       setNewName("");
+      toast.success("Simulation created successfully!", "Project Ready");
       router.push(`/dashboard/project/${data.id}`);
     } else {
       console.error("Supabase Error:", error);
-      alert("Failed to create project check console: " + (error?.message || JSON.stringify(error)));
+      toast.error(error?.message || "Failed to create project", "Creation Error");
     }
     setCreating(false);
   }
@@ -81,11 +92,12 @@ export default function DashboardPage() {
   async function deleteProject(id: string) {
     const { error } = await supabase.from("projects").delete().eq("id", id);
     if (error) {
-      alert("Failed to delete project: " + error.message);
+      toast.error("Failed to delete project: " + error.message);
       return;
     }
     setProjects((p) => p.filter((x) => x.id !== id));
     setDeleteId(null);
+    toast.success("Simulation deleted successfully");
   }
 
   async function renameProject(id: string) {
@@ -96,11 +108,12 @@ export default function DashboardPage() {
     
     const { error } = await supabase.from("projects").update({ name: renameValue.trim() }).eq("id", id);
     if (error) {
-      alert("Failed to rename project: " + error.message);
+      toast.error("Failed to rename project: " + error.message);
       return;
     }
     setProjects((p) => p.map((x) => x.id === id ? { ...x, name: renameValue.trim() } : x));
     setRenamingId(null);
+    toast.success("Simulation renamed successfully");
   }
 
   const getType = (id: string) => simTypes.find((t) => t.id === id) || simTypes[0];
@@ -158,16 +171,20 @@ export default function DashboardPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white/50 backdrop-blur-sm rounded-[24px] border border-gray-100 p-5 flex flex-col h-[260px] animate-pulse">
-                <div className="w-[52px] h-[52px] rounded-[16px] bg-gray-200/50 mb-5" />
-                <div className="flex-1 space-y-3">
-                  <div className="h-4 bg-gray-200/60 rounded-full w-3/4" />
-                  <div className="h-5 bg-gray-200/40 rounded-full w-1/3" />
+              <div key={i} className="bg-white/80 backdrop-blur-sm rounded-[22px] border border-gray-100 flex flex-col h-[340px] animate-pulse overflow-hidden shadow-sm">
+                <div className="h-[145px] bg-gradient-to-b from-gray-100/70 to-gray-50/50 flex items-center justify-center relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gray-200/60" />
                 </div>
-                <div className="h-3 bg-gray-100 rounded-full w-1/4 mt-5 mb-4" />
-                <div className="flex gap-2.5 mt-auto">
-                  <div className="h-9 bg-gray-200/50 rounded-[14px] flex-1" />
-                  <div className="w-9 h-9 bg-gray-100 rounded-[12px]" />
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200/70 rounded-full w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded-full w-1/2" />
+                  </div>
+                  <div className="w-full h-px bg-gray-100 my-2" />
+                  <div className="flex gap-2.5">
+                    <div className="h-10 bg-gray-200/50 rounded-xl flex-1" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -192,82 +209,171 @@ export default function DashboardPage() {
               const isRenaming = renamingId === proj.id;
               
               return (
-                <motion.div key={proj.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06, type: "spring", stiffness: 260, damping: 20 }}>
-                  <div className="bg-white rounded-[24px] shadow-[0_2px_16px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_-8px_rgba(87,66,255,0.15)] transition-all duration-300 overflow-hidden flex flex-col h-[340px] relative border border-gray-100/50">
+                <motion.div 
+                  key={proj.id} 
+                  initial={{ opacity: 0, y: 24 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  transition={{ delay: i * 0.05, type: "spring", stiffness: 260, damping: 20 }}
+                  className="h-full"
+                >
+                  <div className="group bg-white rounded-[22px] border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(87,66,255,0.14)] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col h-[340px] relative">
                     
-                    {/* Top Section with Wavy Background */}
-                    <div className="h-[130px] relative flex items-center justify-center shrink-0">
-                      {/* Gradient Background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#F5F3FF] to-[#EBE9FF]" />
-                      
-                      {/* Wavy SVG overlay cutting into the background */}
-                      <svg className="absolute bottom-0 left-0 w-full h-[50px] text-white" preserveAspectRatio="none" viewBox="0 0 1440 320" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                      </svg>
-                      
-                      {/* Dashboard 3D Icon */}
-                      <div className="relative z-10 w-24 h-24 mb-4 transform hover:scale-105 transition-transform duration-300">
-                        <img src={`/icons/${proj.sim_type}.png`} alt={type.label} className="w-full h-full object-contain mix-blend-multiply" />
+                    {/* Top Preview Banner — single artwork focal point */}
+                    <div 
+                      className="h-[145px] relative flex items-center justify-center shrink-0 border-b border-gray-100/70 overflow-hidden"
+                      style={{
+                        background: `radial-gradient(110% 120% at 50% 15%, ${type.color}14 0%, #fafbfc 75%)`,
+                      }}
+                    >
+                      {/* Subtle dot pattern grid */}
+                      <div 
+                        className="absolute inset-0 opacity-[0.45] pointer-events-none"
+                        style={{
+                          backgroundImage: "radial-gradient(#94a3b8 1px, transparent 1px)",
+                          backgroundSize: "14px 14px",
+                        }}
+                      />
+
+                      {/* Top Left: Category badge pill */}
+                      <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-gray-100 shadow-[0_2px_6px_rgba(0,0,0,0.03)]">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: type.color }} />
+                        <span className="text-[10px] font-extrabold tracking-wider uppercase text-gray-700">
+                          {type.label}
+                        </span>
                       </div>
 
-                      {/* Top Right Options */}
-                      <button className="absolute top-4 right-4 z-10 p-1.5 rounded-full text-gray-500 hover:bg-white/50 transition-colors">
-                        <MoreVertical size={18} strokeWidth={2.5} />
-                      </button>
+                      {/* Top Right: Options menu trigger */}
+                      <div className="absolute top-3.5 right-3.5 z-20">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId(menuOpenId === proj.id ? null : proj.id);
+                          }}
+                          className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-white/90 transition-all"
+                          title="More options"
+                        >
+                          <MoreVertical size={16} strokeWidth={2.5} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {menuOpenId === proj.id && (
+                          <div 
+                            className="absolute top-8 right-0 z-30 w-44 bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-gray-100 py-1.5 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => {
+                                setMenuOpenId(null);
+                                setRenamingId(proj.id);
+                                setRenameValue(proj.name);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-[#F5F3FF] hover:text-[#5742FF] transition-colors text-left"
+                            >
+                              <Edit2 size={14} /> Rename
+                            </button>
+                            <Link
+                              href={`/dashboard/project/${proj.id}`}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-[#F5F3FF] hover:text-[#5742FF] transition-colors text-left"
+                            >
+                              <ExternalLink size={14} /> Open Editor
+                            </Link>
+                            <div className="h-px bg-gray-100 my-1" />
+                            <button
+                              onClick={() => {
+                                setMenuOpenId(null);
+                                setDeleteId(proj.id);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors text-left"
+                            >
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Single 3D Simulation Graphic with hover scale */}
+                      <div className="relative z-10 w-20 h-20 flex items-center justify-center transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 ease-out">
+                        <img 
+                          src={`/icons/${proj.sim_type}.png`} 
+                          alt={type.label} 
+                          className="w-full h-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.08)] mix-blend-multiply" 
+                        />
+                      </div>
                     </div>
                     
-                    {/* Content Section */}
+                    {/* Content Section — NO duplicate icon */}
                     <div className="p-5 flex flex-col flex-1 bg-white relative z-10">
                       
-                      {/* Icon + Title */}
-                      <div className="flex items-start gap-3 mb-2">
-                        <div className="w-[42px] h-[42px] rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${type.color}15` }}>
-                          <img src={`/icons/${proj.sim_type}.png`} alt={type.label} className="w-6 h-6 object-contain mix-blend-multiply" />
+                      {/* Title row with inline rename */}
+                      {isRenaming ? (
+                        <div className="flex items-center gap-2 mb-1">
+                          <input 
+                            autoFocus
+                            className="w-full px-2.5 py-1 text-sm font-bold border-2 rounded-lg focus:outline-none focus:border-[#5742FF] transition-colors bg-gray-50 text-gray-900"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && renameProject(proj.id)}
+                            onBlur={() => renameProject(proj.id)}
+                          />
+                          <button onClick={() => renameProject(proj.id)} className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0">
+                            <Check size={16} strokeWidth={2.5} />
+                          </button>
                         </div>
-                        <div className="flex-1 overflow-hidden min-w-0">
-                          {isRenaming ? (
-                            <div className="flex items-center gap-2 mb-1">
-                              <input 
-                                autoFocus
-                                className="w-full px-2 py-1 text-sm border-2 rounded-lg focus:outline-none focus:border-[#5742FF] transition-colors bg-gray-50"
-                                value={renameValue}
-                                onChange={(e) => setRenameValue(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && renameProject(proj.id)}
-                                onBlur={() => renameProject(proj.id)}
-                              />
-                              <button onClick={() => renameProject(proj.id)} className="text-green-500 hover:text-green-600 transition-colors shrink-0">
-                                <Check size={16} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between group/title mb-1">
-                              <h3 className="font-extrabold text-[17px] text-[#111827] truncate tracking-[-0.02em]">{proj.name}</h3>
-                              <button onClick={() => { setRenamingId(proj.id); setRenameValue(proj.name); }} className="opacity-0 group-hover/title:opacity-100 transition-all p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 shrink-0">
-                                <Edit2 size={13} />
-                              </button>
-                            </div>
-                          )}
-                          <span className="inline-block text-[10px] px-2 py-0.5 rounded font-extrabold tracking-wider uppercase bg-[#F5F3FF] text-[#5742FF]">
-                            {type.label}
-                          </span>
+                      ) : (
+                        <div className="flex items-center justify-between group/title mb-1.5">
+                          <Link 
+                            href={`/dashboard/project/${proj.id}`} 
+                            className="font-extrabold text-[17px] text-[#111827] truncate tracking-[-0.02em] hover:text-[#5742FF] transition-colors"
+                            title={proj.name}
+                          >
+                            {proj.name}
+                          </Link>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation();
+                              setRenamingId(proj.id); 
+                              setRenameValue(proj.name); 
+                            }} 
+                            className="opacity-0 group-hover/title:opacity-100 transition-all p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-700 shrink-0 ml-1"
+                            title="Rename simulation"
+                          >
+                            <Edit2 size={13} strokeWidth={2.5} />
+                          </button>
                         </div>
-                      </div>
-                      
-                      {/* Date */}
-                      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-400 mt-2">
-                        <Clock size={13} strokeWidth={2.5} />
-                        {new Date(proj.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      )}
+
+                      {/* Metadata Row */}
+                      <div className="flex items-center justify-between text-[12px] font-semibold text-gray-400 mt-1">
+                        <span className="flex items-center gap-1.5">
+                          <Clock size={13} strokeWidth={2} />
+                          {new Date(proj.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100/60">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Ready
+                        </span>
                       </div>
 
                       <div className="w-full h-px bg-gray-100 my-4" />
                       
-                      {/* Actions */}
-                      <div className="flex gap-3 mt-auto">
-                        <Link href={`/dashboard/project/${proj.id}`} className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-[14px] text-[14px] font-bold text-[#5742FF] border border-[#5742FF] bg-[#F8F7FF] hover:bg-[#F5F3FF] transition-all duration-300">
-                          <ExternalLink size={16} strokeWidth={2.5} /> Open
+                      {/* Bottom Actions Row */}
+                      <div className="flex items-center gap-2.5 mt-auto">
+                        <Link 
+                          href={`/dashboard/project/${proj.id}`} 
+                          className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-[12px] text-[13.5px] font-bold text-[#5742FF] bg-[#F8F7FF] hover:bg-[#5742FF] hover:text-white border border-[#EBE9FF] hover:border-[#5742FF] transition-all duration-200 shadow-sm group/btn"
+                        >
+                          <span>Open</span>
+                          <ArrowRight size={15} strokeWidth={2.5} className="group-hover/btn:translate-x-0.5 transition-transform" />
                         </Link>
-                        <button onClick={() => setDeleteId(proj.id)} className="flex items-center justify-center w-[46px] h-[46px] rounded-[14px] border border-gray-200 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all duration-300 shrink-0">
-                          <Trash2 size={18} strokeWidth={2.5} />
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(proj.id);
+                          }} 
+                          className="flex items-center justify-center w-[40px] h-[40px] rounded-[12px] border border-gray-200/80 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all duration-200 shrink-0"
+                          title="Delete simulation"
+                        >
+                          <Trash2 size={16} strokeWidth={2} />
                         </button>
                       </div>
                     </div>
@@ -278,18 +384,26 @@ export default function DashboardPage() {
 
             {/* Create New Simulation Card */}
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: projects.length * 0.06, type: "spring", stiffness: 260, damping: 20 }}>
-              <div className="w-full h-[340px] rounded-[24px] border-2 border-dashed border-[#E5E0FF] bg-white flex flex-col items-center justify-center p-6 relative">
-                <div className="w-16 h-16 rounded-full border border-[#E5E0FF] bg-white text-[#5742FF] flex items-center justify-center mb-6 shadow-sm">
-                  <Plus size={24} strokeWidth={2.5} />
+              <div 
+                onClick={() => setShowModal(true)}
+                className="w-full h-[340px] rounded-[22px] border-2 border-dashed border-indigo-200/90 bg-white/70 hover:bg-white hover:border-[#5742FF] flex flex-col items-center justify-center p-6 relative transition-all duration-300 group hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,0.12)] hover:-translate-y-1.5 cursor-pointer text-center"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-[#F5F3FF] text-[#5742FF] flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-[#5742FF] group-hover:text-white transition-all duration-300 shadow-inner">
+                  <Plus size={28} strokeWidth={2.5} />
                 </div>
-                <h3 className="font-extrabold text-[18px] text-[#111827] mb-2">Create New Simulation</h3>
-                <p className="text-[13px] text-gray-500 text-center mb-6 max-w-[200px] leading-relaxed">
-                  Start building your next simulation project.
+                <h3 className="font-extrabold text-[18px] text-[#111827] mb-1.5 group-hover:text-[#5742FF] transition-colors">
+                  Create New Simulation
+                </h3>
+                <p className="text-[13px] text-gray-500 max-w-[200px] leading-relaxed mb-6">
+                  Start building your next simulation model from scratch.
                 </p>
-                <button onClick={() => setShowModal(true)} className="px-5 py-2.5 rounded-full text-white text-[13px] font-bold shadow-md hover:shadow-lg transition-shadow flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #5742FF, #4531E5)" }}>
+                <span 
+                  className="px-5 py-2.5 rounded-xl text-white text-[13px] font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 group-hover:scale-[1.02] active:scale-[0.98]" 
+                  style={{ background: "linear-gradient(135deg, #5742FF, #4531E5)" }}
+                >
                   <Plus size={16} strokeWidth={2.5} />
                   New Simulation
-                </button>
+                </span>
               </div>
             </motion.div>
           </div>
@@ -299,38 +413,71 @@ export default function DashboardPage() {
       {/* Create Modal */}
       <AnimatePresence>
         {showModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white w-full max-w-xl rounded-[24px] shadow-2xl relative flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.96, opacity: 0, y: 14 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.96, opacity: 0, y: 14 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white w-full max-w-[1020px] rounded-[28px] shadow-[0_24px_70px_-12px_rgba(0,0,0,0.22)] relative p-7 sm:p-9 md:p-10 max-h-[92vh] overflow-y-auto custom-scrollbar"
+              onClick={(e) => e.stopPropagation()}
+            >
               
               {/* Close Button */}
-              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 md:top-5 md:right-5 p-1.5 rounded-xl bg-indigo-50 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600 transition-colors z-20">
+              <button 
+                onClick={() => setShowModal(false)} 
+                className="absolute top-6 right-6 p-2 rounded-xl bg-gray-100/70 hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors z-20"
+                title="Close"
+              >
                 <X size={18} strokeWidth={2.5} />
               </button>
 
-              <div className="p-5 md:p-7 pb-0 md:pb-0 overflow-y-auto custom-scrollbar flex-1">
-                {/* Header */}
-                <div className="flex items-center gap-1 mb-5 md:mb-6 -ml-2">
-                  <img src="/logo-transparent.png" alt="Logo" className="w-14 h-14 md:w-16 md:h-16 object-contain scale-[1.35]" />
-                  <div className="-ml-1 md:-ml-2">
-                    <h2 className="font-bold text-xl md:text-2xl text-[#111827] tracking-tight">New Simulation</h2>
-                    <p className="text-[#6B7280] text-[13px] md:text-[14px]">Create a new simulation project</p>
+              {/* Main 2-Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+                
+                {/* ── Left Column: Form Steps (7 cols) ── */}
+                <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                  
+                  {/* Header */}
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50/80 border border-indigo-100/60 flex items-center justify-center text-[#5742FF] shadow-sm shrink-0">
+                      <Box size={24} strokeWidth={2.2} />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-[22px] md:text-[24px] text-[#111827] tracking-tight">
+                        New Simulation
+                      </h2>
+                      <p className="text-[#6B7280] text-[13.5px]">
+                        Create a new simulation project to model, analyze and optimize.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Form Content */}
-                <div className="space-y-6 mb-6">
+                  {/* Step 1: Project Name */}
                   <div>
-                    <label className="block text-[14px] font-bold text-[#111827] mb-2">Project Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400">
-                        <FolderPlus size={16} />
+                    <div className="flex items-start gap-2.5 mb-2.5">
+                      <span className="w-6 h-6 rounded-full bg-indigo-50 text-[#5742FF] font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">
+                        1
+                      </span>
+                      <div>
+                        <h3 className="text-[14.5px] font-bold text-[#111827]">Project Name</h3>
+                        <p className="text-[12.5px] text-gray-400">Give your simulation a clear and descriptive name.</p>
+                      </div>
+                    </div>
+
+                    <div className="relative mt-2">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <Calendar size={17} />
                       </div>
                       <input 
                         autoFocus 
-                        className="w-full pl-12 pr-4 py-3 border-2 rounded-full focus:outline-none focus:ring-0 focus:border-[#5742FF] text-[#111827] placeholder-gray-400 font-medium transition-colors border-[#E5E0FF] text-sm" 
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5742FF]/15 focus:border-[#5742FF] text-[#111827] placeholder-gray-400 font-medium transition-all text-sm shadow-sm" 
                         value={newName} 
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="e.g. Bank Teller Optimization" 
@@ -339,39 +486,96 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
+                  {/* Step 2: Simulation Domain */}
                   <div>
-                    <div className="mb-3">
-                      <label className="block text-[14px] font-bold text-[#111827] mb-0.5">Simulation Domain</label>
-                      <p className="text-[13px] text-[#6B7280]">Select the domain that best matches your simulation.</p>
+                    <div className="flex items-start gap-2.5 mb-2.5">
+                      <span className="w-6 h-6 rounded-full bg-indigo-50 text-[#5742FF] font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">
+                        2
+                      </span>
+                      <div>
+                        <h3 className="text-[14.5px] font-bold text-[#111827]">Simulation Domain</h3>
+                        <p className="text-[12.5px] text-gray-400">Select the domain that best matches your simulation.</p>
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+                    <div className="grid grid-cols-3 gap-2.5 mt-2.5">
                       {[
-                        { id: "human_queue" as const, label: "HUMAN QUEUE", sub: "People, lines, service systems" },
-                        { id: "vehicle" as const, label: "VEHICLE", sub: "Traffic, vehicles, transport systems" },
-                        { id: "liquid" as const, label: "LIQUID / MATERIAL", sub: "Flow of liquids or materials" },
-                        { id: "manufacturing" as const, label: "MANUFACTURING", sub: "Production lines, machines, operations" },
-                        { id: "logistics" as const, label: "LOGISTICS", sub: "Warehousing, supply chain, distribution" },
-                        { id: "network_signal" as const, label: "NETWORK / SIGNAL", sub: "Networks, signals, communication" }
+                        { 
+                          id: "human_queue" as const, 
+                          label: "HUMAN QUEUE", 
+                          sub: "People, lines, service systems",
+                          icon: Users,
+                          bg: "bg-indigo-50",
+                          text: "text-indigo-600"
+                        },
+                        { 
+                          id: "vehicle" as const, 
+                          label: "VEHICLE", 
+                          sub: "Traffic, vehicles, transport systems",
+                          icon: Car,
+                          bg: "bg-red-50",
+                          text: "text-red-500"
+                        },
+                        { 
+                          id: "liquid" as const, 
+                          label: "LIQUID / MATERIAL", 
+                          sub: "Flow of liquids or materials",
+                          icon: Droplet,
+                          bg: "bg-blue-50",
+                          text: "text-blue-500"
+                        },
+                        { 
+                          id: "manufacturing" as const, 
+                          label: "MANUFACTURING", 
+                          sub: "Production lines, machines, operations",
+                          icon: Factory,
+                          bg: "bg-emerald-50",
+                          text: "text-emerald-600"
+                        },
+                        { 
+                          id: "logistics" as const, 
+                          label: "LOGISTICS", 
+                          sub: "Warehousing, supply chain, distribution",
+                          icon: Package,
+                          bg: "bg-orange-50",
+                          text: "text-orange-500"
+                        },
+                        { 
+                          id: "network_signal" as const, 
+                          label: "NETWORK / SIGNAL", 
+                          sub: "Networks, signals, communication",
+                          icon: Radio,
+                          bg: "bg-purple-50",
+                          text: "text-purple-600"
+                        }
                       ].map((type) => {
                         const isSelected = newType === type.id;
+                        const IconComponent = type.icon;
+
                         return (
                           <button 
                             key={type.id} 
                             onClick={() => setNewType(type.id)}
-                            className={`relative flex flex-col items-center justify-center p-4 rounded-[16px] transition-all border-2 text-center h-full min-h-[120px]
-                              ${isSelected ? "border-[#5742FF] bg-[#F8F7FF]" : "border-gray-100 hover:border-gray-200 bg-white"}`}
+                            className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl transition-all border text-center min-h-[140px]
+                              ${isSelected 
+                                ? "border-2 border-[#5742FF] bg-[#F8F7FF] shadow-sm" 
+                                : "border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50/50"}`}
                           >
                             {isSelected && (
-                              <div className="absolute top-2 right-2 text-[#5742FF] bg-white rounded-full">
-                                <CheckCircle2 size={16} fill="#5742FF" className="text-white" />
+                              <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-[#5742FF] text-white flex items-center justify-center shadow-sm">
+                                <Check size={11} strokeWidth={3} />
                               </div>
                             )}
-                            <img src={`/icons/${type.id}.png`} alt={type.label} className="w-14 h-14 md:w-16 md:h-16 object-contain mb-2 mix-blend-multiply brightness-105 contrast-110" />
-                            <div className={`text-[12px] font-bold tracking-wide mb-1 ${isSelected ? "text-[#111827]" : "text-[#374151]"}`}>
+                            
+                            {/* Icon Squircle */}
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2.5 ${type.bg} ${type.text}`}>
+                              <IconComponent size={22} strokeWidth={2.2} />
+                            </div>
+
+                            <div className="text-[11px] font-extrabold tracking-wider text-[#111827] uppercase mb-1">
                               {type.label}
                             </div>
-                            <div className="text-[11px] text-[#6B7280] leading-tight px-1">
+                            <div className="text-[10px] text-gray-500 leading-tight px-0.5">
                               {type.sub}
                             </div>
                           </button>
@@ -380,19 +584,117 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* ── Right Column: Info & 3D Layer Showcase (5 cols) ── */}
+                <div className="lg:col-span-5 lg:border-l lg:border-gray-100 lg:pl-8 flex flex-col justify-between pt-2 lg:pt-0">
+                  <div>
+                    <span className="text-[10.5px] font-extrabold tracking-[0.16em] uppercase text-[#5742FF] block mb-1.5">
+                      SIMULATE SMARTER
+                    </span>
+                    <h3 className="text-[22px] font-bold text-[#111827] leading-tight tracking-tight mb-2">
+                      Turn your ideas <br className="hidden sm:block" />into insights.
+                    </h3>
+                    <p className="text-[13px] text-gray-500 leading-relaxed mb-4">
+                      Build, analyze, and optimize real-world systems with powerful simulation tools.
+                    </p>
+
+                    {/* Isometric Floating Glass Layers Illustration */}
+                    <div className="relative w-full h-[155px] flex flex-col items-center justify-center my-3 overflow-hidden rounded-2xl bg-gradient-to-b from-[#FAF8FF] to-[#F3EFFF] border border-indigo-50">
+                      {/* Ambient Grid Dots */}
+                      <div 
+                        className="absolute inset-0 opacity-[0.35] pointer-events-none"
+                        style={{
+                          backgroundImage: "radial-gradient(#8b5cf6 1px, transparent 1px)",
+                          backgroundSize: "14px 14px",
+                        }}
+                      />
+
+                      {/* 3D Stacked Layers */}
+                      <div className="relative w-44 h-16 flex items-center justify-center mb-1">
+                        {/* Top-right Floating Analytics Pill */}
+                        <div className="absolute -top-2 right-1 z-30 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/95 shadow-[0_4px_14px_rgba(87,66,255,0.18)] border border-indigo-100/90">
+                          <span className="text-[10px] font-black text-[#5742FF]">E</span>
+                          <BarChart3 size={13} strokeWidth={2.5} className="text-[#5742FF]" />
+                        </div>
+
+                        {/* Layer 3: Bottom colored base */}
+                        <div 
+                          className="absolute w-28 h-12 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] opacity-90 shadow-[0_8px_20px_rgba(99,102,241,0.28)]"
+                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(0px)" }}
+                        />
+                        {/* Layer 2: Middle frosted layer */}
+                        <div 
+                          className="absolute w-28 h-12 rounded-xl bg-white/80 backdrop-blur-md border border-white shadow-[0_6px_18px_rgba(99,102,241,0.15)]"
+                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(16px)" }}
+                        />
+                        {/* Layer 1: Top glass layer */}
+                        <div 
+                          className="absolute w-28 h-12 rounded-xl bg-white/95 backdrop-blur-md border border-indigo-100 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(32px)" }}
+                        />
+                      </div>
+
+                      {/* Model → Analyze → Optimize pill */}
+                      <div className="relative z-10 px-3 py-0.5 rounded-full bg-white/95 border border-indigo-100 shadow-sm text-[10.5px] font-semibold text-[#5742FF]">
+                        Model → Analyze → Optimize
+                      </div>
+                    </div>
+
+                    {/* 3 Value Propositions */}
+                    <div className="space-y-3.5 mt-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
+                          <BarChart3 size={16} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <h4 className="text-[13px] font-bold text-[#111827]">Make better decisions</h4>
+                          <p className="text-[11.5px] text-gray-400 leading-tight">Test ideas before real-world implementation.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
+                          <Clock size={16} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <h4 className="text-[13px] font-bold text-[#111827]">Save time & resources</h4>
+                          <p className="text-[11.5px] text-gray-400 leading-tight">Identify bottlenecks and optimize processes.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
+                          <Shield size={16} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <h4 className="text-[13px] font-bold text-[#111827]">Built for innovators</h4>
+                          <p className="text-[11.5px] text-gray-400 leading-tight">Flexible, powerful, and easy to use.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Bottom Attached Button */}
-              <button 
-                onClick={createProject} 
-                disabled={creating || !newName.trim()} 
-                className="w-full flex items-center justify-center py-4 rounded-t-none rounded-b-[24px] text-white font-semibold transition-all disabled:opacity-80 disabled:cursor-not-allowed bg-gradient-to-r from-[#5742FF] to-[#4531E5] hover:brightness-110 shrink-0"
-              >
-                <span className="text-[16px] tracking-wide flex items-center gap-2">
-                  {creating && <Loader2 size={18} className="animate-spin text-white/90" />}
-                  {creating ? "Creating Project..." : "Create Project"}
-                </span>
-              </button>
+              {/* Bottom Actions Bar */}
+              <div className="pt-6 mt-8 border-t border-gray-100 flex items-center justify-between">
+                <button 
+                  onClick={() => setShowModal(false)} 
+                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-[13.5px] hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={createProject} 
+                  disabled={creating || !newName.trim()} 
+                  className="px-7 py-2.5 rounded-xl text-white font-bold text-[13.5px] flex items-center gap-2 transition-all bg-[#5742FF] hover:bg-[#4531E5] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-[0_4px_16px_rgba(87,66,255,0.35)] active:scale-[0.99]"
+                >
+                  {creating && <Loader2 size={16} className="animate-spin" />}
+                  <span>Create Project</span>
+                  <ArrowRight size={15} strokeWidth={2.5} />
+                </button>
+              </div>
+
             </motion.div>
           </motion.div>
         )}

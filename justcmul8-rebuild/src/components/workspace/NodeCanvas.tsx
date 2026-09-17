@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, createContext, useContext, useRef, useEffect } from "react";
+import React, { useState, useCallback, createContext, useContext, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   ReactFlow, ReactFlowProvider,
   Background, Controls, MiniMap, addEdge, useReactFlow,
@@ -9,8 +9,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
-import type { SimTick, NodeStats } from "@/lib/simulation/types";
-import { AlertCircle } from "lucide-react";
+import type { SimTick, NodeStats, NodeType } from "@/lib/simulation/types";
+import { AlertCircle, X } from "lucide-react";
 import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 
 // ─── Live Stats Context ───────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ const LiveStatsContext = createContext<{
 }>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set(), simType: "human_queue" });
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
-const NODE_BASE_COLORS: Record<string, string> = {
+export const NODE_BASE_COLORS: Record<string, string> = {
   source:           "var(--color-node-source)",
   queue:            "var(--color-node-queue)",
   resource:         "var(--color-node-resource)",
@@ -87,7 +87,8 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
 
   // Get edge color dynamically based on the source node type!
   const sourceNode = getNode(source);
-  const edgeColor = NODE_BASE_COLORS[sourceNode?.data?.nodeType] || "var(--color-info)";
+  const nodeType = (sourceNode?.data?.nodeType || "source") as NodeType;
+  const edgeColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
 
   return (
     <>
@@ -157,13 +158,91 @@ function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
   };
 }
 
+// ─── Non-Technical Plain English Block Summary Formatter ─────────────
+function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any> = {}): string {
+  switch (nodeType) {
+    case "source": {
+      if (params.schedule && Array.isArray(params.schedule) && params.schedule.length > 0) {
+        return `📅 ${params.schedule.length} scheduled waves`;
+      }
+      const rate = params.arrivalRate ?? 1;
+      const dist =
+        params.distribution === "deterministic"
+          ? "Fixed"
+          : params.distribution === "poisson"
+          ? "Bursts"
+          : params.distribution === "normal"
+          ? "Average"
+          : "Random";
+      return `${rate}/sec • ${dist} flow`;
+    }
+    case "queue": {
+      const cap =
+        params.capacity === undefined || params.capacity === -1 || params.capacity === ""
+          ? "Infinite line"
+          : `Max ${params.capacity} in line`;
+      const disc =
+        params.discipline === "PRIORITY"
+          ? "VIP first"
+          : params.discipline === "LIFO"
+          ? "Stack order"
+          : "First come";
+      return `${cap} • ${disc}`;
+    }
+    case "resource":
+    case "priority_resource": {
+      const cap = params.capacity ?? 1;
+      const dur = params.serviceTimeMean ?? 1;
+      const servers = cap === 1 ? "1 counter" : `${cap} counters`;
+      return `${servers} • ~${dur}s avg`;
+    }
+    case "service": {
+      const dur = params.durationMean ?? 1;
+      return `Processing ~${dur}s avg`;
+    }
+    case "decision": {
+      const routesCount = params.routes?.length ?? 0;
+      return routesCount > 0 ? `${routesCount} split paths` : "Branch router";
+    }
+    case "sink": {
+      return "Exit & final score";
+    }
+    case "store": {
+      const cap = params.capacity ?? -1;
+      return cap === -1 ? "Infinite storage" : `Max ${cap} items`;
+    }
+    case "container": {
+      return `Capacity: ${params.capacity ?? 100} units`;
+    }
+    case "channel": {
+      return "Transfer transit link";
+    }
+    case "broadcaster": {
+      return "Multi-broadcast hub";
+    }
+    default: {
+      const entries = Object.entries(params || {}).filter(([k]) => !k.startsWith("_"));
+      if (entries.length === 0) return "Ready to configure";
+      return entries.slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(", ");
+    }
+  }
+}
+
 // ─── SimNode ────────────────────────────────────────────────────────────────
 function SimNode({ data, selected, id }: { data: any; selected: boolean; id: string }) {
+  const [showDeleteBtn, setShowDeleteBtn] = useState(false);
+  const { setNodes, setEdges } = useReactFlow();
   const { stats, bottleneckId, simState, connectedHandles, simType } = useContext(LiveStatsContext);
   const nodeType = data.nodeType;
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
+
+  useEffect(() => {
+    if (!selected) {
+      setShowDeleteBtn(false);
+    }
+  }, [selected]);
 
   const simConfig = (SIM_TYPE_REGISTRY as any)[simType] || SIM_TYPE_REGISTRY.human_queue;
   const paletteDef = simConfig.paletteNodes?.find((n: any) => n.type === nodeType);
@@ -198,11 +277,33 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   return (
     <div
-      className={`relative w-[170px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center z-10 transition-all select-none ${selected ? 'scale-105 shadow-lg border-gray-300' : 'hover:shadow-md'}`}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        setShowDeleteBtn((prev) => !prev);
+      }}
+      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center z-10 transition-all select-none cursor-pointer ${
+        selected ? "scale-105 shadow-lg border-gray-300 ring-2 ring-indigo-500/20" : "hover:shadow-md"
+      }`}
       style={{
         borderLeftColor: baseColor,
       }}
     >
+      {/* ── Circular Red X Delete Button on Double-Click ── */}
+      {showDeleteBtn && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setNodes((nds) => nds.filter((n) => n.id !== id));
+            setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+          }}
+          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-115 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
+          title="Delete block"
+        >
+          <X size={12} strokeWidth={3} />
+        </button>
+      )}
+
       {/* ── Target Handle (left) ── */}
       {!isSource && (
         <Handle
@@ -224,7 +325,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
       )}
 
       {/* Bottleneck badge (Post-run) */}
-      {isBottleneck && (
+      {isBottleneck && !showDeleteBtn && (
         <div className="absolute -top-2 -right-2 bg-error text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm animate-pulse z-20">
           <AlertCircle size={12} strokeWidth={3} />
         </div>
@@ -237,19 +338,17 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         })()}
       </div>
       <div className="pointer-events-none min-w-0 flex-1">
-        <h5 className="text-[11px] font-bold text-gray-900 leading-tight truncate">{data.label}</h5>
+        <h5 className="text-[11.5px] font-bold text-gray-900 leading-tight truncate">{data.label}</h5>
         
         {/* Static params or live stats */}
         {statsBadge ? (
-          <p className="text-[9px] mt-0.5 truncate" style={{ color: !isDimmed ? statusColor : 'var(--color-text-secondary)' }}>
+          <p className="text-[9.5px] font-semibold mt-0.5 truncate" style={{ color: !isDimmed ? statusColor : "var(--color-text-secondary)" }}>
             {statsBadge}
           </p>
-        ) : data.params && Object.keys(data.params).length > 0 ? (
-          <p className="text-[9px] text-gray-500 mt-0.5 leading-tight truncate">
-            {Object.entries(data.params || {}).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(", ")}
-          </p>
         ) : (
-          <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">Double-click to config</p>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 leading-tight truncate">
+            {formatNodeFriendlySubtext(nodeType, data.params)}
+          </p>
         )}
       </div>
     </div>
@@ -327,19 +426,50 @@ export interface NodeCanvasProps {
   simType?: string;
   simTick?: SimTick | null;
   bottleneckNodeId?: string;
+  readOnly?: boolean;
 }
 
 const getMiniMapNodeColor = (n: Node) => NODE_BASE_COLORS[(n.data as any)?.nodeType] || "var(--color-info)";
+
+export interface NodeCanvasHandle {
+  addNode: (nodeType: string) => void;
+}
 
 // Inner canvas with access to useReactFlow
 function NodeCanvasInner({
   nodes, edges, onNodesChange, onEdgesChange,
   selectedNodeId, onSelectNode, simState, simType, simTick, bottleneckNodeId = "",
-}: NodeCanvasProps) {
+  exposedRef, readOnly = false,
+}: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
   const { fitView, setNodes, setEdges } = useReactFlow();
   const prevNodeCountRef = useRef(0);
+
+  useImperativeHandle(exposedRef, () => ({
+    addNode: (nodeType: string) => {
+      if (!reactFlowInstance) return;
+      const viewport = reactFlowInstance.getViewport();
+      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+      const centerScreen = {
+        x: (bounds?.width ?? 800) / 2,
+        y: (bounds?.height ?? 600) / 2,
+      };
+      const position = reactFlowInstance.screenToFlowPosition(centerScreen);
+      const maxId = nodes.reduce((max, n) => {
+        const match = n.id.match(/\d+/);
+        return match ? Math.max(max, parseInt(match[0], 10)) : max;
+      }, 0);
+      const newNodeId = `node_${Math.max(nodeIdCounter++, maxId + 1)}`;
+      const newNode: Node = {
+        id: newNodeId,
+        type: "simNode",
+        position: { x: position.x + Math.random() * 40 - 20, y: position.y + Math.random() * 40 - 20 },
+        data: { label: (NODE_LABELS as any)[nodeType] || nodeType, nodeType, params: {} },
+      };
+      onNodesChange([{ type: "add", item: newNode }]);
+    },
+  }), [reactFlowInstance, nodes, onNodesChange]);
 
   // Selection state is synced natively by ReactFlow's onNodesChange and applyNodeChanges
 
@@ -358,6 +488,7 @@ function NodeCanvasInner({
   }, [onSelectNode]);
 
   const onConnect = useCallback((params: Connection) => {
+    if (readOnly) return;
     const newEdge = {
       ...params,
       id: `e_${params.source}-${params.target}-${Date.now()}`,
@@ -372,6 +503,7 @@ function NodeCanvasInner({
   }, []);
 
   const onDrop = useCallback((e: React.DragEvent) => {
+    if (readOnly) return;
     e.preventDefault();
     const nodeType = e.dataTransfer.getData("application/reactflow");
     if (!nodeType || !reactFlowInstance) return;
@@ -394,7 +526,7 @@ function NodeCanvasInner({
       type: "simNode",
       position,
       data: {
-        label: NODE_LABELS[nodeType] || nodeType,
+        label: (NODE_LABELS as any)[nodeType] || nodeType,
         nodeType,
         params: {},
       },
@@ -454,6 +586,9 @@ function NodeCanvasInner({
           edgeTypes={edgeTypes}
           defaultEdgeOptions={{ type: "simEdge" }}
           connectionLineStyle={connectionLineStyle}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
           fitView
           deleteKeyCode="Delete"
         >
@@ -470,10 +605,11 @@ function NodeCanvasInner({
   );
 }
 
-export default function NodeCanvas(props: NodeCanvasProps) {
+const NodeCanvas = forwardRef<NodeCanvasHandle, NodeCanvasProps>(function NodeCanvas(props, ref) {
   return (
     <ReactFlowProvider>
-      <NodeCanvasInner {...props} />
+      <NodeCanvasInner {...props} exposedRef={ref} />
     </ReactFlowProvider>
   );
-}
+});
+export default NodeCanvas;

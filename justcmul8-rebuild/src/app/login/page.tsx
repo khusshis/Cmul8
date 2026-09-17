@@ -31,7 +31,7 @@ function LoginPageInner() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
   };
 
   async function handleLogin(e: React.FormEvent) {
@@ -78,7 +78,7 @@ function LoginPageInner() {
             className="relative z-10 flex-shrink-0 mb-2 lg:mb-4 flex flex-col items-center text-center md:items-start md:text-left"
           >
             <div className="mb-2 md:-ml-6 md:-mt-6">
-              <img src="/logo_full.png" alt="JustCmul8 Logo" className="h-28 md:h-32 lg:h-36 w-auto object-contain md:object-left origin-center md:origin-left" />
+              <img src="/logo-full-transparent.png" alt="JustCmul8 Logo" className="h-28 md:h-32 lg:h-36 w-auto object-contain md:object-left origin-center md:origin-left" />
             </div>
             <h1 className="text-[26px] md:text-[32px] lg:text-[40px] font-bold leading-[1.15] tracking-tight mb-1 lg:mb-2 text-[#111827] hidden md:block">
               Welcome back <br className="hidden lg:block" />

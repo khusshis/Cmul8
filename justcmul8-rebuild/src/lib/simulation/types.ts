@@ -299,6 +299,74 @@ export interface SimLog {
   detail?: string;
 }
 
+export interface PercentileStats {
+  p50: number;
+  p75: number;
+  p90: number;
+  p95: number;
+  p99: number;
+  min: number;
+  max: number;
+  mean: number;
+  stdDev: number;
+  iqr: number;
+}
+
+export interface ResourceOperationalStates {
+  busySeconds: number;
+  starvedSeconds: number;
+  blockedSeconds: number;
+  busyRatio: number;      // 0.0 - 1.0
+  starvedRatio: number;   // 0.0 - 1.0
+  blockedRatio: number;   // 0.0 - 1.0
+}
+
+export interface LittlesLawVerification {
+  lambdaArrivalRate: number;
+  averageCycleTimeW: number;
+  timeWeightedWIP_L: number;
+  computedWIP_LambdaW: number;
+  discrepancyPercent: number;
+  isStable: boolean;
+  verdict: "steady_state" | "accumulating_backlog" | "transient";
+}
+
+export interface EntityJourneyStep {
+  nodeId: string;
+  nodeLabel: string;
+  nodeType: NodeType;
+  enteredAt: number;
+  serviceStartedAt?: number;
+  exitedAt: number;
+  waitTime: number;
+  serviceTime: number;
+  status: "completed" | "reneged" | "dropped" | "in_progress";
+}
+
+export interface EntityJourney {
+  entityId: number;
+  entityClass: string;
+  priority: number;
+  arrivalTime: number;
+  departureTime?: number;
+  totalCycleTime: number;
+  totalWaitTime: number;
+  totalServiceTime: number;
+  status: "completed" | "reneged" | "dropped" | "in_flight";
+  steps: EntityJourneyStep[];
+}
+
+export interface DomainMetricCard {
+  id: string;
+  label: string;
+  value: string | number;
+  unit: string;
+  status: "optimal" | "warning" | "critical" | "neutral";
+  benchmark: string;
+  description: string;
+  iconName: string;
+}
+
 export interface SimResult {
   simType: SimTypeId;
   totalSimTime: number;
@@ -307,8 +375,24 @@ export interface SimResult {
   bottleneckNodeId: string;
   bottleneckLabel: string;
   nodeStats: Record<string, NodeStats>;
-  timeline: Array<{ simTime: number; completed: number; depth: Record<string, number> }>;
+  timeline: Array<{ simTime: number; completed: number; depth: Record<string, number>; wip?: number }>;
   logs: SimLog[];
+  
+  // Enhanced Analytics (Calculated or cached)
+  littlesLaw?: LittlesLawVerification;
+  cycleTimePercentiles?: PercentileStats;
+  waitTimePercentiles?: PercentileStats;
+  resourceStates?: Record<string, ResourceOperationalStates>;
+  entityJourneys?: EntityJourney[];
+  topSlowestEntities?: EntityJourney[];
+  domainMetrics?: DomainMetricCard[];
+  healthScore?: number;
+  aiDiagnosis?: {
+    title: string;
+    summary: string;
+    bottleneckCause: string;
+    recommendations: Array<{ title: string; action: string; impact: string; confidence: number }>;
+  };
 }
 
 // ─── SimulationEngine Interface ───────────────────────────────────────────────
@@ -340,6 +424,9 @@ export interface SimulationEngine {
 
   /** Check if currently running */
   isRunning(): boolean;
+
+  /** Update runtime simulation speed multiplier */
+  updateSpeed?(multiplier: number): void;
 }
 
 // ─── Pyodide Runtime Status ───────────────────────────────────────────────────
@@ -350,4 +437,35 @@ export interface PyodideStatus {
   phase: "idle" | "loading_runtime" | "loading_simpy" | "ready" | "error";
   message?: string;
   progress?: number;
+}
+
+export interface SimulationRunRecord {
+  id: string;
+  project_id: string;
+  user_id: string;
+  ran_at: string;
+  duration_seconds: number | null;
+  sim_time_seconds: number | null;
+  total_arrived: number | null;
+  total_completed: number | null;
+  bottleneck_node: string | null;
+  result_json: SimResult | null;
+  logs_json: SimLog[] | null;
+}
+
+export interface ProjectShare {
+  id: string;
+  project_id: string;
+  share_token: string;
+  created_by: string;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+export interface UserProfile {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  default_sim_type: SimTypeId;
+  updated_at: string;
 }

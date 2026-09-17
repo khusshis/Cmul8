@@ -93,3 +93,79 @@ CREATE INDEX IF NOT EXISTS idx_chat_history_project_id ON public.chat_history(pr
 
 -- 7. Force Supabase to refresh its schema cache so the Next.js API instantly recognizes the columns
 NOTIFY pgrst, 'reload schema';
+
+-- 8. Project Shares table (read-only public links)
+CREATE TABLE IF NOT EXISTS public.project_shares (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  share_token text not null unique default encode(gen_random_bytes(16), 'hex'),
+  created_by uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  revoked_at timestamptz
+);
+
+ALTER TABLE public.project_shares ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own shares') THEN
+        CREATE POLICY "Users can manage their own shares" ON public.project_shares
+          FOR ALL USING (auth.uid() = created_by) WITH CHECK (auth.uid() = created_by);
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_project_shares_token ON public.project_shares(share_token);
+
+-- 9. Public read function for a single shared project (never grant anon direct table SELECT)
+CREATE OR REPLACE FUNCTION public.get_shared_project(token text)
+RETURNS TABLE (name text, sim_type text, graph_json jsonb) AS $$
+  SELECT p.name, p.sim_type, p.graph_json
+  FROM public.projects p
+  JOIN public.project_shares s ON s.project_id = p.id
+  WHERE s.share_token = token AND s.revoked_at IS NULL
+  LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+GRANT EXECUTE ON FUNCTION public.get_shared_project(text) TO anon, authenticated;
+
+-- 10. Profiles table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  avatar_url text,
+  default_sim_type text default 'human_queue',
+  updated_at timestamptz default now()
+);
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can view own profile') THEN
+        CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own profile') THEN
+        CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert own profile') THEN
+        CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+    END IF;
+END $$;
+
+-- 11. Auto-create a profile row whenever a new auth user is created
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, display_name)
+  VALUES (new.id, new.raw_user_meta_data->>'full_name')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+NOTIFY pgrst, 'reload schema';

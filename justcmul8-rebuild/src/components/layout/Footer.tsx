@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Hexagon, ExternalLink, MessageCircle } from "lucide-react";
+import { ExternalLink, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -9,10 +9,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row justify-between items-start gap-8">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Hexagon size={24} className="text-[var(--color-accent)] fill-[var(--color-accent-soft)]" />
-              <span className="font-bold tracking-widest text-[var(--color-text-primary)]">JUSTCMUL8</span>
-            </div>
+            <Link href="/" className="inline-block mb-1">
+              <img
+                src="/logo-full-transparent.png"
+                alt="JustCmul8 Logo"
+                className="h-9 w-auto object-contain"
+              />
+            </Link>
             <p className="text-sm text-[var(--color-text-secondary)]">The no-code simulation engine.</p>
             <p className="text-xs text-[var(--color-text-secondary)]">© 2026 JustCmul8. All rights reserved.</p>
           </div>

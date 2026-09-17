@@ -141,56 +141,60 @@ const Card = ({ type }: { type: any }) => {
     <motion.div
       variants={{
         hidden: { opacity: 0, y: 30, scale: 0.95 },
-        show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
+        show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" as const } }
       }}
-      whileHover={{ y: -8, transition: { duration: 0.2, ease: "easeOut" } }}
+      whileHover={{ y: -8, transition: { duration: 0.2, ease: "easeOut" as const } }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group relative bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-shadow duration-300 flex flex-col h-[380px] overflow-hidden cursor-pointer border border-gray-100"
+      className="group relative bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col h-[400px] overflow-hidden cursor-pointer border border-gray-100"
     >
       {/* Colored Top Border Indicator */}
       <div className={`absolute top-0 left-4 right-4 h-[4px] rounded-b-md ${type.bg} ${type.border} border-t-[4px] opacity-70 group-hover:opacity-100 transition-opacity`} />
       
-      <div className="p-6 flex flex-col h-full z-10 pt-8 items-center text-center">
+      <div className="p-5 flex flex-col h-full z-10 pt-7 items-center text-center">
         
         {/* Bouncing Image Icon */}
         <motion.div 
           animate={isHovered ? { y: [0, -6, 0] } : { y: 0 }}
           transition={{ duration: 1.5, repeat: isHovered ? Infinity : 0, ease: "easeInOut" }}
-          className={`w-28 h-28 flex items-center justify-center mb-5 mt-2`}
+          className="w-24 h-24 flex items-center justify-center mb-3 mt-1"
         >
           <img src={type.image} alt={type.name} className="w-full h-full object-contain drop-shadow-sm" />
         </motion.div>
 
-        <h3 className="text-[15px] font-space font-bold text-[#111827] mb-1.5 tracking-tight">{type.name}</h3>
-        <p className="text-[12px] text-[#6B7280] font-medium mb-6 px-2">{type.desc}</p>
+        <h3 className="text-[14px] font-space font-bold text-[#111827] mb-1 tracking-tight">{type.name}</h3>
+        <p className="text-[11.5px] text-[#6B7280] font-medium mb-3 px-1 line-clamp-2">{type.desc}</p>
         
         {/* Bullet Points with Staggered Hover Effect */}
-        <ul className="space-y-3 w-full flex-1">
+        <ul className="space-y-2 w-full text-left my-auto px-1">
           {type.examples.map((ex: string, idx: number) => (
             <motion.li 
               key={ex} 
               initial={{ x: 0, opacity: 0.8 }}
-              animate={isHovered ? { x: 5, opacity: 1 } : { x: 0, opacity: 0.8 }}
-              transition={{ duration: 0.2, delay: idx * 0.05 }}
-              className="text-[12px] text-gray-600 font-medium flex items-center gap-2"
+              animate={isHovered ? { x: 4, opacity: 1 } : { x: 0, opacity: 0.8 }}
+              transition={{ duration: 0.2, delay: idx * 0.04 }}
+              className="text-[11.5px] text-gray-600 font-medium flex items-center gap-2"
             >
-              <span className={`w-1 h-1 rounded-full ${type.bg} border ${type.border}`} style={{ backgroundColor: type.hex }} />
-              {ex}
+              <span className={`w-1.5 h-1.5 rounded-full ${type.bg} border ${type.border} shrink-0`} style={{ backgroundColor: type.hex }} />
+              <span className="truncate">{ex}</span>
             </motion.li>
           ))}
         </ul>
 
-        {/* Try Button */}
-        <Link href="/signup" className="flex items-center justify-between mt-auto pt-4 group/btn">
-          <span className={`text-[13px] font-bold transition-colors`} style={{ color: type.hex }}>
+        {/* Try Button with Clean Flex Layout */}
+        <Link
+          href="/signup"
+          className="w-full flex items-center justify-center gap-2 mt-auto pt-3 pb-1 group/btn select-none"
+        >
+          <span className="text-[12.5px] font-extrabold transition-colors" style={{ color: type.hex }}>
             Try
           </span>
           <motion.div 
-            animate={isHovered ? { scale: 1.1, backgroundColor: type.hex, color: "#fff" } : { scale: 1, backgroundColor: "#f8fafc", color: type.hex }}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors border border-transparent group-hover/btn:border-gray-100`}
+            animate={isHovered ? { x: 3, backgroundColor: type.hex, color: "#ffffff" } : { x: 0, backgroundColor: "#f1f5f9", color: type.hex }}
+            transition={{ duration: 0.2 }}
+            className="w-6 h-6 rounded-full flex items-center justify-center transition-colors shrink-0 shadow-2xs"
           >
-            <ChevronRight size={16} strokeWidth={2.5} />
+            <ChevronRight size={13} strokeWidth={2.5} />
           </motion.div>
         </Link>
       </div>

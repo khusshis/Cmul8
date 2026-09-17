@@ -25,6 +25,8 @@ export const metadata: Metadata = {
 };
 
 import SmoothScroll from "@/components/SmoothScroll";
+import SplashScreen from "@/components/SplashScreen";
+import ToastContainer from "@/components/ui/Toast";
 
 export default function RootLayout({
   children,
@@ -37,6 +39,8 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable} ${greatVibes.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <SplashScreen />
+        <ToastContainer />
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

@@ -8,7 +8,7 @@
 
 import type { SimTypeId, NodeType, DistributionType } from "./types";
 import type { LucideIcon } from "lucide-react";
-import { Users, DoorOpen, AlignJustify, Monitor, Zap, Shuffle, LogOut, Package, GitFork, Link as LinkIcon, AlertTriangle, Bell, Car, ArrowRight, MoreVertical, Fuel, Wrench, User, Flag, Droplets, ArrowDownCircle, Database, FlaskConical, Archive, Factory, Inbox, Settings, Search, CheckCircle, Truck, Radio, Upload, Server, Signal, Megaphone, Download } from "lucide-react";
+import { Users, DoorOpen, AlignJustify, Monitor, Zap, Shuffle, LogOut, Package, GitFork, Link as LinkIcon, AlertTriangle, Bell, Car, ArrowRight, MoreVertical, Fuel, Wrench, User, Flag, Droplets, ArrowDownCircle, Database, FlaskConical, Archive, Factory, Inbox, Settings, Search, CheckCircle, Truck, Radio, Upload, Server, Signal, Megaphone, Download, Landmark, Stethoscope, TrafficCone, Droplet, PackageCheck, Wifi, FilePlus } from "lucide-react";
 
 
 // ─── Sub-Types ────────────────────────────────────────────────────────────────
@@ -51,6 +51,7 @@ export interface KpiMetricDef {
 export interface StarterGraph {
   label: string;           // e.g. "Bank Tellers"
   description: string;
+  icon?: LucideIcon;       // icon for template gallery
   nodes: Array<{
     id: string;
     nodeType: NodeType;
@@ -158,6 +159,7 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
       {
         label: "Bank Tellers",
         description: "Customers arrive, queue, and are served by 3 tellers",
+        icon: Landmark,
         nodes: [
           { id: "n1", nodeType: "source",   label: "Customer Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 2, distribution: "exponential" } },
           { id: "n2", nodeType: "queue",    label: "Waiting Queue",    position: { x: 320, y: 250 }, params: { capacity: -1, discipline: "FIFO" } },
@@ -179,6 +181,7 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
       {
         label: "ER Triage",
         description: "Patients arrive, are triaged, then routed to treatment",
+        icon: Stethoscope,
         nodes: [
           { id: "n1", nodeType: "source",   label: "Patient Arrival",  position: { x: 100, y: 250 }, params: { arrivalRate: 1, distribution: "poisson" } },
           { id: "n2", nodeType: "resource", label: "Triage Nurse",     position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3, serviceDistribution: "exponential" } },
@@ -199,6 +202,7 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
       {
         label: "Start from scratch",
         description: "Empty canvas — build your own flow",
+        icon: FilePlus,
         nodes: [],
         edges: [],
       },
@@ -228,17 +232,17 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
     entityName: "Vehicle",
 
     entitySprites: [
-      "/sim-assets/vehicle/entity-car.png",
-      "/sim-assets/vehicle/entity-truck-bus.png",
+      "/sim-assets/vehicle/entity-car.svg",
+      "/sim-assets/vehicle/entity-truck-bus.svg",
     ],
     nodeSprites: {
       source:   "/sim-assets/vehicle/node-fuel-pump.png",
       queue:    "/sim-assets/vehicle/node-crossroad.png",
       resource: "/sim-assets/vehicle/node-fuel-pump.png",
-      service:  "/sim-assets/vehicle/node-car-wash.png",
-      decision: "/sim-assets/vehicle/node-traffic-light.png",
+      service:  "/sim-assets/vehicle/node-car-wash.svg",
+      decision: "/sim-assets/vehicle/node-traffic-light.svg",
       sink:     "/sim-assets/vehicle/node-crossroad.png",
-      priority_resource: "/sim-assets/vehicle/node-pedestrian-crossing.png",
+      priority_resource: "/sim-assets/vehicle/node-pedestrian-crossing.svg",
     },
     backgroundAsset: "/sim-assets/vehicle/bg-road.png",
 
@@ -263,6 +267,7 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
       {
         label: "Fuel Pumps",
         description: "Vehicles arrive, queue, fill up at pumps, depart",
+        icon: Fuel,
         nodes: [
           { id: "n1", nodeType: "source",   label: "Vehicle Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 3, distribution: "exponential" } },
           { id: "n2", nodeType: "queue",    label: "Entry Lane",      position: { x: 300, y: 250 }, params: { capacity: 10, discipline: "FIFO" } },
@@ -281,6 +286,7 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
       {
         label: "Crossroad",
         description: "4-way intersection with signal control",
+        icon: TrafficCone,
         nodes: [
           { id: "n1", nodeType: "source",   label: "North Approach",  position: { x: 400, y: 50  }, params: { arrivalRate: 4, distribution: "poisson" } },
           { id: "n2", nodeType: "source",   label: "South Approach",  position: { x: 400, y: 450 }, params: { arrivalRate: 3, distribution: "poisson" } },
@@ -297,7 +303,7 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
           { id: "e5", source: "n5", target: "n6" },
         ],
       },
-      { label: "Start from scratch", description: "Empty canvas", nodes: [], edges: [] },
+      { label: "Start from scratch", description: "Empty canvas", icon: FilePlus, nodes: [], edges: [] },
     ],
 
     kpiMetrics: [
@@ -355,6 +361,7 @@ Arrival rates are in vehicles/minute. Service times in minutes.`,
       {
         label: "Water Treatment",
         description: "Raw water → filter → clean tank → distribution",
+        icon: Droplet,
         nodes: [
           { id: "n1", nodeType: "source",    label: "Raw Water Inlet", position: { x: 100, y: 250 }, params: { arrivalRate: 10, distribution: "deterministic" } },
           { id: "n2", nodeType: "container", label: "Raw Tank",        position: { x: 300, y: 250 }, params: { capacity: 500, initialLevel: 0, fillRate: 10 } },
@@ -369,7 +376,7 @@ Arrival rates are in vehicles/minute. Service times in minutes.`,
           { id: "e4", source: "n4", target: "n5" },
         ],
       },
-      { label: "Start from scratch", description: "Empty canvas", nodes: [], edges: [] },
+      { label: "Start from scratch", description: "Empty canvas", icon: FilePlus, nodes: [], edges: [] },
     ],
 
     kpiMetrics: [
@@ -426,6 +433,7 @@ Flow rates in units/minute. Tank capacity in units.`,
       {
         label: "Assembly Line",
         description: "Parts flow through machines, QC check, then finished goods",
+        icon: Factory,
         nodes: [
           { id: "n1", nodeType: "source",   label: "Raw Parts In",    position: { x: 100, y: 250 }, params: { arrivalRate: 5, distribution: "exponential" } },
           { id: "n2", nodeType: "resource", label: "Machine A",       position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3, serviceDistribution: "normal" } },
@@ -445,7 +453,7 @@ Flow rates in units/minute. Tank capacity in units.`,
           { id: "e7", source: "n7", target: "n3" },  // rework loop
         ],
       },
-      { label: "Start from scratch", description: "Empty canvas", nodes: [], edges: [] },
+      { label: "Start from scratch", description: "Empty canvas", icon: FilePlus, nodes: [], edges: [] },
     ],
 
     kpiMetrics: [
@@ -503,6 +511,7 @@ Arrival rates in parts/minute. Service times in minutes. QC failure route probab
       {
         label: "Sort Center",
         description: "Packages arrive, are scanned and sorted to zones, loaded at docks",
+        icon: PackageCheck,
         nodes: [
           { id: "n1", nodeType: "source",   label: "Inbound Truck",   position: { x: 400, y: 50  }, params: { arrivalRate: 10, distribution: "poisson" } },
           { id: "n2", nodeType: "service",  label: "Scan & Check-in", position: { x: 400, y: 200 }, params: { durationMean: 0.5, distribution: "deterministic" } },
@@ -529,7 +538,7 @@ Arrival rates in parts/minute. Service times in minutes. QC failure route probab
           { id: "e11", source: "n9", target: "n10" },
         ],
       },
-      { label: "Start from scratch", description: "Empty canvas", nodes: [], edges: [] },
+      { label: "Start from scratch", description: "Empty canvas", icon: FilePlus, nodes: [], edges: [] },
     ],
 
     kpiMetrics: [
@@ -590,6 +599,7 @@ Arrival rates in packages/minute. Service times in minutes.`,
       {
         label: "Cable / Event Latency",
         description: "Sender → cable with propagation delay → receiver (SimPy Event Latency example)",
+        icon: Zap,
         nodes: [
           { id: "n1", nodeType: "source",  label: "Sender A",  position: { x: 100, y: 250 }, params: { arrivalRate: 0.2, distribution: "deterministic" } },
           { id: "n2", nodeType: "channel", label: "Cable",     position: { x: 350, y: 250 }, params: { propagationDelay: 10, delayDistribution: "deterministic", bufferCapacity: -1, detectLateMessages: true } },
@@ -603,6 +613,7 @@ Arrival rates in packages/minute. Service times in minutes.`,
       {
         label: "Process Pipe (One-to-One)",
         description: "Generator → Store buffer → Consumer (SimPy Process Communication example)",
+        icon: ArrowRight,
         nodes: [
           { id: "n1", nodeType: "source", label: "Generator A", position: { x: 100, y: 250 }, params: { arrivalRate: 0.125, distribution: "uniform" } },
           { id: "n2", nodeType: "store",  label: "Pipe Buffer", position: { x: 350, y: 250 }, params: { capacity: -1, discipline: "FIFO" } },
@@ -616,6 +627,7 @@ Arrival rates in packages/minute. Service times in minutes.`,
       {
         label: "Broadcast Pipe (One-to-Many)",
         description: "One generator broadcasts to multiple consumers via BroadcastPipe",
+        icon: Radio,
         nodes: [
           { id: "n1", nodeType: "source",      label: "Generator A",  position: { x: 100, y: 300 }, params: { arrivalRate: 0.125, distribution: "uniform" } },
           { id: "n2", nodeType: "broadcaster", label: "Broadcast Hub", position: { x: 350, y: 300 }, params: { bufferCapacity: -1 } },
@@ -639,6 +651,7 @@ Arrival rates in packages/minute. Service times in minutes.`,
       {
         label: "Microservice Pipeline",
         description: "API gateway → auth service → service mesh → slow/fast consumers",
+        icon: Wifi,
         nodes: [
           { id: "n1", nodeType: "source",   label: "API Gateway",     position: { x: 100, y: 300 }, params: { arrivalRate: 5, distribution: "poisson" } },
           { id: "n2", nodeType: "channel",  label: "Auth Channel",    position: { x: 300, y: 300 }, params: { propagationDelay: 2, delayDistribution: "exponential", bufferCapacity: 100, detectLateMessages: true } },
@@ -657,7 +670,7 @@ Arrival rates in packages/minute. Service times in minutes.`,
           { id: "e6", source: "n5", target: "n7" },
         ],
       },
-      { label: "Start from scratch", description: "Empty canvas — build your own topology", nodes: [], edges: [] },
+      { label: "Start from scratch", description: "Empty canvas — build your own topology", icon: FilePlus, nodes: [], edges: [] },
     ],
 
     kpiMetrics: [

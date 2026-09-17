@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
   };
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
   };
 
   async function handleResetPassword(e: React.FormEvent) {
@@ -65,8 +65,8 @@ export default function ForgotPasswordPage() {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="relative z-10 flex-shrink-0 mb-0 flex flex-col items-center text-center md:items-start md:text-left"
             >
-              <div className="mb-2 md:mb-2 lg:mb-4 md:-ml-6 md:-mt-6">
-                <img src="/logo_full.png" alt="JustCmul8 Logo" className="h-36 md:h-28 lg:h-40 w-auto object-contain md:object-left origin-center md:origin-left scale-125" />
+              <div className="mb-2 md:-ml-6 md:-mt-6">
+                <img src="/logo-full-transparent.png" alt="JustCmul8 Logo" className="h-36 md:h-28 lg:h-40 w-auto object-contain md:object-left origin-center md:origin-left scale-125" />
               </div>
               <h1 className="text-[28px] md:text-[32px] lg:text-[40px] font-bold leading-[1.15] tracking-tight mb-2 lg:mb-3 text-[#111827] hidden md:block">
                 Build better systems <br className="hidden sm:block" />

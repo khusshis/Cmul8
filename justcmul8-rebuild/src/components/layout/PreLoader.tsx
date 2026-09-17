@@ -45,11 +45,12 @@ export default function PreLoader({ onComplete }: PreLoaderProps) {
               transition={{ duration: 0.4 }}
               className="flex flex-col items-center text-center"
             >
-              <Hexagon size={48} className="text-[var(--color-accent)] fill-[var(--color-accent-soft)] mb-4" />
-              <h1 className="font-bold text-2xl tracking-widest text-[var(--color-text-primary)]">
-                JUSTCMUL8
-              </h1>
-              <p className="text-sm mt-2 text-[var(--color-text-secondary)]">
+              <img
+                src="/logo-full-transparent.png"
+                alt="JustCmul8"
+                className="w-52 h-auto object-contain mb-2"
+              />
+              <p className="text-sm mt-1 text-gray-500 font-medium">
                 Preparing simulation environment...
               </p>
             </motion.div>

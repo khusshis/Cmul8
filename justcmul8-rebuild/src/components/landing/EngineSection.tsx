@@ -221,7 +221,7 @@ const Card3Nodes = () => {
                   <div className={node.col}><node.icon size={24} /></div>
                   <div className="pointer-events-none">
                     <h5 className="text-[14px] font-bold text-gray-900 leading-tight">{node.title}</h5>
-                    {node.l1 && <p className="text-[11px] font-bold text-gray-500 mt-1">{node.l1}</p>}
+                    {(node as any).l1 && <p className="text-[11px] font-bold text-gray-500 mt-1">{(node as any).l1}</p>}
                   </div>
                 </div>
              ))}
@@ -291,7 +291,7 @@ export default function EngineSection() {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 30 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } }
   };
 
   return (
