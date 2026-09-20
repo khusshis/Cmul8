@@ -714,8 +714,8 @@ export default function WorkspacePage() {
           </div>
 
           {/* Simulation Duration Control Pill */}
-          <div className="relative flex items-center h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-xs px-2 text-[12px] font-bold shrink-0 whitespace-nowrap">
-            <div className="flex items-center pl-0.5 pr-1 text-gray-400">
+          <div className="relative flex items-center h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-xs px-2.5 text-[12px] font-bold shrink-0 whitespace-nowrap">
+            <div className="flex items-center pl-0.5 pr-1.5 text-gray-400">
               <Clock size={13} strokeWidth={2.3} className="text-[#5742FF] shrink-0" />
             </div>
 
@@ -726,7 +726,7 @@ export default function WorkspacePage() {
               value={durationValue}
               onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
               disabled={simState === "running"}
-              className="w-10 h-5 px-1 text-center font-extrabold text-[12px] text-[#111827] bg-gray-50 rounded border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50"
+              className="w-12 min-w-[46px] h-6 px-1 text-center font-extrabold text-[12.5px] text-[#111827] bg-gray-50 rounded-md border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               title="Simulation Duration"
             />
 
@@ -735,7 +735,7 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={() => setDurationUnitOpen((o) => !o)}
                 disabled={simState === "running"}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[11.5px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center gap-1 px-1.5 py-0.5 text-[11.5px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 <span>{durationUnit}</span>
                 <ChevronDown size={11} strokeWidth={2.5} className="text-gray-400 shrink-0" />
