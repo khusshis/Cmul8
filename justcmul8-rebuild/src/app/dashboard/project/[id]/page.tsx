@@ -550,7 +550,6 @@ export default function WorkspacePage() {
       setSimTick(null);
       setSimResult(null);
       tickBufferRef.current.length = 0;
-      setDigitalTwinActive(true);
       setSimState("running");
       runStartTimeRef.current = Date.now();
       engineRef.current.start({
@@ -950,8 +949,8 @@ export default function WorkspacePage() {
                         <BarChart2 size={14} strokeWidth={2.4} />
                       </div>
                       <div>
-                        <div className="leading-tight">Monte Carlo Studio</div>
-                        <div className="text-[10.5px] font-medium text-gray-400">Multi-run trials & A/B test</div>
+                        <div className="leading-tight">Stress Test & Risk Simulator</div>
+                        <div className="text-[10.5px] font-medium text-gray-400">Multi-scenario trials & A/B test</div>
                       </div>
                     </div>
                   </button>

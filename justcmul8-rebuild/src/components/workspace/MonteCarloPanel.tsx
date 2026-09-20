@@ -263,14 +263,14 @@ export default function MonteCarloPanel({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-[17px] font-black text-gray-900 tracking-tight">
-                    Statistical Lab & Scenario Studio
+                    Scenario Stress Testing & Risk Analysis
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-[#5742FF] border border-indigo-100 uppercase tracking-wider">
-                    Monte Carlo
+                    Reliability Lab
                   </span>
                 </div>
                 <p className="text-[12px] text-gray-400 font-medium">
-                  Run stochastic batch trials with 95% confidence intervals and compare Baseline vs. Optimized designs
+                  Simulate dozens of unpredictable rush-hour scenarios to test system limits and compare Baseline vs. Optimized setups
                 </p>
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function MonteCarloPanel({
                       : "text-gray-500 hover:text-gray-900"
                   }`}
                 >
-                  <RefreshCw size={13} /> Monte Carlo Multi-Run
+                  <RefreshCw size={13} /> Multi-Scenario Stress Test
                 </button>
                 <button
                   onClick={() => setActiveTab("scenario_compare")}
@@ -334,7 +334,7 @@ export default function MonteCarloPanel({
                       ))}
                     </div>
                     <span className="text-[11.5px] text-gray-400 hidden sm:inline">
-                      (SimPy random seed variation per iteration)
+                      (Tests realistic customer surges & random spikes)
                     </span>
                   </div>
 
@@ -346,12 +346,12 @@ export default function MonteCarloPanel({
                     {running ? (
                       <>
                         <RefreshCw size={15} className="animate-spin" />
-                        <span>Running Batch ({progress?.completedRuns || 0}/{runCount})...</span>
+                        <span>Running Tests ({progress?.completedRuns || 0}/{runCount})...</span>
                       </>
                     ) : (
                       <>
                         <Play size={15} fill="currentColor" />
-                        <span>Execute {runCount}x Monte Carlo Trials</span>
+                        <span>Execute {runCount}x Scenario Stress Tests</span>
                       </>
                     )}
                   </button>
@@ -557,10 +557,10 @@ export default function MonteCarloPanel({
                       <Sparkles size={24} />
                     </div>
                     <h3 className="text-[16px] font-black text-gray-900 mb-1">
-                      Ready for Monte Carlo Statistical Analysis
+                      Ready to Stress Test Your System
                     </h3>
                     <p className="text-[13px] text-gray-500 max-w-md">
-                      Choose an iteration count above and click <strong>Execute Trials</strong> to run repeated simulations, eliminating single-seed noise and uncovering true confidence bands.
+                      Choose a test size above and click <strong>Execute Scenario Stress Tests</strong> to simulate multiple realistic rush-hour runs, revealing worst-case bottlenecks and true reliability ranges.
                     </p>
                   </div>
                 )}
@@ -642,7 +642,7 @@ export default function MonteCarloPanel({
                     ) : (
                       <>
                         <Scale size={16} />
-                        <span>Run Head-to-Head Monte Carlo Comparison (A vs B)</span>
+                        <span>Run Head-to-Head Comparison (Scenario A vs B)</span>
                       </>
                     )}
                   </button>

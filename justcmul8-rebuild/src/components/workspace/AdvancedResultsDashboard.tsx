@@ -43,15 +43,15 @@ export type DashboardTab =
   | "logs"
   | "cost";
 
-const TABS: { id: DashboardTab; label: string; icon: any }[] = [
-  { id: "executive", label: "Executive Summary", icon: LayoutGrid },
-  { id: "analytics", label: "Flow & Balance Check", icon: Scale },
-  { id: "flow", label: "Traffic Heatmap", icon: Flame },
-  { id: "timeline", label: "Line Buildup Timeline", icon: TrendingUp },
-  { id: "blocks", label: "Station Counters", icon: Table2 },
-  { id: "entities", label: "Person / Item Journey", icon: User },
-  { id: "logs", label: "Live Activity Log", icon: ScrollText },
-  { id: "cost", label: "Cost & ROI", icon: DollarSign },
+const TABS: { id: DashboardTab; label: string }[] = [
+  { id: "executive", label: "Executive Summary" },
+  { id: "analytics", label: "Flow & Balance Check" },
+  { id: "flow", label: "Traffic Heatmap" },
+  { id: "timeline", label: "Line Buildup Timeline" },
+  { id: "blocks", label: "Station Counters" },
+  { id: "entities", label: "Person / Item Journey" },
+  { id: "logs", label: "Live Activity Log" },
+  { id: "cost", label: "Cost & ROI" },
 ];
 
 export default function AdvancedResultsDashboard({
@@ -129,11 +129,8 @@ export default function AdvancedResultsDashboard({
             className="w-full h-full max-w-[1440px] bg-[#F8F7FF] rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col border border-indigo-100"
           >
             {/* ── Top Header Bar ── */}
-            <div className="flex-shrink-0 flex items-center justify-between px-6 h-[72px] bg-white border-b border-gray-100 gap-4">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 h-[64px] bg-white border-b border-gray-100 gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-[#5742FF] flex items-center justify-center font-bold">
-                  <Sparkles size={20} />
-                </div>
                 <div>
                   <h1 className="text-[17px] font-black text-gray-900 tracking-tight leading-tight">
                     Simulation Analytics Suite
@@ -143,29 +140,6 @@ export default function AdvancedResultsDashboard({
                     <span className="text-[#5742FF] font-extrabold">{result.healthScore ?? 85}/100</span>
                   </p>
                 </div>
-              </div>
-
-              {/* 7 Tab Switcher */}
-              <div className="hidden xl:flex items-center gap-1 bg-gray-100/80 rounded-full p-1 border border-gray-200/50">
-                {TABS.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTab(t.id)}
-                    className={`relative px-3.5 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1.5 transition-all ${
-                      tab === t.id ? "text-white" : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    {tab === t.id && (
-                      <motion.div
-                        layoutId="active-dashboard-tab"
-                        className="absolute inset-0 rounded-full bg-[#5742FF] shadow-sm"
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                      />
-                    )}
-                    <t.icon size={13} className="relative z-10" />
-                    <span className="relative z-10">{t.label}</span>
-                  </button>
-                ))}
               </div>
 
               {/* Action Buttons */}
@@ -214,22 +188,29 @@ export default function AdvancedResultsDashboard({
               </div>
             </div>
 
-            {/* Mobile / Tablet Tab Switcher (Scrollable) */}
-            <div className="xl:hidden flex items-center gap-1.5 p-2 bg-white border-b border-gray-100 overflow-x-auto custom-scrollbar">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`px-3 py-1.5 rounded-xl text-[11.5px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
-                    tab === t.id
-                      ? "bg-[#5742FF] text-white shadow-sm"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  <t.icon size={12} />
-                  <span>{t.label}</span>
-                </button>
-              ))}
+            {/* ── Dedicated Navigation Tab Strip (Spacious, No Icon Clutter) ── */}
+            <div className="flex items-center gap-1.5 px-6 py-2 bg-white/95 border-b border-gray-100/90 overflow-x-auto scrollbar-none shrink-0 select-none">
+              {TABS.map((t) => {
+                const isActive = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`relative px-4 py-1.5 rounded-full text-[12px] font-bold flex items-center transition-all whitespace-nowrap ${
+                      isActive ? "text-white" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-dashboard-tab"
+                        className="absolute inset-0 rounded-full bg-[#5742FF] shadow-sm"
+                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                      />
+                    )}
+                    <span className="relative z-10">{t.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* ── Main Content Area ── */}

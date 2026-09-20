@@ -28,6 +28,113 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/Toast";
 import { applyDagreLayout } from "@/lib/simulation/layoutEngine";
 import { applyAIOps, normalizeAIResponse, snapshotForHistory, type AIGraphOps } from "@/lib/ai/graphOps";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolean }) {
+  if (isUser) {
+    return <div className="whitespace-pre-wrap font-medium">{content}</div>;
+  }
+
+  return (
+    <div className="text-[12px] leading-relaxed select-text break-words space-y-1">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-[13.5px] font-black text-gray-900 mt-2 mb-1 tracking-tight">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-[13px] font-black text-gray-900 mt-2 mb-1 tracking-tight">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-[12px] font-black text-[#4338CA] mt-2 mb-0.5 tracking-tight flex items-center gap-1">
+              {children}
+            </h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="text-[11.5px] font-black text-gray-900 mt-1 mb-0.5">
+              {children}
+            </h4>
+          ),
+          p: ({ children }) => (
+            <p className="text-[12px] text-gray-800 leading-relaxed my-1">
+              {children}
+            </p>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-bold text-gray-950">
+              {children}
+            </strong>
+          ),
+          ul: ({ children }) => (
+            <ul className="list-disc pl-4 space-y-1 my-1 text-[11.5px] marker:text-[#6366F1]">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="list-decimal pl-4 space-y-1 my-1 text-[11.5px] marker:text-[#6366F1] font-semibold">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => (
+            <li className="leading-relaxed pl-0.5 text-gray-800 font-normal">
+              {children}
+            </li>
+          ),
+          code: ({ className, children, ...props }: any) => {
+            const isInline = !className?.includes("language-");
+            return isInline ? (
+              <code
+                className="px-1.5 py-0.5 rounded bg-indigo-50 text-[#4F46E5] font-mono text-[11px] font-semibold border border-indigo-100/70"
+                {...props}
+              >
+                {children}
+              </code>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="bg-[#181825] text-indigo-100 p-2.5 rounded-xl font-mono text-[11px] overflow-x-auto my-1.5 shadow-inner border border-slate-800">
+              {children}
+            </pre>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-[#6366F1] bg-indigo-50/50 pl-2.5 py-1 my-1.5 rounded-r text-[11.5px] text-indigo-900 italic">
+              {children}
+            </blockquote>
+          ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-2 rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 text-[11px]">
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="px-2 py-1 bg-gray-50 font-bold text-gray-700 text-left">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-2 py-1 border-t border-gray-100 text-gray-800">
+              {children}
+            </td>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 /** Client-side ceiling; the route itself allows up to 120 s for model fallbacks. */
 const CHAT_REQUEST_TIMEOUT_MS = 110_000;
@@ -632,7 +739,7 @@ export default function AIChatPanel({
                           : "bg-white border border-indigo-100/70 text-gray-800 rounded-bl-xs shadow-2xs"
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{m.content}</div>
+                      <MarkdownMessage content={m.content} isUser={isUser} />
                     </div>
                   </div>
 

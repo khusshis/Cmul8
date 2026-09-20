@@ -300,7 +300,7 @@ export default function SimResultsPanel({
       </div>
 
       {/* ── Top Header Navigation Bar ── */}
-      <div className="flex items-center justify-between px-5 h-[48px] bg-white/80 border-b border-indigo-50/90 select-none shrink-0 gap-3">
+      <div className="flex items-center justify-between px-5 h-[48px] bg-white/90 border-b border-indigo-50/90 select-none shrink-0 gap-3">
         {/* Left: 1-Click Status Badge with Pulsing Light */}
         <div
           className="flex items-center gap-3 cursor-pointer group"
@@ -352,41 +352,6 @@ export default function SimResultsPanel({
           </div>
         </div>
 
-        {/* Middle: Modern Animated Pill Tabs */}
-        {!collapsed && (
-          <div className="hidden md:flex items-center gap-1 bg-[#F1F0FB] rounded-full p-1 border border-indigo-100/60 overflow-x-auto max-w-[620px] scrollbar-none">
-            {[
-              { id: "overview", label: "Summary", icon: Activity },
-              { id: "analytics", label: "Detailed Charts", icon: Scale },
-              { id: "timeline", label: "Queue Timeline", icon: TrendingUp },
-              { id: "blocks", label: "Station Details", icon: Table2 },
-              { id: "entities", label: "Customer Trips", icon: User },
-              { id: "logs", label: "Event History", icon: ScrollText },
-            ].map((t) => {
-              const isActive = activeTab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
-                  className={`relative px-3.5 py-1 rounded-full text-[11.5px] font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                    isActive ? "text-white" : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeResultsTabPill"
-                      className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5742FF] to-[#7C3AED] shadow-[0_3px_12px_rgba(87,66,255,0.35)]"
-                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    />
-                  )}
-                  <t.icon size={12} className="relative z-10" />
-                  <span className="relative z-10">{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* Right: Quick Actions & Window Controls */}
         <div className="flex items-center gap-2">
           {!collapsed && (
@@ -424,6 +389,40 @@ export default function SimResultsPanel({
           </button>
         </div>
       </div>
+
+      {/* ── Sub-Header Dedicated Tab Strip ── */}
+      {!collapsed && (
+        <div className="flex items-center gap-1.5 px-5 py-2 bg-[#FAF9FF] border-b border-indigo-50/90 overflow-x-auto scrollbar-none shrink-0 select-none">
+          {[
+            { id: "overview", label: "Summary" },
+            { id: "analytics", label: "Detailed Charts" },
+            { id: "timeline", label: "Queue Timeline" },
+            { id: "blocks", label: "Station Details" },
+            { id: "entities", label: "Customer Trips" },
+            { id: "logs", label: "Event History" },
+          ].map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`relative px-4 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  isActive ? "text-white" : "text-gray-600 hover:text-gray-900 hover:bg-indigo-50/60"
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeResultsTabPill"
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5742FF] to-[#7C3AED] shadow-[0_2px_10px_rgba(87,66,255,0.3)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Main Panel Content (Internal Smooth Scroll) ── */}
       {!collapsed && (
