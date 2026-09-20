@@ -116,6 +116,7 @@ export default function DigitalTwinCanvas({
     let prevTick: SimTick | null = null;
     let seenReset = resetRef.current;
     let lastReported = -2;
+    let lastReportAt = 0;
 
     const world = new PIXI.Container();
     const edgeLayer = new PIXI.Graphics();
@@ -283,8 +284,12 @@ export default function DigitalTwinCanvas({
         }
       }
 
-      if (appliedIndex !== lastReported) {
+      // Report progress at ~10Hz (always report resets and the final frame) so the parent page isn't re-rendered every frame.
+      const nowMs = performance.now();
+      const isFinal = appliedIndex === buffer.length - 1;
+      if (appliedIndex !== lastReported && (nowMs - lastReportAt > 100 || isFinal || appliedIndex < 0)) {
         lastReported = appliedIndex;
+        lastReportAt = nowMs;
         const t = appliedIndex >= 0 ? buffer[appliedIndex] : null;
         onFrameRef.current?.({ index: appliedIndex + 1, total: buffer.length, simTime: t?.simTime ?? 0 });
       }

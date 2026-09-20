@@ -184,11 +184,22 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     const engine = new PyodideSimEngine();
+    // The worker emits ~1000 ticks in a burst; the twin reads the full buffer, but React state
+    // (HUD + node stats) only needs ~7 updates/sec, otherwise every tick re-renders the whole page.
+    let latestTick: SimTick | null = null;
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushTick = () => {
+      flushTimer = null;
+      if (latestTick) setSimTick(latestTick);
+    };
     engine.onTick((tick) => {
       tickBufferRef.current.push(tick);
-      setSimTick(tick);
+      latestTick = tick;
+      if (!flushTimer) flushTimer = setTimeout(flushTick, 150);
     });
     engine.onComplete(async (rawResult) => {
+      if (flushTimer) clearTimeout(flushTimer);
+      flushTick();
       setSimState("idle");
       const currentSimGraph = graphToSimNodes(nodesRef.current, edgesRef.current);
       const result = enrichSimResult(rawResult, currentSimGraph);
@@ -218,6 +229,7 @@ export default function WorkspacePage() {
     engineRef.current = engine;
 
     return () => {
+      if (flushTimer) clearTimeout(flushTimer);
       engine.stop();
     };
   }, []);
