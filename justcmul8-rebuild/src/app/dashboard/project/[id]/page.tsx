@@ -613,7 +613,7 @@ export default function WorkspacePage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-white min-w-0 overflow-x-auto">
+      <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-white relative z-30">
         
         {/* Left Section: Logo, Breadcrumbs, Undo/Redo */}
         <div className="flex items-center gap-3 shrink-0 min-w-0 mr-3">
