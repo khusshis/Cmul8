@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -99,6 +99,7 @@ export default function WorkspacePage() {
   const [monteCarloOpen, setMonteCarloOpen] = useState(false);
   const [digitalTwinActive, setDigitalTwinActive] = useState(false);
   const [codeInspectorOpen, setCodeInspectorOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [twinPlaying, setTwinPlaying] = useState(true);
   const [twinSpeed, setTwinSpeed] = useState(2);
   const [twinViewport, setTwinViewport] = useState<TwinViewport>({ x: 0, y: 0, zoom: 1 });
@@ -612,7 +613,7 @@ export default function WorkspacePage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 h-[62px] flex items-center justify-between px-4 border-b border-gray-100 bg-white min-w-0 overflow-x-auto">
+      <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-white min-w-0 overflow-x-auto">
         
         {/* Left Section: Logo, Breadcrumbs, Undo/Redo */}
         <div className="flex items-center gap-3 shrink-0 min-w-0 mr-3">
@@ -667,46 +668,48 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        {/* Right Section: Simulation Status, Controls, HUD, Actions */}
+        {/* Right Section: Simulation Status, Controls, HUD, More Tools, Actions */}
         <div className="flex items-center gap-2 shrink-0 ml-auto">
           
-          {/* Saved Status */}
-          <div className="flex items-center gap-1.5 px-2.5 h-[32px] rounded-full bg-emerald-50 border border-emerald-100/60 text-emerald-600 text-[12px] font-bold shadow-xs shrink-0 whitespace-nowrap">
-            {saved ? (
-              <>
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
-                <span>Saved</span>
-              </>
+          {/* Engine Status (Circular Icon with Tooltip) */}
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-xs shrink-0 cursor-pointer border transition-colors ${
+              pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"
+                ? "bg-amber-50 border-amber-200 text-amber-600"
+                : pyodideStatus.phase === "error"
+                ? "bg-rose-50 border-rose-200 text-rose-600"
+                : "bg-emerald-50 border-emerald-200/80 text-emerald-600"
+            }`}
+            title={
+              pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"
+                ? "Simulation Engine: Loading SimPy runtime..."
+                : pyodideStatus.phase === "error"
+                ? "Simulation Engine: Error (Fallback active)"
+                : "Simulation Engine: SimPy Ready"
+            }
+          >
+            {pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy" ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : pyodideStatus.phase === "error" ? (
+              <AlertCircle size={14} strokeWidth={2.4} />
             ) : (
-              <>
-                <Loader2 size={12} className="animate-spin text-emerald-500 shrink-0" />
-                <span>Saving...</span>
-              </>
+              <Zap size={14} strokeWidth={2.4} fill="currentColor" />
             )}
           </div>
 
-          {runSavedPulse && (
-            <div className="flex items-center gap-1 px-2.5 h-[32px] rounded-full bg-blue-50 border border-blue-100/60 text-blue-600 text-[12px] font-bold shadow-xs animate-pulse shrink-0 whitespace-nowrap">
-              <Check size={12} className="shrink-0" />
-              <span>Run saved</span>
-            </div>
-          )}
-
-          {/* Engine Status */}
-          <div className="flex items-center gap-1.5 px-2.5 h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] text-[12px] font-bold shadow-xs shrink-0 whitespace-nowrap">
-            <span className="text-gray-400 font-semibold mr-0.5">Engine:</span>
-            {pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy" ? (
-              <span className="text-orange-500 flex items-center gap-1.5">
-                <Loader2 size={12} className="animate-spin shrink-0" /> Loading
-              </span>
-            ) : pyodideStatus.phase === "error" ? (
-              <span className="text-red-500 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" /> Error
-              </span>
+          {/* Saved Status (Circular Icon with Tooltip) */}
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-xs shrink-0 cursor-pointer border transition-colors ${
+              saved
+                ? "bg-emerald-50 border-emerald-200/80 text-emerald-600"
+                : "bg-amber-50 border-amber-200 text-amber-600"
+            }`}
+            title={saved ? (runSavedPulse ? "Run saved to history!" : "All changes saved to cloud") : "Saving changes..."}
+          >
+            {saved ? (
+              <Check size={14} strokeWidth={2.6} className={runSavedPulse ? "text-blue-600 animate-pulse" : ""} />
             ) : (
-              <span className="text-emerald-500 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" /> Ready
-              </span>
+              <Loader2 size={14} className="animate-spin text-amber-600" />
             )}
           </div>
 
@@ -724,7 +727,7 @@ export default function WorkspacePage() {
               onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
               disabled={simState === "running"}
               className="w-10 h-5 px-1 text-center font-extrabold text-[12px] text-[#111827] bg-gray-50 rounded border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50"
-              title="Simulation Duration Value"
+              title="Simulation Duration"
             />
 
             <div className="relative ml-1">
@@ -774,6 +777,7 @@ export default function WorkspacePage() {
           {/* Run Button with Speed Control */}
           <div className="relative flex items-center shadow-xs h-[32px] shrink-0 whitespace-nowrap">
             <button
+              type="button"
               onClick={handleRun}
               disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
               className="flex items-center h-full gap-1.5 pl-3.5 pr-2.5 rounded-l-full bg-[#5742FF] text-white text-[12.5px] font-bold hover:bg-[#4531E5] disabled:opacity-50 transition-colors border-r border-[#4531E5]"
@@ -781,8 +785,10 @@ export default function WorkspacePage() {
               <Play size={13} fill="currentColor" className="shrink-0" /> Run
             </button>
             <button
+              type="button"
               onClick={() => setSpeedDropdownOpen(!speedDropdownOpen)}
               className="flex items-center justify-center h-full pl-1.5 pr-2.5 rounded-r-full bg-[#5742FF] text-white hover:bg-[#4531E5] transition-colors disabled:opacity-50"
+              title="Select Simulation Speed"
             >
               <ChevronDown size={13} strokeWidth={2.5} />
             </button>
@@ -812,62 +818,32 @@ export default function WorkspacePage() {
             )}
           </div>
 
-          {/* Pause */}
+          {/* Pause (Circular Button) */}
           <button
+            type="button"
             onClick={handlePause}
             disabled={simState !== "running" || (pyodideStatus.phase !== "error" && !pyodideStatus.fallbackActive)}
             title={
               pyodideStatus.phase !== "error" && !pyodideStatus.fallbackActive
                 ? "Pause is not supported for synchronous SimPy simulations — use Stop instead"
-                : undefined
+                : "Pause Simulation"
             }
-            className="flex items-center justify-center h-[32px] gap-1 px-3 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
+            aria-label="Pause"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#5742FF] hover:bg-gray-50 disabled:opacity-40 transition-all shadow-xs disabled:cursor-not-allowed shrink-0 active:scale-95"
           >
-            <Pause size={13} fill="currentColor" className="shrink-0" /> Pause
+            <Pause size={13} fill="currentColor" />
           </button>
 
-          {/* Stop */}
+          {/* Stop (Circular Button) */}
           <button
+            type="button"
             onClick={handleStop}
             disabled={simState === "idle"}
-            className="flex items-center justify-center h-[32px] gap-1 px-3 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs shrink-0 whitespace-nowrap"
+            title="Stop Simulation"
+            aria-label="Stop"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 transition-all shadow-xs shrink-0 active:scale-95"
           >
-            <Square size={12} fill="currentColor" className="shrink-0" /> Stop
-          </button>
-
-          {/* Monte Carlo & Scenario Studio */}
-          <button
-            onClick={() => setMonteCarloOpen(true)}
-            disabled={simState === "running"}
-            className="flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 text-[#5742FF] text-[12px] font-bold hover:from-indigo-100 hover:to-purple-100 disabled:opacity-40 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Monte Carlo multi-run trials & Scenario A/B comparison"
-          >
-            <BarChart2 size={13} strokeWidth={2.4} className="shrink-0" />
-            <span>Monte Carlo</span>
-          </button>
-
-          {/* Digital Twin View Toggle */}
-          <button
-            onClick={() => setDigitalTwinActive((d) => !d)}
-            className={`flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full text-[12px] font-bold transition-all shadow-xs shrink-0 whitespace-nowrap ${
-              digitalTwinActive
-                ? "bg-[#5742FF] text-white border border-[#4531E5]"
-                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-            title="Toggle 2D Digital Twin Real-time Animation Overlay"
-          >
-            <Activity size={13} strokeWidth={2.4} className="shrink-0" />
-            <span>Digital Twin</span>
-          </button>
-
-          {/* Code Inspector */}
-          <button
-            onClick={() => setCodeInspectorOpen(true)}
-            className="flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full bg-white border border-gray-200 text-gray-700 text-[12px] font-bold hover:bg-gray-50 transition-all shadow-xs shrink-0 whitespace-nowrap"
-            title="Inspect live SimPy Python code & export Jupyter Notebook"
-          >
-            <Code2 size={13} strokeWidth={2.4} className="shrink-0" />
-            <span>Code</span>
+            <Square size={12} fill="currentColor" />
           </button>
 
           {/* Live Simulation Clock & Progress HUD */}
@@ -897,6 +873,103 @@ export default function WorkspacePage() {
             );
           })()}
 
+          {/* Triple-Dot More Options Dropdown (Monte Carlo, Digital Twin, Code Inspector) */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setMoreMenuOpen((v) => !v)}
+              className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all shadow-xs active:scale-95 ${
+                digitalTwinActive || moreMenuOpen
+                  ? "bg-indigo-50 border-[#5742FF] text-[#5742FF]"
+                  : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-[#5742FF]"
+              }`}
+              title="More Options (Digital Twin, Monte Carlo, Python Code)"
+              aria-label="More Options"
+            >
+              <MoreHorizontal size={15} strokeWidth={2.4} />
+              {digitalTwinActive && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#5742FF] rounded-full border-2 border-white" />
+              )}
+            </button>
+
+            {moreMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMoreMenuOpen(false)} />
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                    Simulation Views & Tools
+                  </div>
+
+                  {/* Digital Twin 2D Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDigitalTwinActive((d) => !d);
+                      setMoreMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${
+                      digitalTwinActive ? "text-[#5742FF] bg-indigo-50/50" : "text-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${digitalTwinActive ? "bg-[#5742FF] text-white" : "bg-gray-100 text-gray-600"}`}>
+                        <Activity size={14} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div className="leading-tight">Digital Twin 2D</div>
+                        <div className="text-[10.5px] font-medium text-gray-400">Live 2D physics animation</div>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${digitalTwinActive ? "bg-[#5742FF] text-white" : "bg-gray-100 text-gray-500"}`}>
+                      {digitalTwinActive ? "ON" : "OFF"}
+                    </span>
+                  </button>
+
+                  {/* Monte Carlo & Scenario Studio */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonteCarloOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    disabled={simState === "running"}
+                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-[#5742FF] flex items-center justify-center">
+                        <BarChart2 size={14} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div className="leading-tight">Monte Carlo Studio</div>
+                        <div className="text-[10.5px] font-medium text-gray-400">Multi-run trials & A/B test</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Python Code Inspector */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCodeInspectorOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors text-gray-700"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                        <Code2 size={14} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div className="leading-tight">SimPy Python Code</div>
+                        <div className="text-[10.5px] font-medium text-gray-400">Inspect & Export Notebook</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           {remoteUsers.length > 0 && (
             <div className="flex items-center -space-x-2 shrink-0">
               {remoteUsers.slice(0, 4).map((u) => (
@@ -923,17 +996,21 @@ export default function WorkspacePage() {
           {/* Right Divider */}
           <div className="w-px h-6 bg-gray-200 mx-0.5 shrink-0" />
 
+          {/* Share Button (Circular) */}
           <button
+            type="button"
             onClick={() => setShareModalOpen(true)}
-            className="flex items-center justify-center h-[32px] gap-1.5 px-3.5 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 transition-colors shadow-xs shrink-0 whitespace-nowrap"
+            title="Share & Export Simulation"
+            aria-label="Share"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#5742FF] hover:bg-gray-50 transition-all shadow-xs shrink-0 active:scale-95"
           >
-            <Share2 size={13} className="shrink-0" /> Share
+            <Share2 size={14} strokeWidth={2.2} />
           </button>
 
-          {/* Avatar */}
-          <div className="flex items-center gap-1 cursor-pointer group ml-0.5 shrink-0">
-            <div className="w-7 h-7 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-              M
+          {/* Avatar (Circular) */}
+          <div className="flex items-center gap-1 cursor-pointer group ml-0.5 shrink-0" title={currentUser?.email || "User Profile"}>
+            <div className="w-8 h-8 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+              {currentUser?.email ? currentUser.email[0].toUpperCase() : "M"}
             </div>
             <ChevronDown size={13} className="text-gray-400 group-hover:text-gray-600 transition-colors shrink-0" />
           </div>
