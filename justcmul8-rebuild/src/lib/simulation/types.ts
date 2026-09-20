@@ -260,7 +260,9 @@ export interface NodeStats {
   entitiesIn: number;
   entitiesOut: number;
   currentDepth: number;       // queue depth / entities in service / buffer size
-  utilization: number;        // 0–1 fraction busy
+  utilization: number;        // 0–1 fraction busy (cumulative since t=0)
+  busySeconds?: number;       // cumulative server-busy seconds (for windowed/real-time utilization)
+  capacity?: number;          // parallel servers, for busySeconds normalisation
   avgWaitTime: number;        // sim-time units
   avgServiceTime: number;
   level?: number;             // for containers: current fill level

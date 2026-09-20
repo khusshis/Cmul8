@@ -78,9 +78,26 @@ export function resolveKpiMetrics(
       return m.nodeTypes.includes(nType);
     });
 
-    const series = filteredStats.map(([nodeId, stats]) => {
+    // Average-type metrics are only meaningful for nodes that actually recorded samples
+    // (e.g. a sink has no latency); counting them as 0 would drag the average down.
+    const isAvgMetric = String(m.key).startsWith("avg");
+    const contributing = isAvgMetric
+      ? filteredStats.filter(([, st]) => (st as NodeStats)[m.key as keyof NodeStats] != null)
+      : filteredStats;
+
+    const series = contributing.map(([nodeId, stats]) => {
       const s = stats as NodeStats;
       let val = Number(s[m.key as keyof NodeStats] ?? 0);
+      // The engine measures durations in seconds; convert to the unit the KPI is labelled with.
+      if (m.key === "avgWaitTime" || m.key === "avgServiceTime") {
+        if (m.unit === "min") val = val / 60;
+        else if (m.unit === "hr" || m.unit === "hrs") val = val / 3600;
+        else if (m.unit === "ms") val = val * 1000;
+      }
+      if (m.key === "avgLatency") {
+        if (m.unit === "ms") val = val * 1000;
+        else if (m.unit === "min") val = val / 60;
+      }
       if (m.key === "utilization") {
         // If utilization is a 0-1 fraction, convert to percentage for chart display
         val = Math.round(val * 100);

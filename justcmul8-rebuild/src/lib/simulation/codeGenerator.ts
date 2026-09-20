@@ -172,7 +172,9 @@ def init_stats():
             "busyCount": 0,
             "busy_seconds": 0.0,
             "last_busy_change": 0.0,
-            "capacity": cfg["params"].get("capacity", 1),
+            "capacity": (cfg["params"].get("bufferCapacity", -1) if cfg["nodeType"] == "channel" and cfg["params"].get("bufferCapacity", -1) > 0
+                         else cfg["params"].get("capacity", 1)),
+            "lateCount": 0,
             "waits": [],
             "services": [],
             "latencies": [],
@@ -197,6 +199,10 @@ def snapshot_stats(env):
         if node_type == "container":
             con = resources.get(nid)
             level = con.level if con else 0
+            # A tank has no servers: utilization is how full it is.
+            cap = con.capacity if con else 0
+            if cap and cap != float('inf'):
+                util = level / cap
         else:
             level = s.get("level")
 
@@ -208,10 +214,14 @@ def snapshot_stats(env):
             "entitiesOut": s["entitiesOut"],
             "currentDepth": s["currentDepth"],
             "utilization": min(1.0, util),
+            # Raw counters so the Digital Twin can compute *current* busy % over a recent window.
+            "busySeconds": busy_so_far,
+            "capacity": max(1, s["capacity"]) if s["capacity"] else 1,
             "avgWaitTime": sum(s["waits"]) / len(s["waits"]) if s["waits"] else 0,
             "avgServiceTime": sum(s["services"]) / len(s["services"]) if s["services"] else 0,
             "renegeCount": s.get("renegeCount", 0),
             "droppedCount": s.get("droppedCount", 0),
+            "lateCount": s.get("lateCount", 0),
             "level": level,
         }
         if s["latencies"]:
@@ -219,11 +229,14 @@ def snapshot_stats(env):
     return snap
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at):
+def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_stats=None):
     params = cfg["params"]
     label = cfg["label"]
     wait_time = env.now - queued_at
     s["waits"].append(wait_time)
+    # The wait is spent in the upstream queue, so credit it there too (queue KPIs read it).
+    if queue_stats is not None:
+        queue_stats["waits"].append(wait_time)
     # G19 fix: accumulate busy-time before changing busyCount
     if s["busyCount"] > 0:
         s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
@@ -317,7 +330,7 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
                         s["currentDepth"] -= 1
                         s["entitiesOut"] += 1
                         res_s["currentDepth"] += 1
-                        svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                        svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s))
                         yield svc
                         next_after_service = svc.value
                     else:
@@ -331,7 +344,7 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
                     s["currentDepth"] -= 1
                     s["entitiesOut"] += 1
                     res_s["currentDepth"] += 1
-                    svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at))
+                    svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s))
                     yield svc
                     next_after_service = svc.value
             # Server released here -- only now do we move downstream (F-5),
@@ -373,10 +386,20 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             except simpy.Interrupt as i:
                 log_event(env.now, eid, node_id, label, "interrupted")
                 
+        # Track busy time so Processing Time / utilization are real for service nodes.
+        if s["busyCount"] > 0:
+            s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+        s["last_busy_change"] = env.now
+        s["busyCount"] += 1
+        svc_started = env.now
         p = env.process(interruptible_delay(env, svc_time))
         if node_id not in active_processes_by_node: active_processes_by_node[node_id] = {}
         active_processes_by_node[node_id][eid] = p
         yield p
+        s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+        s["last_busy_change"] = env.now
+        s["busyCount"] -= 1
+        s["services"].append(env.now - svc_started)
         if eid in active_processes_by_node[node_id]: del active_processes_by_node[node_id][eid]
         
         s["currentDepth"] -= 1
@@ -453,7 +476,17 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
         delay = sample(params.get("delayDistribution", "deterministic"), params.get("propagationDelay", 0))
         log_event(env.now, eid, node_id, label, "transmitted")
         
+        if s["busyCount"] > 0:
+            s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+        s["last_busy_change"] = env.now
+        s["busyCount"] += 1
         yield env.timeout(delay)
+        s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+        s["last_busy_change"] = env.now
+        s["busyCount"] -= 1
+        # A message is "late" when it took longer than the channel's nominal propagation delay.
+        if params.get("detectLateMessages", False) and delay > params.get("propagationDelay", 0) + 1e-9:
+            s["lateCount"] += 1
         
         yield store.get() # free capacity
         s["currentDepth"] = len(store.items)

@@ -61,6 +61,19 @@ interface Dot {
   delay: number; // ms before it starts moving
 }
 
+const BUSY_WINDOW_TICKS = 10;
+const SERVER_TYPES = new Set(["resource", "priority_resource", "service"]);
+
+/** Busy % over the last few ticks (what the server is doing *now*), not the average since t=0. */
+function currentBusy(buffer: SimTick[], index: number, id: string): number | null {
+  const cur = buffer[index]?.nodeStats[id];
+  const prev = buffer[Math.max(0, index - BUSY_WINDOW_TICKS)]?.nodeStats[id];
+  if (!cur || !prev || cur.busySeconds == null || prev.busySeconds == null) return null;
+  const dt = buffer[index].simTime - buffer[Math.max(0, index - BUSY_WINDOW_TICKS)].simTime;
+  if (dt <= 0) return null;
+  return Math.max(0, Math.min(1, (cur.busySeconds - prev.busySeconds) / (dt * (cur.capacity || 1))));
+}
+
 function congestionColor(util: number, depth: number) {
   if (util > 0.85 || depth >= 5) return { color: 0xef4444, alpha: 0.32, radius: NODE_RADIUS + 4 };
   if (util > 0.55 || depth >= 2) return { color: 0xf59e0b, alpha: 0.24, radius: NODE_RADIUS + 2 };
@@ -192,7 +205,7 @@ export default function DigitalTwinCanvas({
       }
     }
 
-    function drawNodes(tick: SimTick | null) {
+    function drawNodes(tick: SimTick | null, index = -1) {
       for (const n of nodesRef.current) {
         const v = visuals.get(n.id);
         if (!v) continue;
@@ -203,11 +216,17 @@ export default function DigitalTwinCanvas({
           v.sub.text = "";
           continue;
         }
-        const util = s.utilization ?? 0;
+        const isServer = SERVER_TYPES.has(s.nodeType);
         const depth = s.currentDepth ?? 0;
-        const c = congestionColor(util, depth);
+        // Servers: real-time busy % (falls back to cumulative for engines that don't send raw counters).
+        const util = isServer ? currentBusy(tickBufferRef.current, index, n.id) ?? s.utilization ?? 0 : 0;
+        const c = congestionColor(util, isServer ? 0 : depth);
         v.g.circle(0, 0, c.radius).fill({ color: c.color, alpha: c.alpha }).stroke({ width: 3, color: c.color, alpha: 0.9 });
-        v.sub.text = `${Math.round(util * 100)}% busy · ${depth} waiting`;
+        v.sub.text = isServer
+          ? `${Math.round(util * 100)}% busy now`
+          : s.nodeType === "source" || s.nodeType === "sink"
+            ? `${s.entitiesOut} ${s.nodeType === "source" ? "sent" : "done"}`
+            : `${depth} waiting`;
       }
     }
 
@@ -269,7 +288,7 @@ export default function DigitalTwinCanvas({
         dirtyRef.current = false;
         syncNodeVisuals();
         drawEdges();
-        drawNodes(prevTick);
+        drawNodes(prevTick, appliedIndex);
       }
 
       if (playingRef.current && buffer.length > 0) {
@@ -280,7 +299,7 @@ export default function DigitalTwinCanvas({
           spawnDots(prevTick, next);
           prevTick = next;
           appliedIndex = target;
-          drawNodes(next);
+          drawNodes(next, target);
         }
       }
 
