@@ -4,7 +4,7 @@ import React, { useState, useCallback, createContext, useContext, useRef, useEff
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ReactFlow, ReactFlowProvider,
-  Background, Controls, MiniMap, addEdge, useReactFlow,
+  Background, Controls, MiniMap, addEdge, useReactFlow, useViewport,
   Handle, Position, BaseEdge, getBezierPath, EdgeLabelRenderer,
   type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges
 } from "@xyflow/react";
@@ -13,6 +13,8 @@ import type { SimState } from "@/app/dashboard/project/[id]/page";
 import type { SimTick, NodeStats, NodeType } from "@/lib/simulation/types";
 import { AlertCircle, X } from "lucide-react";
 import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
+import type { PresenceUser } from "@/lib/realtime/usePresence";
+import LiveCursor from "@/components/workspace/LiveCursor";
 
 // ─── Live Stats Context ───────────────────────────────────────────────────────
 const LiveStatsContext = createContext<{
@@ -22,7 +24,16 @@ const LiveStatsContext = createContext<{
   connectedHandles: Set<string>;
   simType: string;
   upstreamQueueDepth: Record<string, number>;
-}>({ stats: {}, bottleneckId: "", simState: "idle", connectedHandles: new Set(), simType: "human_queue", upstreamQueueDepth: {} });
+  remoteUsers: PresenceUser[];
+}>({
+  stats: {},
+  bottleneckId: "",
+  simState: "idle",
+  connectedHandles: new Set(),
+  simType: "human_queue",
+  upstreamQueueDepth: {},
+  remoteUsers: [],
+});
 
 // ─── Node color map (Gap G6 Resolved) ─────────────────────────────────────────
 export const NODE_BASE_COLORS: Record<string, string> = {
@@ -351,11 +362,22 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { setNodes, setEdges } = useReactFlow();
-  const { stats, bottleneckId, simState, connectedHandles, simType, upstreamQueueDepth } = useContext(LiveStatsContext);
+  const { stats, bottleneckId, simState, connectedHandles, simType, upstreamQueueDepth, remoteUsers } = useContext(LiveStatsContext);
   const nodeType = data.nodeType;
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
+
+  // Remote presence on this node
+  const selectingUsers = remoteUsers.filter((u) => u.selectedNodeId === id || u.editingNodeId === id);
+  const primaryRemoteUser = selectingUsers[0];
+  const isRemoteEditing = selectingUsers.some((u) => u.editingNodeId === id);
+
+  const remoteShadow = isRemoteEditing
+    ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}`
+    : primaryRemoteUser
+    ? `0 0 0 2px ${primaryRemoteUser.color}`
+    : undefined;
 
   useEffect(() => {
     if (!selected) {
@@ -432,9 +454,23 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
       }`}
       style={{
         borderLeftColor: baseColor,
+        boxShadow: remoteShadow,
         zIndex: isHovered ? 9999 : selected ? 50 : 1,
       }}
     >
+      {/* ── Remote User Presence Pill / Editing Badge ── */}
+      {primaryRemoteUser && (
+        <div
+          className="absolute -top-3 left-2 px-2 py-0.5 rounded-full text-white text-[9.5px] font-bold shadow-sm flex items-center gap-1 pointer-events-none z-30 transition-all"
+          style={{ backgroundColor: primaryRemoteUser.color }}
+        >
+          {isRemoteEditing && <span className="text-[9px]">✏️</span>}
+          <span className="truncate max-w-[70px]">{primaryRemoteUser.name}</span>
+          {selectingUsers.length > 1 && (
+            <span className="opacity-80 text-[8.5px]">+{selectingUsers.length - 1}</span>
+          )}
+        </div>
+      )}
       {/* ── Sleek Light Theme Hover Details Tooltip ── */}
       <AnimatePresence>
         {isHovered && !showDeleteBtn && (
@@ -616,6 +652,7 @@ export interface NodeCanvasProps {
   edges: Edge[];
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
+  onNodeDragStop?: (event: any, node: Node, nodes: Node[]) => void;
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   simState: SimState;
@@ -623,29 +660,95 @@ export interface NodeCanvasProps {
   simTick?: SimTick | null;
   bottleneckNodeId?: string;
   readOnly?: boolean;
+  remoteUsers?: PresenceUser[];
+  onBroadcastCursor?: (cursor: { x: number; y: number } | null) => void;
+  /** Fires on every pan/zoom (and once on init) so overlays can stay aligned with the graph. */
+  onViewportChange?: (viewport: { x: number; y: number; zoom: number }) => void;
 }
 
 const getMiniMapNodeColor = (n: Node) => NODE_BASE_COLORS[(n.data as any)?.nodeType] || "var(--color-info)";
 
 export interface NodeCanvasHandle {
   addNode: (nodeType: string) => void;
+  captureSnapshot: () => Promise<string | null>;
+}
+
+function RemoteCursorsOverlay({
+  remoteUsers,
+  wrapperRef,
+}: {
+  remoteUsers: PresenceUser[];
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { flowToScreenPosition } = useReactFlow();
+  useViewport();
+
+  const bounds = wrapperRef.current?.getBoundingClientRect();
+  if (!bounds) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+      {remoteUsers
+        .filter((u) => u.cursor && u.cursor.x != null && u.cursor.y != null)
+        .map((u) => {
+          const screenPos = flowToScreenPosition(u.cursor!);
+          const localX = screenPos.x - bounds.left;
+          const localY = screenPos.y - bounds.top;
+          return (
+            <LiveCursor
+              key={u.id}
+              x={localX}
+              y={localY}
+              name={u.name}
+              color={u.color}
+            />
+          );
+        })}
+    </div>
+  );
 }
 
 // Inner canvas with access to useReactFlow
 function NodeCanvasInner({
-  nodes, edges, onNodesChange, onEdgesChange,
+  nodes, edges, onNodesChange, onEdgesChange, onNodeDragStop,
   selectedNodeId, onSelectNode, simState, simType, simTick, bottleneckNodeId = "",
+  remoteUsers = [], onBroadcastCursor, onViewportChange,
   exposedRef, readOnly = false,
 }: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
   const { fitView, setNodes, setEdges } = useReactFlow();
   const prevNodeCountRef = useRef(0);
+  const cursorThrottleRef = useRef(false);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onBroadcastCursor || !reactFlowInstance || !reactFlowWrapper.current) return;
+    if (cursorThrottleRef.current) return;
+    cursorThrottleRef.current = true;
+    const bounds = reactFlowWrapper.current.getBoundingClientRect();
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    requestAnimationFrame(() => {
+      if (reactFlowInstance) {
+        const flowPos = reactFlowInstance.screenToFlowPosition({
+          x: clientX - bounds.left,
+          y: clientY - bounds.top,
+        });
+        onBroadcastCursor(flowPos);
+      }
+      cursorThrottleRef.current = false;
+    });
+  }, [onBroadcastCursor, reactFlowInstance]);
+
+  const handlePointerLeave = useCallback(() => {
+    if (onBroadcastCursor) {
+      onBroadcastCursor(null);
+    }
+  }, [onBroadcastCursor]);
 
   useImperativeHandle(exposedRef, () => ({
     addNode: (nodeType: string) => {
       if (!reactFlowInstance) return;
-      const viewport = reactFlowInstance.getViewport();
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();
       const centerScreen = {
         x: (bounds?.width ?? 800) / 2,
@@ -664,6 +767,19 @@ function NodeCanvasInner({
         data: { label: (NODE_LABELS as any)[nodeType] || nodeType, nodeType, params: {} },
       };
       onNodesChange([{ type: "add", item: newNode }]);
+    },
+    captureSnapshot: async () => {
+      if (!reactFlowWrapper.current) return null;
+      try {
+        const { toPng } = await import("html-to-image");
+        return await toPng(reactFlowWrapper.current, {
+          backgroundColor: "#F9F8FD",
+          quality: 0.95,
+        });
+      } catch (err) {
+        console.warn("Failed to capture canvas snapshot:", err);
+        return null;
+      }
     },
   }), [reactFlowInstance, nodes, onNodesChange]);
 
@@ -773,8 +889,13 @@ function NodeCanvasInner({
   }), []);
 
   return (
-    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue", upstreamQueueDepth }}>
-      <div ref={reactFlowWrapper} className="w-full h-full workspace-canvas relative">
+    <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue", upstreamQueueDepth, remoteUsers }}>
+      <div
+        ref={reactFlowWrapper}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        className="w-full h-full workspace-canvas relative"
+      >
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes dashdraw {
             from { stroke-dashoffset: 10; }
@@ -786,8 +907,13 @@ function NodeCanvasInner({
           edges={liveEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragStop={onNodeDragStop}
           onConnect={onConnect}
-          onInit={setReactFlowInstance}
+          onInit={(instance) => {
+            setReactFlowInstance(instance);
+            onViewportChange?.(instance.getViewport());
+          }}
+          onMove={(_, vp) => onViewportChange?.(vp)}
           onDrop={onDrop}
           onDragOver={onDragOver}
           onSelectionChange={onSelectionChange}
@@ -808,6 +934,7 @@ function NodeCanvasInner({
             maskColor="rgba(240, 240, 244, 0.7)"
             className="border border-border rounded-md shadow-sm bg-surface"
           />
+          <RemoteCursorsOverlay remoteUsers={remoteUsers} wrapperRef={reactFlowWrapper} />
         </ReactFlow>
       </div>
     </LiveStatsContext.Provider>

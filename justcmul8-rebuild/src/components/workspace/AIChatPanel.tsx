@@ -288,8 +288,17 @@ export default function AIChatPanel({
     if (!textToSend.trim() || generating) return;
     const echoUser = opts.echoUser !== false;
 
-    const userMessage = {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const userMessage: {
+      project_id: string;
+      user_id?: string;
+      role: "user" | "assistant";
+      content: string;
+      metadata?: any;
+    } = {
       project_id: project.id,
+      ...(user?.id ? { user_id: user.id } : {}),
       role: "user",
       content: textToSend,
     };
@@ -383,7 +392,8 @@ export default function AIChatPanel({
 
       const assistantMessage = {
         project_id: project.id,
-        role: "assistant",
+        ...(user?.id ? { user_id: user.id } : {}),
+        role: "assistant" as const,
         content: withWarnings(data.text || "Simulation plan updated.", allWarnings),
         metadata: {
           actionType: data.actionType,

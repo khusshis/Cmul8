@@ -30,11 +30,19 @@ CREATE TABLE IF NOT EXISTS public.simulation_runs (
 CREATE TABLE IF NOT EXISTS public.chat_history (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null check (role in ('user', 'ai')),
-  message text not null,
+  user_id uuid references auth.users(id) on delete cascade,
+  role text not null check (role in ('user', 'assistant')),
+  content text not null,
+  metadata jsonb,
   created_at timestamptz default now()
 );
+
+-- Migration helpers for existing databases:
+-- ALTER TABLE public.chat_history RENAME COLUMN message TO content;
+-- ALTER TABLE public.chat_history DROP CONSTRAINT IF EXISTS chat_history_role_check;
+-- ALTER TABLE public.chat_history ADD CONSTRAINT chat_history_role_check CHECK (role IN ('user', 'assistant'));
+-- ALTER TABLE public.chat_history ADD COLUMN IF NOT EXISTS metadata jsonb;
+-- ALTER TABLE public.chat_history ALTER COLUMN user_id DROP NOT NULL;
 
 -- 4. Enable Row-Level Security
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
@@ -84,12 +92,29 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can delete their own chat') THEN
         CREATE POLICY "Users can delete their own chat" ON public.chat_history FOR DELETE USING (auth.uid() = user_id);
     END IF;
+
+    -- Realtime Messages Authorization Policy (Task 5)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'realtime' AND table_name = 'messages') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'realtime' AND tablename = 'messages' AND policyname = 'project members can access their project realtime channel') THEN
+            CREATE POLICY "project members can access their project realtime channel"
+            ON realtime.messages
+            FOR SELECT
+            TO authenticated
+            USING (
+              realtime.topic() = 'project:' || (
+                SELECT p.id::text FROM public.projects p WHERE p.id::text = split_part(realtime.topic(), ':', 2)
+                AND (p.user_id = auth.uid())
+              )
+            );
+        END IF;
+    END IF;
 END $$;
 
 -- 6. Indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_projects_user_id ON public.projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON public.projects(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_history_project_id ON public.chat_history(project_id);
+CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON public.chat_history(user_id);
 
 -- 7. Force Supabase to refresh its schema cache so the Next.js API instantly recognizes the columns
 NOTIFY pgrst, 'reload schema';
@@ -127,6 +152,20 @@ RETURNS TABLE (name text, sim_type text, graph_json jsonb) AS $$
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 GRANT EXECUTE ON FUNCTION public.get_shared_project(text) TO anon, authenticated;
+
+-- 9b. Public status check for a share token (so the viewer page can tell an
+-- invalid link apart from a valid-but-revoked one, without exposing any
+-- project_shares row data beyond that single status word).
+CREATE OR REPLACE FUNCTION public.get_share_status(token text)
+RETURNS text AS $$
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM public.project_shares WHERE share_token = token) THEN 'invalid'
+    WHEN EXISTS (SELECT 1 FROM public.project_shares WHERE share_token = token AND revoked_at IS NOT NULL) THEN 'revoked'
+    ELSE 'active'
+  END;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+GRANT EXECUTE ON FUNCTION public.get_share_status(text) TO anon, authenticated;
 
 -- 10. Profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (

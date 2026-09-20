@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -20,10 +20,14 @@ import {
   Radio,
   Activity,
   Check,
+  DollarSign,
+  Loader2,
 } from "lucide-react";
-import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
-import type { SimResult, SimTypeId, DomainMetricCard } from "@/lib/simulation/types";
+import type { OptimizerFix, OptimizerRecommendation } from "@/app/api/ai/optimize/route";
+import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, BarChart, Bar, Tooltip } from "recharts";
+import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { resolveKpiMetrics, type ResolvedKpi } from "@/lib/simulation/resolveKpiMetrics";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 
 const ICON_MAP: Record<string, any> = {
@@ -44,6 +48,7 @@ function HeroStatCard({
   label,
   value,
   decimals = 0,
+  prefix = "",
   suffix = "",
   subtext,
   color,
@@ -53,6 +58,7 @@ function HeroStatCard({
   label: string;
   value: number;
   decimals?: number;
+  prefix?: string;
   suffix?: string;
   subtext?: string;
   color: string;
@@ -81,6 +87,7 @@ function HeroStatCard({
 
       <div className="mt-4">
         <div className="text-[28px] font-black text-gray-900 leading-none tabular-nums tracking-tight">
+          {prefix}
           {animated}
           {suffix}
         </div>
@@ -98,11 +105,13 @@ function HeroStatCard({
 export default function ExecutiveTab({
   result,
   simType,
+  onApplyFix,
 }: {
   result: SimResult;
   simType: SimTypeId;
-  }) {
-  const simConfig = SIM_TYPE_REGISTRY[simType];
+  onApplyFix?: (fix: OptimizerFix) => void;
+}) {
+  const simConfig = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue;
   const efficiencyRate =
     result.totalArrived > 0
       ? Math.round((result.totalCompleted / result.totalArrived) * 100)
@@ -110,8 +119,33 @@ export default function ExecutiveTab({
 
   const healthScore = result.healthScore ?? 85;
   const aiDiagnosis = result.aiDiagnosis;
-  const domainMetrics = result.domainMetrics || [];
+  const resolvedKpis = resolveKpiMetrics(simConfig.kpiMetrics, result);
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
+
+  const [aiRecs, setAiRecs] = useState<OptimizerRecommendation[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [appliedFixIds, setAppliedFixIds] = useState<Set<number>>(new Set());
+
+  async function runAiOptimizer() {
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ result, simType }),
+      });
+      const data = await res.json();
+      if (data.recommendations && Array.isArray(data.recommendations)) {
+        setAiRecs(data.recommendations);
+      }
+    } catch (err) {
+      console.error("AI Optimizer Request Failed:", err);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  const activeRecommendations = aiRecs || aiDiagnosis?.recommendations || [];
 
   return (
     <div className="space-y-6">
@@ -248,8 +282,14 @@ export default function ExecutiveTab({
         </motion.div>
       </div>
 
-      {/* ── Middle Row: 4 Core Headline KPIs ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* ── Middle Row: Core Headline KPIs ── */}
+      <div
+        className={`grid grid-cols-2 ${
+          result.costAnalysis && result.costAnalysis.totalSystemCost > 0
+            ? "md:grid-cols-3 lg:grid-cols-5"
+            : "md:grid-cols-4"
+        } gap-4`}
+      >
         <HeroStatCard
           icon={Users}
           label={`${simConfig.entityName}s Arrived`}
@@ -285,6 +325,18 @@ export default function ExecutiveTab({
           delay={0.25}
           subtext={`Worst-case wait (p95): ${(result.waitTimePercentiles?.p95 ?? 0).toFixed(1)}s`}
         />
+        {result.costAnalysis && result.costAnalysis.totalSystemCost > 0 && (
+          <HeroStatCard
+            icon={DollarSign}
+            label="Total System Cost"
+            value={result.costAnalysis.totalSystemCost}
+            decimals={2}
+            prefix="$"
+            color="#10B981"
+            delay={0.3}
+            subtext={`$${result.costAnalysis.costPerCompletedEntity.toFixed(2)} per finished ${simConfig.entityName.toLowerCase()}`}
+          />
+        )}
       </div>
 
       {/* ── Bottom Row: Domain Operations Tiles + Top Optimizations ── */}
@@ -297,39 +349,70 @@ export default function ExecutiveTab({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {domainMetrics.map((dm) => {
-              const IconComp = ICON_MAP[dm.iconName] || Activity;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {resolvedKpis.map((kpi, idx) => {
+              const iconKey = kpi.key.toLowerCase();
+              const IconComp =
+                iconKey.includes("wait") || iconKey.includes("latency") || iconKey.includes("time")
+                  ? Clock
+                  : iconKey.includes("util")
+                  ? Gauge
+                  : iconKey.includes("completed") || iconKey.includes("served")
+                  ? CheckCircle2
+                  : iconKey.includes("depth") || iconKey.includes("inventory") || iconKey.includes("level")
+                  ? Boxes
+                  : iconKey.includes("dropped") || iconKey.includes("late")
+                  ? AlertTriangle
+                  : Activity;
+
               return (
                 <div
-                  key={dm.id}
-                  className="rounded-2xl bg-white border border-gray-100 p-4 flex flex-col justify-between shadow-sm hover:border-indigo-100 transition-all"
+                  key={idx}
+                  className="rounded-2xl bg-white border border-gray-100 p-4 flex flex-col justify-between shadow-sm hover:border-indigo-200 hover:shadow-xs transition-all min-h-[140px]"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 text-[#5742FF] flex items-center justify-center">
                       <IconComp size={16} />
                     </div>
-                    <span
-                      className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                        dm.status === "optimal"
-                          ? "bg-emerald-50 text-emerald-600"
-                          : dm.status === "warning"
-                          ? "bg-amber-50 text-amber-600"
-                          : "bg-red-50 text-red-600"
-                      }`}
-                    >
-                      {dm.status === "optimal" ? "Good" : dm.status === "warning" ? "Notice" : "High Delay"}
+                    <span className="text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-50/80 text-indigo-700 border border-indigo-100">
+                      {kpi.chartType.replace("_", " ")}
                     </span>
                   </div>
+
                   <div>
                     <div className="text-[20px] font-black text-gray-900 leading-tight">
-                      {dm.value}
+                      {kpi.displayValue}
                     </div>
-                    <div className="text-[11px] font-bold text-gray-700 mt-0.5 line-clamp-1">
-                      {dm.label}
+                    <div className="text-[11.5px] font-bold text-gray-700 mt-1 line-clamp-1">
+                      {kpi.label}
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-1">{dm.benchmark}</div>
+                    <div className="text-[10px] font-medium text-gray-400 mt-0.5">
+                      {kpi.series ? `${kpi.series.length} station${kpi.series.length > 1 ? "s" : ""}` : kpi.unit}
+                    </div>
                   </div>
+
+                  {/* Micro Series Mini-Bar Breakdown for bar/pie charts when node data is available */}
+                  {kpi.series && kpi.series.length > 1 && (
+                    <div className="mt-2.5 pt-2 border-t border-gray-100">
+                      <div className="space-y-1 max-h-[46px] overflow-y-auto custom-scrollbar">
+                        {kpi.series.slice(0, 3).map((item, sIdx) => {
+                          const maxVal = Math.max(1, ...kpi.series!.map((s) => s.value));
+                          const pct = Math.min(100, Math.round((item.value / maxVal) * 100));
+                          return (
+                            <div key={sIdx} className="flex items-center justify-between gap-2 text-[9.5px]">
+                              <span className="text-gray-500 font-semibold truncate max-w-[80px]">{item.name}</span>
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#5742FF] rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-gray-700 font-bold tabular-nums shrink-0">
+                                {item.value}{kpi.unit === "%" ? "%" : ""}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -340,12 +423,30 @@ export default function ExecutiveTab({
         <div className="lg:col-span-6 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#5742FF]">
-              Smart Recommendations to Speed Up Flow
+              {aiRecs ? "Gemini Prescriptive Recommendations" : "Smart Recommendations to Speed Up Flow"}
             </span>
+
+            <button
+              onClick={runAiOptimizer}
+              disabled={aiLoading}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-[#5742FF] to-indigo-600 hover:from-[#4531E5] hover:to-indigo-700 text-white text-[11px] font-black shadow-xs transition-all disabled:opacity-60"
+            >
+              {aiLoading ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Analyzing Chokepoints...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={12} />
+                  <span>✨ Optimize System with AI</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="space-y-2.5">
-            {aiDiagnosis?.recommendations?.map((rec, i) => (
+            {activeRecommendations.map((rec: any, i: number) => (
               <div
                 key={i}
                 className="rounded-2xl bg-white border border-gray-100 p-4 flex items-start gap-3.5 shadow-sm hover:border-indigo-200 transition-all group"
@@ -366,6 +467,37 @@ export default function ExecutiveTab({
                   <p className="text-[11px] font-medium text-indigo-600 mt-1">
                     Expected Benefit: {rec.impact}
                   </p>
+
+                  {/* One-Click Apply Fix Action */}
+                  {(rec as OptimizerRecommendation).fix && onApplyFix && (
+                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-gray-500 truncate max-w-[220px]">
+                        Fix: {(rec as OptimizerRecommendation).fix!.description}
+                      </span>
+                      <button
+                        onClick={() => {
+                          onApplyFix((rec as OptimizerRecommendation).fix!);
+                          setAppliedFixIds((prev: Set<number>) => new Set([...prev, i]));
+                        }}
+                        disabled={appliedFixIds.has(i)}
+                        className={`px-3 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all ${
+                          appliedFixIds.has(i)
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-[#5742FF] hover:bg-[#4531E5] text-white shadow-xs"
+                        }`}
+                      >
+                        {appliedFixIds.has(i) ? (
+                          <>
+                            <Check size={12} strokeWidth={3} /> Applied
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={12} fill="currentColor" /> Apply Fix
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

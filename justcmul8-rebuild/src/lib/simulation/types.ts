@@ -96,6 +96,12 @@ export interface QueueParams {
   soldOutThreshold?: number;
   /** If true, ALL entities currently waiting in this queue renege simultaneously when sold-out fires. */
   broadcastRenege?: boolean;
+
+  // ── Cost & ROI ────────────────────────────────────────────────────────────
+  /** Cost per unit sim-time per entity sitting in this queue (inventory/buffer holding cost). */
+  holdingCostPerUnitTime?: number;
+  /** Dollar penalty incurred per unit of sim-time an entity waits here (customer dissatisfaction cost). */
+  waitingPenaltyPerUnitTime?: number;
 }
 
 export interface ResourceParams {
@@ -118,6 +124,10 @@ export interface ResourceParams {
   repairmanNodeId?: string;
   /** Priority level when requesting the repairman (lower = higher priority). Default: 1. */
   repairPriority?: number;
+
+  // ── Cost & ROI ────────────────────────────────────────────────────────────
+  /** Cost per unit sim-time this resource is busy (e.g. $/hour of a worker/machine). */
+  hourlyCost?: number;
 }
 
 export interface ServiceParams {
@@ -137,6 +147,10 @@ export interface ContainerParams {
   capacity: number;
   initialLevel: number;
   fillRate: number;
+
+  // ── Cost & ROI ────────────────────────────────────────────────────────────
+  /** Cost per unit sim-time for holding fluid/inventory in this container. */
+  holdingCostPerUnitTime?: number;
 }
 
 export interface StoreParams {
@@ -368,6 +382,27 @@ export interface DomainMetricCard {
   iconName: string;
 }
 
+export interface CostBreakdown {
+  nodeId: string;
+  nodeLabel: string;
+  resourceCost: number;      // hourlyCost * (busySeconds / 3600)
+  holdingCost: number;       // holdingCostPerUnitTime * entity-seconds-in-queue
+  waitingPenalty: number;    // waitingPenaltyPerUnitTime * entity-seconds-waited
+  totalCost: number;
+}
+
+export interface CostAnalysis {
+  totalSystemCost: number;
+  breakdown: CostBreakdown[];
+  costPerCompletedEntity: number;
+  /** Only present when comparing against a baseline run (e.g. Monte Carlo scenario diffing). */
+  roiVsBaseline?: {
+    baselineCost: number;
+    savedCost: number;
+    savedPercent: number;
+  };
+}
+
 export interface SimResult {
   simType: SimTypeId;
   totalSimTime: number;
@@ -397,6 +432,7 @@ export interface SimResult {
     bottleneckCause: string;
     recommendations: Array<{ title: string; action: string; impact: string; confidence: number }>;
   };
+  costAnalysis?: CostAnalysis;
 }
 
 // ─── SimulationEngine Interface ───────────────────────────────────────────────

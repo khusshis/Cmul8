@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -17,6 +17,7 @@ import { validateGraphConnectivity } from "@/components/workspace/NodeCanvas";
 import type { NodeCanvasHandle } from "@/components/workspace/NodeCanvas";
 import { usePresence } from "@/lib/realtime/usePresence";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import type { OptimizerFix } from "@/app/api/ai/optimize/route";
 
 // Dynamic imports for workspace components (stubs in Phase 4)
 import NodeCanvas from "@/components/workspace/NodeCanvas";
@@ -27,7 +28,11 @@ import SimResultsPanel from "@/components/workspace/SimResultsPanel";
 import TemplateGallery from "@/components/workspace/TemplateGallery";
 import ShareExportModal from "@/components/workspace/ShareExportModal";
 import AdvancedResultsDashboard from "@/components/workspace/AdvancedResultsDashboard";
+import MonteCarloPanel from "@/components/workspace/MonteCarloPanel";
+import DigitalTwinCanvas, { type TwinViewport, type TwinFrameInfo } from "@/components/workspace/DigitalTwinCanvas";
+import PlaybackControls from "@/components/workspace/PlaybackControls";
 import LiveCursor from "@/components/workspace/LiveCursor";
+import { CodeInspectorPanel } from "@/components/workspace/CodeInspectorPanel";
 
 export type SimState = "idle" | "running" | "paused";
 
@@ -36,6 +41,28 @@ interface Project {
   name: string;
   sim_type: string;
   graph_json: { nodes: any[]; edges: any[] };
+}
+
+interface HistorySnapshot {
+  nodes: any[];
+  edges: any[];
+}
+
+function graphToSimNodes(rfNodes: any[], rfEdges: any[]): SimGraph {
+  return {
+    nodes: rfNodes.map((n) => ({
+      id: n.id,
+      nodeType: (n.data as any).nodeType,
+      label: (n.data as any).label,
+      params: (n.data as any).params || {},
+      position: n.position,
+    })),
+    edges: rfEdges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+    })),
+  };
 }
 
 export default function WorkspacePage() {
@@ -48,12 +75,37 @@ export default function WorkspacePage() {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [saved, setSaved] = useState(true);
+
+  // Undo / Redo History Stack
+  const [history, setHistory] = useState<HistorySnapshot[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const historyRef = useRef<HistorySnapshot[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const isUndoRedoingRef = useRef(false);
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeRightPanel, setActiveRightPanel] = useState<"ai" | "properties">("properties");
   const [galleryDismissed, setGalleryDismissed] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [monteCarloOpen, setMonteCarloOpen] = useState(false);
+  const [digitalTwinActive, setDigitalTwinActive] = useState(false);
+  const [codeInspectorOpen, setCodeInspectorOpen] = useState(false);
+  const [twinPlaying, setTwinPlaying] = useState(true);
+  const [twinSpeed, setTwinSpeed] = useState(2);
+  const [twinViewport, setTwinViewport] = useState<TwinViewport>({ x: 0, y: 0, zoom: 1 });
+  const [twinReplayKey, setTwinReplayKey] = useState(0);
+  const [twinFrame, setTwinFrame] = useState<TwinFrameInfo>({ index: 0, total: 0, simTime: 0 });
+  // Every tick of the current run; the SimPy worker finishes in a burst, so the twin replays from this buffer at a watchable pace.
+  const tickBufferRef = useRef<SimTick[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null);
 
   // Simulation state placeholders
@@ -78,6 +130,21 @@ export default function WorkspacePage() {
     days: 86400,
   };
 
+  const twinNodes = useMemo(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        x: (n.position?.x ?? 0) + (n.measured?.width ?? n.width ?? 160) / 2,
+        y: (n.position?.y ?? 0) + (n.measured?.height ?? n.height ?? 80) / 2,
+        label: (n.data as any)?.label || n.id,
+      })),
+    [nodes]
+  );
+  const twinEdges = useMemo(
+    () => edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+    [edges]
+  );
+
   const saveTimer = useRef<NodeJS.Timeout | null>(null);
   const engineRef = useRef<SimulationEngine | null>(null);
   const canvasRef = useRef<NodeCanvasHandle>(null);
@@ -85,7 +152,20 @@ export default function WorkspacePage() {
   const runStartTimeRef = useRef<number>(0);
   const throttleRef = useRef(false);
 
-  const { users: remoteUsers, broadcastOp, onRemoteOp } = usePresence(
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  const nodeDataBroadcastTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const { users: remoteUsers, broadcastOp, onRemoteOp, updatePresence } = usePresence(
     project?.id || "",
     currentUser?.id || "",
     currentUser?.email?.split("@")[0] || "Someone"
@@ -96,11 +176,22 @@ export default function WorkspacePage() {
   }, [project]);
 
   useEffect(() => {
+    updatePresence({
+      selectedNodeId,
+      editingNodeId: activeRightPanel === "properties" ? selectedNodeId : null,
+    });
+  }, [selectedNodeId, activeRightPanel, updatePresence]);
+
+  useEffect(() => {
     const engine = new PyodideSimEngine();
-    engine.onTick((tick) => setSimTick(tick));
+    engine.onTick((tick) => {
+      tickBufferRef.current.push(tick);
+      setSimTick(tick);
+    });
     engine.onComplete(async (rawResult) => {
       setSimState("idle");
-      const result = enrichSimResult(rawResult);
+      const currentSimGraph = graphToSimNodes(nodesRef.current, edgesRef.current);
+      const result = enrichSimResult(rawResult, currentSimGraph);
       setSimResult(result);
 
       if (projectRef.current) {
@@ -131,6 +222,127 @@ export default function WorkspacePage() {
     };
   }, []);
 
+  // Record history snapshot helper
+  const recordHistory = useCallback((newNodes: any[], newEdges: any[]) => {
+    if (isUndoRedoingRef.current) return;
+
+    try {
+      const clonedNodes = JSON.parse(JSON.stringify(newNodes));
+      const clonedEdges = JSON.parse(JSON.stringify(newEdges));
+
+      setHistory((prev) => {
+        const curIdx = historyIndexRef.current;
+        const base = curIdx >= 0 ? prev.slice(0, curIdx + 1) : [];
+
+        // Check if identical to last snapshot
+        const last = base[base.length - 1];
+        if (
+          last &&
+          JSON.stringify(last.nodes) === JSON.stringify(clonedNodes) &&
+          JSON.stringify(last.edges) === JSON.stringify(clonedEdges)
+        ) {
+          return prev;
+        }
+
+        const next = [...base, { nodes: clonedNodes, edges: clonedEdges }];
+        if (next.length > 50) {
+          next.shift();
+        }
+        const nextIdx = next.length - 1;
+        historyIndexRef.current = nextIdx;
+        setHistoryIndex(nextIdx);
+        return next;
+      });
+    } catch (e) {
+      console.error("Failed to record history", e);
+    }
+  }, []);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex >= 0 && historyIndex < history.length - 1;
+
+  const handleUndo = useCallback(() => {
+    const curIdx = historyIndexRef.current;
+    if (curIdx <= 0 || historyRef.current.length === 0) return;
+
+    const targetIdx = curIdx - 1;
+    const snapshot = historyRef.current[targetIdx];
+    if (!snapshot) return;
+
+    isUndoRedoingRef.current = true;
+    historyIndexRef.current = targetIdx;
+    setHistoryIndex(targetIdx);
+
+    const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
+    const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+
+    setNodes(restoredNodes);
+    setEdges(restoredEdges);
+    triggerAutoSave(restoredNodes, restoredEdges);
+    toast.info("Action undone", "Undo");
+
+    setTimeout(() => {
+      isUndoRedoingRef.current = false;
+    }, 150);
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    const curIdx = historyIndexRef.current;
+    if (curIdx >= historyRef.current.length - 1 || curIdx < 0) return;
+
+    const targetIdx = curIdx + 1;
+    const snapshot = historyRef.current[targetIdx];
+    if (!snapshot) return;
+
+    isUndoRedoingRef.current = true;
+    historyIndexRef.current = targetIdx;
+    setHistoryIndex(targetIdx);
+
+    const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
+    const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+
+    setNodes(restoredNodes);
+    setEdges(restoredEdges);
+    triggerAutoSave(restoredNodes, restoredEdges);
+    toast.info("Action redone", "Redo");
+
+    setTimeout(() => {
+      isUndoRedoingRef.current = false;
+    }, 150);
+  }, []);
+
+  // Keyboard Shortcuts for Undo & Redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modKey && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (modKey && e.key.toLowerCase() === "y") ||
+        (modKey && e.key.toLowerCase() === "z" && e.shiftKey)
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   useEffect(() => {
     loadProject();
   }, [id]);
@@ -153,8 +365,18 @@ export default function WorkspacePage() {
     setProject(data);
     projectRef.current = data;
     const parsedGraph = data.graph_json || { nodes: [], edges: [] };
-    setNodes(parsedGraph.nodes || []);
-    setEdges(parsedGraph.edges || []);
+    const initNodes = parsedGraph.nodes || [];
+    const initEdges = parsedGraph.edges || [];
+    setNodes(initNodes);
+    setEdges(initEdges);
+    
+    // Initialize undo history with initial canvas
+    const initSnap = [{ nodes: JSON.parse(JSON.stringify(initNodes)), edges: JSON.parse(JSON.stringify(initEdges)) }];
+    setHistory(initSnap);
+    historyRef.current = initSnap;
+    setHistoryIndex(0);
+    historyIndexRef.current = 0;
+    
     setLoading(false);
   }
 
@@ -183,18 +405,60 @@ export default function WorkspacePage() {
         onUpdateNodes((prev) => applyNodeChanges(op.changes, prev));
       } else if (op.kind === "edges") {
         onUpdateEdges((prev) => applyEdgeChanges(op.changes, prev));
+      } else if (op.kind === "nodeData") {
+        const payload = op.changes?.[0];
+        if (payload && payload.id && payload.partialData) {
+          onUpdateNodes((prev) =>
+            prev.map((n) =>
+              n.id === payload.id
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      ...payload.partialData,
+                      params: payload.partialData.params
+                        ? { ...(n.data?.params || {}), ...payload.partialData.params }
+                        : n.data?.params,
+                    },
+                  }
+                : n
+            )
+          );
+        }
       }
     });
   }, [onRemoteOp]);
 
   function handleNodesChange(changes: NodeChange[]) {
-    onUpdateNodes((prev) => applyNodeChanges(changes, prev));
+    onUpdateNodes((prev) => {
+      const next = applyNodeChanges(changes, prev);
+      const hasStructureChange = changes.some(
+        (c) => c.type === "add" || c.type === "remove" || c.type === "replace"
+      );
+      if (hasStructureChange) {
+        recordHistory(next, edgesRef.current);
+      }
+      return next;
+    });
     broadcastOp({ kind: "nodes", changes });
   }
 
   function handleEdgesChange(changes: EdgeChange[]) {
-    onUpdateEdges((prev) => applyEdgeChanges(changes, prev));
+    onUpdateEdges((prev) => {
+      const next = applyEdgeChanges(changes, prev);
+      const hasStructureChange = changes.some(
+        (c) => c.type === "add" || c.type === "remove" || c.type === "replace"
+      );
+      if (hasStructureChange) {
+        recordHistory(nodesRef.current, next);
+      }
+      return next;
+    });
     broadcastOp({ kind: "edges", changes });
+  }
+
+  function handleNodeDragStop() {
+    recordHistory(nodesRef.current, edgesRef.current);
   }
 
   function handleSelectNode(id: string | null) {
@@ -217,21 +481,26 @@ export default function WorkspacePage() {
     setSaved(true);
   }
 
-  function graphToSimNodes(rfNodes: any[], rfEdges: any[]): SimGraph {
-    return {
-      nodes: rfNodes.map((n) => ({
-        id: n.id,
-        nodeType: (n.data as any).nodeType,
-        label: (n.data as any).label,
-        params: (n.data as any).params || {},
-        position: n.position,
-      })),
-      edges: rfEdges.map((e) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-      })),
-    };
+  function applyOptimizerFix(fix: OptimizerFix) {
+    const updatedNodes = nodes.map((n) => {
+      if (n.id === fix.nodeId) {
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            params: {
+              ...(n.data?.params || {}),
+              ...fix.paramPatch,
+            },
+          },
+        };
+      }
+      return n;
+    });
+
+    onUpdateNodes(() => updatedNodes);
+    recordHistory(updatedNodes, edges);
+    toast.success(`Applied fix: ${fix.description}`, "Optimization Applied");
   }
 
   function handleRun() {
@@ -257,6 +526,8 @@ export default function WorkspacePage() {
     if (engineRef.current && project) {
       setSimTick(null);
       setSimResult(null);
+      tickBufferRef.current.length = 0;
+      setDigitalTwinActive(true);
       setSimState("running");
       runStartTimeRef.current = Date.now();
       engineRef.current.start({
@@ -271,12 +542,10 @@ export default function WorkspacePage() {
 
   function handlePause() {
     if (engineRef.current) {
-      engineRef.current.pause();
-      if (pyodideStatus.phase !== "error") {
-        // Warning: pause is not supported on Pyodide. The engine will gracefully ignore it
-        // but we'll show an alert just so the user knows.
-        console.warn("Pause not supported on Pyodide. Engine continues running.");
+      if (pyodideStatus.phase !== "error" && !pyodideStatus.fallbackActive) {
+        toast.info("This simulation runs synchronously on SimPy and cannot be paused mid-flight — use Stop to restart instead.", "Pause Not Supported");
       } else {
+        engineRef.current.pause();
         setSimState("paused");
       }
     }
@@ -306,6 +575,7 @@ export default function WorkspacePage() {
     
     setNodes(rfNodes);
     setEdges(rfEdges);
+    recordHistory(rfNodes, rfEdges);
     triggerAutoSave(rfNodes, rfEdges);
   }
 
@@ -330,82 +600,108 @@ export default function WorkspacePage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 h-[68px] flex items-center px-5 border-b border-gray-100 bg-white">
+      <div className="flex-shrink-0 h-[62px] flex items-center justify-between px-4 border-b border-gray-100 bg-white min-w-0 overflow-x-auto">
         
-        {/* Logo Section */}
-        <Link href="/dashboard" className="flex items-center gap-2 mr-5 group cursor-pointer" title="Go to Dashboard">
-          <img src="/logo-transparent.png" alt="JustCmul8" className="w-10 h-10 object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105" />
-          <div className="flex flex-col">
-            <span className="font-extrabold text-[16px] text-[#111827] group-hover:text-[#5742FF] transition-colors leading-[1.1] tracking-tight">JustCmul8</span>
-            <span className="text-[10.5px] text-[#5742FF] font-medium leading-[1.1]">Model. Simulate. Optimize.</span>
-          </div>
-        </Link>
-
-        {/* Divider */}
-        <div className="w-px h-8 bg-gray-200 mr-5" />
-
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-gray-400">
-          <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-[#5742FF] transition-colors">
-            <Home size={15} /> My Simulations
+        {/* Left Section: Logo, Breadcrumbs, Undo/Redo */}
+        <div className="flex items-center gap-3 shrink-0 min-w-0 mr-3">
+          {/* Logo Section */}
+          <Link href="/dashboard" className="flex items-center gap-2 group cursor-pointer shrink-0" title="Go to Dashboard">
+            <img src="/logo-transparent.png" alt="JustCmul8" className="w-8 h-8 object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105" />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-[15px] text-[#111827] group-hover:text-[#5742FF] transition-colors leading-[1.1] tracking-tight whitespace-nowrap">JustCmul8</span>
+              <span className="text-[10px] text-[#5742FF] font-medium leading-[1.1] whitespace-nowrap">Model. Simulate. Optimize.</span>
+            </div>
           </Link>
-          <ChevronRight size={14} className="text-gray-300" />
-          <div className="flex items-center gap-1.5 text-[#111827] font-bold cursor-pointer group hover:text-[#5742FF] transition-colors">
-            {project?.name || "Loading..."}
-            <ChevronDown size={14} className="text-gray-400 group-hover:text-[#5742FF] transition-colors" />
-            <Edit2 size={13} className="text-gray-400 group-hover:text-[#5742FF] transition-colors ml-0.5" />
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-gray-200 shrink-0" />
+
+          {/* Breadcrumbs */}
+          <div className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-400 shrink-0 min-w-0">
+            <Link href="/dashboard" className="flex items-center gap-1 hover:text-[#5742FF] transition-colors shrink-0 whitespace-nowrap">
+              <Home size={14} /> My Simulations
+            </Link>
+            <ChevronRight size={13} className="text-gray-300 shrink-0" />
+            <div className="flex items-center gap-1 text-[#111827] font-bold cursor-pointer group hover:text-[#5742FF] transition-colors shrink-0">
+              <span className="max-w-[120px] lg:max-w-[160px] truncate">{project?.name || "Loading..."}</span>
+              <ChevronDown size={13} className="text-gray-400 group-hover:text-[#5742FF] transition-colors shrink-0" />
+              <Edit2 size={12} className="text-gray-400 group-hover:text-[#5742FF] transition-colors ml-0.5 shrink-0" />
+            </div>
+          </div>
+
+          {/* Undo / Redo Toolbar Controls */}
+          <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-full p-0.5 shadow-xs shrink-0">
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-[#5742FF] hover:bg-white hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
+            >
+              <Undo2 size={14} strokeWidth={2.4} />
+            </button>
+            <div className="w-px h-3 bg-gray-200 mx-0.5" />
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+              aria-label="Redo"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-[#5742FF] hover:bg-white hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
+            >
+              <Redo2 size={14} strokeWidth={2.4} />
+            </button>
           </div>
         </div>
 
-        <div className="flex-1" />
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right Section: Simulation Status, Controls, HUD, Actions */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           
           {/* Saved Status */}
-          <div className="flex items-center gap-1.5 px-3 h-[34px] rounded-full bg-emerald-50 border border-emerald-100/60 text-emerald-600 text-[12.5px] font-bold shadow-sm">
+          <div className="flex items-center gap-1.5 px-2.5 h-[32px] rounded-full bg-emerald-50 border border-emerald-100/60 text-emerald-600 text-[12px] font-bold shadow-xs shrink-0 whitespace-nowrap">
             {saved ? (
               <>
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                Saved just now
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
+                <span>Saved</span>
               </>
             ) : (
               <>
-                <Loader2 size={12} className="animate-spin text-emerald-500" />
-                Saving...
+                <Loader2 size={12} className="animate-spin text-emerald-500 shrink-0" />
+                <span>Saving...</span>
               </>
             )}
           </div>
 
           {runSavedPulse && (
-            <div className="flex items-center gap-1.5 px-3 h-[34px] rounded-full bg-blue-50 border border-blue-100/60 text-blue-600 text-[12.5px] font-bold shadow-sm animate-pulse">
-              <Check size={12} />
-              Run saved to history
+            <div className="flex items-center gap-1 px-2.5 h-[32px] rounded-full bg-blue-50 border border-blue-100/60 text-blue-600 text-[12px] font-bold shadow-xs animate-pulse shrink-0 whitespace-nowrap">
+              <Check size={12} className="shrink-0" />
+              <span>Run saved</span>
             </div>
           )}
 
           {/* Engine Status */}
-          <div className="flex items-center gap-1.5 px-3 h-[34px] rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold shadow-sm">
+          <div className="flex items-center gap-1.5 px-2.5 h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] text-[12px] font-bold shadow-xs shrink-0 whitespace-nowrap">
             <span className="text-gray-400 font-semibold mr-0.5">Engine:</span>
             {pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy" ? (
               <span className="text-orange-500 flex items-center gap-1.5">
-                <Loader2 size={12} className="animate-spin" /> Loading
+                <Loader2 size={12} className="animate-spin shrink-0" /> Loading
               </span>
             ) : pyodideStatus.phase === "error" ? (
               <span className="text-red-500 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-500" /> Error
+                <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" /> Error
               </span>
             ) : (
               <span className="text-emerald-500 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Ready
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" /> Ready
               </span>
             )}
           </div>
 
           {/* Simulation Duration Control Pill */}
-          <div className="relative flex items-center h-[34px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-sm px-2 text-[12.5px] font-bold">
-            <div className="flex items-center gap-1.5 pl-1 pr-1.5 text-gray-400">
-              <Clock size={13} strokeWidth={2.3} className="text-[#5742FF]" />
+          <div className="relative flex items-center h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-xs px-2 text-[12px] font-bold shrink-0 whitespace-nowrap">
+            <div className="flex items-center pl-0.5 pr-1 text-gray-400">
+              <Clock size={13} strokeWidth={2.3} className="text-[#5742FF] shrink-0" />
             </div>
 
             <input
@@ -415,7 +711,7 @@ export default function WorkspacePage() {
               value={durationValue}
               onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
               disabled={simState === "running"}
-              className="w-12 h-6 px-1 text-center font-extrabold text-[12.5px] text-[#111827] bg-gray-50 rounded-md border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50"
+              className="w-10 h-5 px-1 text-center font-extrabold text-[12px] text-[#111827] bg-gray-50 rounded border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50"
               title="Simulation Duration Value"
             />
 
@@ -424,10 +720,10 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={() => setDurationUnitOpen((o) => !o)}
                 disabled={simState === "running"}
-                className="flex items-center gap-1 px-2 py-1 text-[12px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[11.5px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded hover:bg-gray-50 disabled:opacity-50"
               >
                 <span>{durationUnit}</span>
-                <ChevronDown size={12} strokeWidth={2.5} className="text-gray-400" />
+                <ChevronDown size={11} strokeWidth={2.5} className="text-gray-400 shrink-0" />
               </button>
 
               {durationUnitOpen && (
@@ -464,19 +760,19 @@ export default function WorkspacePage() {
           </div>
 
           {/* Run Button with Speed Control */}
-          <div className="relative flex items-center shadow-sm h-[34px]">
+          <div className="relative flex items-center shadow-xs h-[32px] shrink-0 whitespace-nowrap">
             <button
               onClick={handleRun}
               disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
-              className="flex items-center h-full gap-1.5 pl-4 pr-3 rounded-l-full bg-[#5742FF] text-white text-[13.5px] font-bold hover:bg-[#4531E5] disabled:opacity-50 transition-colors border-r border-[#4531E5]"
+              className="flex items-center h-full gap-1.5 pl-3.5 pr-2.5 rounded-l-full bg-[#5742FF] text-white text-[12.5px] font-bold hover:bg-[#4531E5] disabled:opacity-50 transition-colors border-r border-[#4531E5]"
             >
-              <Play size={14} fill="currentColor" /> Run
+              <Play size={13} fill="currentColor" className="shrink-0" /> Run
             </button>
             <button
               onClick={() => setSpeedDropdownOpen(!speedDropdownOpen)}
-              className="flex items-center justify-center h-full pl-2 pr-3 rounded-r-full bg-[#5742FF] text-white hover:bg-[#4531E5] transition-colors disabled:opacity-50"
+              className="flex items-center justify-center h-full pl-1.5 pr-2.5 rounded-r-full bg-[#5742FF] text-white hover:bg-[#4531E5] transition-colors disabled:opacity-50"
             >
-              <ChevronDown size={14} strokeWidth={2.5} />
+              <ChevronDown size={13} strokeWidth={2.5} />
             </button>
             
             {/* Speed Dropdown */}
@@ -507,19 +803,59 @@ export default function WorkspacePage() {
           {/* Pause */}
           <button
             onClick={handlePause}
-            disabled={simState !== "running"}
-            className="flex items-center justify-center h-[34px] gap-1.5 px-4 rounded-full bg-white border border-gray-200 text-[#111827] text-[13.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+            disabled={simState !== "running" || (pyodideStatus.phase !== "error" && !pyodideStatus.fallbackActive)}
+            title={
+              pyodideStatus.phase !== "error" && !pyodideStatus.fallbackActive
+                ? "Pause is not supported for synchronous SimPy simulations — use Stop instead"
+                : undefined
+            }
+            className="flex items-center justify-center h-[32px] gap-1 px-3 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
           >
-            <Pause size={14} fill="currentColor" /> Pause
+            <Pause size={13} fill="currentColor" className="shrink-0" /> Pause
           </button>
 
           {/* Stop */}
           <button
             onClick={handleStop}
             disabled={simState === "idle"}
-            className="flex items-center justify-center h-[34px] gap-1.5 px-4 rounded-full bg-white border border-gray-200 text-[#111827] text-[13.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+            className="flex items-center justify-center h-[32px] gap-1 px-3 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-xs shrink-0 whitespace-nowrap"
           >
-            <Square size={13} fill="currentColor" /> Stop
+            <Square size={12} fill="currentColor" className="shrink-0" /> Stop
+          </button>
+
+          {/* Monte Carlo & Scenario Studio */}
+          <button
+            onClick={() => setMonteCarloOpen(true)}
+            disabled={simState === "running"}
+            className="flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 text-[#5742FF] text-[12px] font-bold hover:from-indigo-100 hover:to-purple-100 disabled:opacity-40 transition-all shadow-xs shrink-0 whitespace-nowrap"
+            title="Monte Carlo multi-run trials & Scenario A/B comparison"
+          >
+            <BarChart2 size={13} strokeWidth={2.4} className="shrink-0" />
+            <span>Monte Carlo</span>
+          </button>
+
+          {/* Digital Twin View Toggle */}
+          <button
+            onClick={() => setDigitalTwinActive((d) => !d)}
+            className={`flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full text-[12px] font-bold transition-all shadow-xs shrink-0 whitespace-nowrap ${
+              digitalTwinActive
+                ? "bg-[#5742FF] text-white border border-[#4531E5]"
+                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+            title="Toggle 2D Digital Twin Real-time Animation Overlay"
+          >
+            <Activity size={13} strokeWidth={2.4} className="shrink-0" />
+            <span>Digital Twin</span>
+          </button>
+
+          {/* Code Inspector */}
+          <button
+            onClick={() => setCodeInspectorOpen(true)}
+            className="flex items-center justify-center h-[32px] gap-1.5 px-3 rounded-full bg-white border border-gray-200 text-gray-700 text-[12px] font-bold hover:bg-gray-50 transition-all shadow-xs shrink-0 whitespace-nowrap"
+            title="Inspect live SimPy Python code & export Jupyter Notebook"
+          >
+            <Code2 size={13} strokeWidth={2.4} className="shrink-0" />
+            <span>Code</span>
           </button>
 
           {/* Live Simulation Clock & Progress HUD */}
@@ -530,56 +866,64 @@ export default function WorkspacePage() {
             const currentVal = (currentSecs / unitMult).toFixed(1);
             const pct = Math.min(100, Math.round((currentSecs / totalSecs) * 100));
             return (
-              <div className="flex items-center gap-2.5 h-[34px] px-3.5 rounded-full bg-[#F5F3FF] border border-indigo-100 text-[#1E1B4B] text-[12px] font-bold shadow-sm">
-                <div className="flex items-center gap-1.5 text-[#5742FF]">
-                  <Clock size={13} strokeWidth={2.5} />
-                  <span>{currentVal} / {durationValue} {durationUnit}</span>
+              <div className="flex items-center gap-2 h-[32px] px-3 rounded-full bg-[#F5F3FF] border border-indigo-100 text-[#1E1B4B] text-[11.5px] font-bold shadow-xs shrink-0 whitespace-nowrap">
+                <div className="flex items-center gap-1 text-[#5742FF]">
+                  <Clock size={12} strokeWidth={2.5} className="shrink-0" />
+                  <span>{currentVal}/{durationValue} {durationUnit}</span>
                 </div>
                 <span className="text-indigo-200">|</span>
                 <span className="text-emerald-600 font-extrabold" title="Total Entities Arrived">↑{simTick?.totalArrived ?? 0}</span>
                 <span className="text-[#5742FF] font-extrabold" title="Total Entities Completed">↓{simTick?.totalCompleted ?? 0}</span>
-                <div className="w-12 h-1.5 bg-indigo-200/60 rounded-full overflow-hidden">
+                <div className="w-10 h-1.5 bg-indigo-200/60 rounded-full overflow-hidden shrink-0">
                   <div
                     className="h-full bg-[#5742FF] rounded-full transition-all duration-200"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="text-[11px] font-extrabold text-gray-500">{pct}%</span>
+                <span className="text-[10.5px] font-extrabold text-gray-500">{pct}%</span>
               </div>
             );
           })()}
 
           {remoteUsers.length > 0 && (
-            <div className="flex items-center -space-x-2">
+            <div className="flex items-center -space-x-2 shrink-0">
               {remoteUsers.slice(0, 4).map((u) => (
                 <div
                   key={u.id}
                   title={u.name}
-                  className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-sm border-2 border-white"
+                  className="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-white shrink-0"
                   style={{ background: u.color }}
                 >
                   {u.name.charAt(0).toUpperCase()}
                 </div>
               ))}
+              {remoteUsers.length > 4 && (
+                <div
+                  title={remoteUsers.slice(4).map((u) => u.name).join(", ")}
+                  className="w-7 h-7 rounded-full bg-gray-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-white shrink-0"
+                >
+                  +{remoteUsers.length - 4}
+                </div>
+              )}
             </div>
           )}
 
           {/* Right Divider */}
-          <div className="w-px h-8 bg-gray-200 ml-1" />
+          <div className="w-px h-6 bg-gray-200 mx-0.5 shrink-0" />
 
           <button
             onClick={() => setShareModalOpen(true)}
-            className="flex items-center justify-center h-[34px] gap-1.5 px-4 rounded-full bg-white border border-gray-200 text-[#111827] text-[13.5px] font-bold hover:bg-gray-50 transition-colors shadow-sm"
+            className="flex items-center justify-center h-[32px] gap-1.5 px-3.5 rounded-full bg-white border border-gray-200 text-[#111827] text-[12.5px] font-bold hover:bg-gray-50 transition-colors shadow-xs shrink-0 whitespace-nowrap"
           >
-            <Share2 size={14} /> Share
+            <Share2 size={13} className="shrink-0" /> Share
           </button>
 
           {/* Avatar */}
-          <div className="flex items-center gap-1.5 cursor-pointer group ml-1">
-            <div className="w-8 h-8 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-sm shadow-sm">
+          <div className="flex items-center gap-1 cursor-pointer group ml-0.5 shrink-0">
+            <div className="w-7 h-7 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               M
             </div>
-            <ChevronDown size={14} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+            <ChevronDown size={13} className="text-gray-400 group-hover:text-gray-600 transition-colors shrink-0" />
           </div>
 
         </div>
@@ -616,19 +960,7 @@ export default function WorkspacePage() {
           onAddNode={(type) => canvasRef.current?.addNode(type)}
         />
 
-        <div
-          className="flex-1 relative overflow-hidden"
-          onMouseMove={(e) => {
-            if (!throttleRef.current) {
-              throttleRef.current = true;
-              const bounds = e.currentTarget.getBoundingClientRect();
-              requestAnimationFrame(() => {
-                broadcastOp({ kind: "cursor", changes: [{ x: e.clientX - bounds.left, y: e.clientY - bounds.top }] });
-                throttleRef.current = false;
-              });
-            }
-          }}
-        >
+        <div className="flex-1 relative overflow-hidden">
           <NodeCanvas
             ref={canvasRef}
             nodes={nodes}
@@ -636,16 +968,46 @@ export default function WorkspacePage() {
             simType={project?.sim_type || "human_queue"}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
+            onNodeDragStop={handleNodeDragStop}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}
             simState={simState}
             simTick={simTick}
+            remoteUsers={remoteUsers}
+            onBroadcastCursor={(cursor) =>
+              broadcastOp({ kind: "cursor", changes: [cursor] })
+            }
+            onViewportChange={setTwinViewport}
           />
 
-          {remoteUsers.filter((u) => u.cursor).map((u) => (
-            <LiveCursor key={u.id} x={u.cursor!.x} y={u.cursor!.y} name={u.name} color={u.color} />
-          ))}
+          {digitalTwinActive && (
+            <>
+              <div className="absolute inset-0 pointer-events-none z-10">
+                <DigitalTwinCanvas
+                  nodes={twinNodes}
+                  edges={twinEdges}
+                  tickBufferRef={tickBufferRef}
+                  playing={twinPlaying}
+                  speed={twinSpeed}
+                  viewport={twinViewport}
+                  replayKey={twinReplayKey}
+                  onFrame={setTwinFrame}
+                />
+              </div>
 
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+                <PlaybackControls
+                  playing={twinPlaying}
+                  onTogglePlay={() => setTwinPlaying((p) => !p)}
+                  speed={twinSpeed}
+                  onSpeedChange={setTwinSpeed}
+                  onClose={() => setDigitalTwinActive(false)}
+                  onReplay={() => { setTwinPlaying(true); setTwinReplayKey((k) => k + 1); }}
+                  progress={twinFrame}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="w-[330px] border-l border-gray-100 bg-[#fcfcfd] h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
@@ -702,9 +1064,31 @@ export default function WorkspacePage() {
                   node={nodes.find((n) => n.id === selectedNodeId)!}
                   simType={project?.sim_type || "human_queue"}
                   onUpdate={(id, partialData) => {
-                    onUpdateNodes((prev) =>
-                      prev.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...partialData } } : n))
+                    const updatedNodes = nodesRef.current.map((n) =>
+                      n.id === id
+                        ? {
+                            ...n,
+                            data: {
+                              ...n.data,
+                              ...partialData,
+                              params: partialData.params
+                                ? { ...(n.data?.params || {}), ...partialData.params }
+                                : n.data?.params,
+                            },
+                          }
+                        : n
                     );
+                    onUpdateNodes(() => updatedNodes);
+                    recordHistory(updatedNodes, edgesRef.current);
+                    if (nodeDataBroadcastTimer.current) {
+                      clearTimeout(nodeDataBroadcastTimer.current);
+                    }
+                    nodeDataBroadcastTimer.current = setTimeout(() => {
+                      broadcastOp({
+                        kind: "nodeData",
+                        changes: [{ id, partialData }],
+                      });
+                    }, 150);
                   }}
                 />
               ) : (
@@ -727,6 +1111,7 @@ export default function WorkspacePage() {
                 onApplyChanges={(newNodes, newEdges) => {
                   setNodes(newNodes);
                   setEdges(newEdges);
+                  recordHistory(newNodes, newEdges);
                   setSaved(false);
                 }}
               />
@@ -752,6 +1137,28 @@ export default function WorkspacePage() {
         result={simResult}
         simType={(project?.sim_type as SimTypeId) || "human_queue"}
         projectId={project?.id || ""}
+        onApplyFix={applyOptimizerFix}
+        onCaptureCanvasSnapshot={() => canvasRef.current?.captureSnapshot() ?? Promise.resolve(null)}
+      />
+
+      <MonteCarloPanel
+        open={monteCarloOpen}
+        onClose={() => setMonteCarloOpen(false)}
+        currentGraph={graphToSimNodes(nodes, edges)}
+        simType={(project?.sim_type as SimTypeId) || "human_queue"}
+        durationSeconds={Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60))}
+        speed={speed}
+        tickInterval={Math.max(0.05, Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60)) / 1000)}
+      />
+
+      <CodeInspectorPanel
+        isOpen={codeInspectorOpen}
+        onClose={() => setCodeInspectorOpen(false)}
+        graph={graphToSimNodes(nodes, edges)}
+        projectName={project?.name || "Simulation System"}
+        durationSeconds={Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60))}
+        tickIntervalSeconds={Math.max(0.05, Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60)) / 1000)}
+        result={simResult}
       />
     </div>
   );

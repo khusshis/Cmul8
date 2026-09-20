@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Check,
   HelpCircle,
+  DollarSign,
 } from "lucide-react";
 import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
@@ -678,6 +679,42 @@ function QueueProperties({ params, nodeId, onUpdate, theme }: any) {
           </div>
         )}
       </div>
+
+      <div className="pt-3 border-t border-gray-100 space-y-3">
+        <label className="text-[12px] font-extrabold text-gray-800 flex items-center gap-1.5">
+          <DollarSign size={14} className="text-emerald-600" /> Cost & Financial Impact
+        </label>
+        <div>
+          <label className={labelCls}>Holding Cost ($ / unit time per waiting item)</label>
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={params.holdingCostPerUnitTime ?? ""}
+            placeholder="0.00"
+            onChange={(e) =>
+              setParam("holdingCostPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
+            }
+            className={modernInputCls}
+          />
+          <span className="text-[11px] text-gray-400">Inventory or buffer holding cost while items wait</span>
+        </div>
+        <div>
+          <label className={labelCls}>Waiting Penalty ($ / unit time per waiting item)</label>
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={params.waitingPenaltyPerUnitTime ?? ""}
+            placeholder="0.00"
+            onChange={(e) =>
+              setParam("waitingPenaltyPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
+            }
+            className={modernInputCls}
+          />
+          <span className="text-[11px] text-gray-400">Dissatisfaction or SLA delay penalty incurred while waiting</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -762,6 +799,27 @@ function ResourceProperties({ params, nodeId, onUpdate, theme, isPriorityNode }:
             />
           </div>
         )}
+      </div>
+
+      <div className="pt-3 border-t border-gray-100 space-y-3">
+        <label className="text-[12px] font-extrabold text-gray-800 flex items-center gap-1.5">
+          <DollarSign size={14} className="text-emerald-600" /> Cost & ROI
+        </label>
+        <div>
+          <label className={labelCls}>Hourly Cost ($/hr)</label>
+          <input
+            type="number"
+            min={0}
+            step={0.5}
+            value={params.hourlyCost ?? ""}
+            placeholder="0.00"
+            onChange={(e) =>
+              setParam("hourlyCost", e.target.value !== "" ? Number(e.target.value) : undefined)
+            }
+            className={modernInputCls}
+          />
+          <span className="text-[11px] text-gray-400">Wage or operational cost while this resource is busy</span>
+        </div>
       </div>
     </div>
   );
@@ -889,6 +947,72 @@ function SinkProperties({ params, nodeId, onUpdate, theme }: any) {
   );
 }
 
+// ─── 7. Container (Tank / Fluid Level) ──────────────────────────
+function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
+  function setParam(key: string, value: any) {
+    onUpdate(nodeId, { params: { ...params, [key]: value } });
+  }
+  return (
+    <div className={sectionCls}>
+      <SectionHeading icon={Activity} accent={theme.accent} iconBg={theme.iconBg} iconColor={theme.iconColor}>
+        Container & Fluid Parameters
+      </SectionHeading>
+      <div>
+        <label className={labelCls}>Capacity</label>
+        <input
+          type="number"
+          min={0}
+          value={params.capacity ?? 100}
+          onChange={(e) => setParam("capacity", Number(e.target.value))}
+          className={modernInputCls}
+        />
+      </div>
+      <div>
+        <label className={labelCls}>Initial Level</label>
+        <input
+          type="number"
+          min={0}
+          value={params.initialLevel ?? 0}
+          onChange={(e) => setParam("initialLevel", Number(e.target.value))}
+          className={modernInputCls}
+        />
+      </div>
+      <div>
+        <label className={labelCls}>Fill Rate (units/sec)</label>
+        <input
+          type="number"
+          min={0}
+          step={0.1}
+          value={params.fillRate ?? 1}
+          onChange={(e) => setParam("fillRate", Number(e.target.value))}
+          className={modernInputCls}
+        />
+      </div>
+
+      <div className="pt-3 border-t border-gray-100 space-y-3">
+        <label className="text-[12px] font-extrabold text-gray-800 flex items-center gap-1.5">
+          <DollarSign size={14} className="text-emerald-600" /> Cost & ROI
+        </label>
+        <div>
+          <label className={labelCls}>Holding Cost ($ / unit time)</label>
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={params.holdingCostPerUnitTime ?? ""}
+            placeholder="0.00"
+            onChange={(e) =>
+              setParam("holdingCostPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
+            }
+            className={modernInputCls}
+          />
+          <span className="text-[11px] text-gray-400">Inventory holding cost for fluid/material</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Configuration Panel ───────────────────────────────────
 export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePropertiesPanelProps) {
   if (!node) return null;
@@ -964,6 +1088,9 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
         )}
         {nodeType === "decision" && (
           <DecisionProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+        )}
+        {nodeType === "container" && (
+          <ContainerProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
         )}
         {nodeType === "sink" && (
           <SinkProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />

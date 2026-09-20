@@ -9,6 +9,12 @@ import type {
   EntityJourney,
   EntityJourneyStep,
   DomainMetricCard,
+  SimGraph,
+  ResourceParams,
+  QueueParams,
+  ContainerParams,
+  CostAnalysis,
+  CostBreakdown,
 } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
 
@@ -621,12 +627,75 @@ export function generateExecutiveDiagnosis(
 }
 
 /**
+ * Computes financial metrics (resource busy cost, buffer holding cost, waiting penalties).
+ */
+export function calculateCostAnalysis(
+  graph: SimGraph,
+  result: SimResult,
+  resourceStates: Record<string, ResourceOperationalStates>
+): CostAnalysis {
+  const breakdown: CostBreakdown[] = [];
+  let totalSystemCost = 0;
+
+  for (const node of graph.nodes) {
+    const stats = result.nodeStats[node.id];
+    if (!stats) continue;
+
+    let resourceCost = 0;
+    let holdingCost = 0;
+    let waitingPenalty = 0;
+
+    if (node.nodeType === "resource" || node.nodeType === "priority_resource") {
+      const p = (node.params || {}) as ResourceParams;
+      const busySeconds = resourceStates[node.id]?.busySeconds ?? 0;
+      resourceCost = (p.hourlyCost ?? 0) * (busySeconds / 3600);
+    }
+
+    if (node.nodeType === "queue" || node.nodeType === "container") {
+      const p = (node.params || {}) as QueueParams & ContainerParams;
+      // Approximate entity-seconds-in-queue via avgWaitTime * entitiesIn (L*W relationship,
+      // consistent with how littlesLaw estimates WIP).
+      const entitySecondsWaited = (stats.avgWaitTime || 0) * (stats.entitiesIn || 0);
+      holdingCost = (p.holdingCostPerUnitTime ?? 0) * entitySecondsWaited;
+      waitingPenalty = (p.waitingPenaltyPerUnitTime ?? 0) * entitySecondsWaited;
+    }
+
+    const totalCost = resourceCost + holdingCost + waitingPenalty;
+    if (totalCost > 0) {
+      breakdown.push({
+        nodeId: node.id,
+        nodeLabel: node.label,
+        resourceCost,
+        holdingCost,
+        waitingPenalty,
+        totalCost,
+      });
+      totalSystemCost += totalCost;
+    }
+  }
+
+  return {
+    totalSystemCost,
+    breakdown,
+    costPerCompletedEntity: result.totalCompleted > 0 ? totalSystemCost / result.totalCompleted : 0,
+  };
+}
+
+/**
  * Master analytical enrichment function that processes raw SimResult into an enterprise-ready intelligence object.
  */
-export function enrichSimResult(rawResult: SimResult): SimResult {
+export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResult {
   // Idempotence guard: page.tsx already enriches before storing, and both result
   // panels re-enrich defensively. Re-running costs a full journey reconstruction.
-  if (rawResult.entityJourneys !== undefined) return rawResult;
+  if (rawResult.entityJourneys !== undefined) {
+    if (graph && !rawResult.costAnalysis && rawResult.resourceStates) {
+      return {
+        ...rawResult,
+        costAnalysis: calculateCostAnalysis(graph, rawResult, rawResult.resourceStates),
+      };
+    }
+    return rawResult;
+  }
 
   const journeys = reconstructEntityJourneys(rawResult.logs || []);
   // F-10: keep zero-wait entities. Dropping them makes every percentile
@@ -638,8 +707,15 @@ export function enrichSimResult(rawResult: SimResult): SimResult {
     .map((j) => j.totalCycleTime)
     .filter((c) => Number.isFinite(c) && c >= 0);
 
-  // Fallback: If journeys is sparse due to log buffering, calculate from nodeStats
-  if (waitTimes.length === 0) {
+  // Fallback: If journeys is sparse due to log buffering, OR the journey
+  // reconstruction under-counted waiting (e.g. a queue feeding a "service"/
+  // "store"/"channel" block instead of a resource/priority_resource — those
+  // blocking points don't emit the "queued" step needed to close the wait
+  // window, so every reconstructed wait comes out as exactly 0 even though
+  // SimPy measured real waiting) — fall back to nodeStats.avgWaitTime, which
+  // SimPy computes directly during the run and is unaffected by log gaps.
+  const journeyWaitIsDegenerate = waitTimes.length === 0 || waitTimes.every((w) => w === 0);
+  if (journeyWaitIsDegenerate) {
     let totalNodeAvgWait = 0;
     let totalNodeAvgService = 0;
     for (const s of Object.values(rawResult.nodeStats || {})) {
@@ -678,6 +754,7 @@ export function enrichSimResult(rawResult: SimResult): SimResult {
   const domainMetrics = computeDomainMetrics(rawResult.simType, rawResult, waitTimePercentiles);
   const healthScore = calculateSystemHealthScore(rawResult, littlesLaw, waitTimePercentiles);
   const aiDiagnosis = generateExecutiveDiagnosis(rawResult, rawResult.simType, healthScore, littlesLaw, waitTimePercentiles);
+  const costAnalysis = graph ? calculateCostAnalysis(graph, rawResult, resourceStates) : rawResult.costAnalysis;
 
   // Top 10 slowest journeys for inspection
   const topSlowestEntities = [...journeys]
@@ -695,5 +772,6 @@ export function enrichSimResult(rawResult: SimResult): SimResult {
     domainMetrics,
     healthScore,
     aiDiagnosis,
+    costAnalysis,
   };
 }

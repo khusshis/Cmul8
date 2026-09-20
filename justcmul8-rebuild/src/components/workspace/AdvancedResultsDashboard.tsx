@@ -14,11 +14,15 @@ import {
   User,
   FileText,
   Sparkles,
+  DollarSign,
+  Loader2,
 } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import { generateExecutiveHtmlReport } from "@/lib/simulation/reportGenerator";
+import { generateExecutivePdfReport } from "@/lib/simulation/pdfReportGenerator";
+import type { OptimizerFix } from "@/app/api/ai/optimize/route";
 
 import ExecutiveTab from "./results-dashboard/ExecutiveTab";
 import DeepAnalyticsTab from "./results-dashboard/DeepAnalyticsTab";
@@ -27,6 +31,7 @@ import TimelineTab from "./results-dashboard/TimelineTab";
 import BlocksTab from "./results-dashboard/BlocksTab";
 import EntityTracerTab from "./results-dashboard/EntityTracerTab";
 import LogsTab from "./results-dashboard/LogsTab";
+import CostRoiTab from "./results-dashboard/CostRoiTab";
 
 export type DashboardTab =
   | "executive"
@@ -35,7 +40,8 @@ export type DashboardTab =
   | "timeline"
   | "blocks"
   | "entities"
-  | "logs";
+  | "logs"
+  | "cost";
 
 const TABS: { id: DashboardTab; label: string; icon: any }[] = [
   { id: "executive", label: "Executive Summary", icon: LayoutGrid },
@@ -45,6 +51,7 @@ const TABS: { id: DashboardTab; label: string; icon: any }[] = [
   { id: "blocks", label: "Station Counters", icon: Table2 },
   { id: "entities", label: "Person / Item Journey", icon: User },
   { id: "logs", label: "Live Activity Log", icon: ScrollText },
+  { id: "cost", label: "Cost & ROI", icon: DollarSign },
 ];
 
 export default function AdvancedResultsDashboard({
@@ -53,14 +60,19 @@ export default function AdvancedResultsDashboard({
   result: rawResult,
   simType,
   projectId,
+  onApplyFix,
+  onCaptureCanvasSnapshot,
 }: {
   open: boolean;
   onClose: () => void;
   result: SimResult | null;
   simType: SimTypeId;
   projectId: string;
+  onApplyFix?: (fix: OptimizerFix) => void;
+  onCaptureCanvasSnapshot?: () => Promise<string | null>;
 }) {
   const [tab, setTab] = useState<DashboardTab>("executive");
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   const simConfig = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue;
 
   // Ensure result has all deep mathematical and journey enrichments
@@ -78,6 +90,25 @@ export default function AdvancedResultsDashboard({
     if (printWindow) {
       printWindow.document.write(html);
       printWindow.document.close();
+    }
+  }
+
+  async function handleDownloadPdf() {
+    if (!result) return;
+    setPdfGenerating(true);
+    try {
+      const snapshot = onCaptureCanvasSnapshot ? await onCaptureCanvasSnapshot() : null;
+      const blob = await generateExecutivePdfReport(result, simConfig.label + " Simulation", snapshot);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${simConfig.label.replace(/\s+/g, "_")}_Executive_Report.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF Generation Error:", err);
+    } finally {
+      setPdfGenerating(false);
     }
   }
 
@@ -140,12 +171,30 @@ export default function AdvancedResultsDashboard({
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
+                  onClick={handleDownloadPdf}
+                  disabled={pdfGenerating}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-[12px] font-black text-[#5742FF] shadow-xs transition-all disabled:opacity-60"
+                  title="Download complete executive PDF report with canvas snapshot"
+                >
+                  {pdfGenerating ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span className="hidden sm:inline">Generating PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} />
+                      <span className="hidden sm:inline">Download PDF</span>
+                    </>
+                  )}
+                </button>
+
+                <button
                   onClick={handlePrintReport}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-50 hover:text-[#5742FF] shadow-xs transition-all"
-                  title="Generate print-ready executive PDF report"
+                  title="View formatted HTML report"
                 >
-                  <FileText size={14} />
-                  <span className="hidden sm:inline">Executive PDF</span>
+                  <span className="hidden sm:inline">HTML Report</span>
                 </button>
 
                 <a
@@ -194,7 +243,7 @@ export default function AdvancedResultsDashboard({
                   transition={{ duration: 0.15 }}
                 >
                   {tab === "executive" && (
-                    <ExecutiveTab result={result} simType={simType} />
+                    <ExecutiveTab result={result} simType={simType} onApplyFix={onApplyFix} />
                   )}
                   {tab === "analytics" && (
                     <DeepAnalyticsTab result={result} simType={simType} />
@@ -208,6 +257,9 @@ export default function AdvancedResultsDashboard({
                     <EntityTracerTab result={result} simType={simType} />
                   )}
                   {tab === "logs" && <LogsTab result={result} />}
+                  {tab === "cost" && (
+                    <CostRoiTab result={result} simType={simType} />
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>

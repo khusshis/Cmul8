@@ -42,6 +42,7 @@ import {
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { resolveKpiMetrics } from "@/lib/simulation/resolveKpiMetrics";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 
 import DeepAnalyticsTab from "./results-dashboard/DeepAnalyticsTab";
@@ -155,6 +156,66 @@ export default function SimResultsPanel({
 
   const simConfig = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue;
 
+  // Calculate maximum active workload
+  // NOTE: these hooks must run unconditionally on every render (Rules of Hooks) —
+  // they are computed here, before the `if (!result) return null` guard below,
+  // and are null-safe so they're harmless while `result` hasn't arrived yet.
+  const maxWip = useMemo(() => {
+    if (!result) return 1;
+    if (result.timeline && result.timeline.length > 0) {
+      return Math.max(
+        1,
+        ...result.timeline.map((t) => {
+          const depthObj = t.depth || {};
+          return t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
+        })
+      );
+    }
+    return Math.max(1, result.totalArrived - result.totalCompleted);
+  }, [result]);
+
+  // Build WIP timeline data (downsample to <= 180 points if large, preserving peak)
+  const wipChartData = useMemo(() => {
+    if (!result || !result.timeline || result.timeline.length === 0) {
+      return [];
+    }
+
+    const raw = result.timeline.map((t) => {
+      const depthObj = t.depth || {};
+      const sumWip = t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
+      return {
+        simTime: t.simTime,
+        wip: sumWip,
+        completed: t.completed,
+      };
+    });
+
+    if (raw.length <= 180) {
+      return raw;
+    }
+
+    const maxWipPoint = raw.reduce((max, p) => (p.wip > max.wip ? p : max), raw[0]);
+    const step = Math.ceil(raw.length / 180);
+    const sampled: typeof raw = [];
+
+    for (let i = 0; i < raw.length; i += step) {
+      sampled.push(raw[i]);
+    }
+
+    if (!sampled.some((p) => p.simTime === maxWipPoint.simTime)) {
+      sampled.push(maxWipPoint);
+      sampled.sort((a, b) => a.simTime - b.simTime);
+    }
+
+    const lastPoint = raw[raw.length - 1];
+    if (sampled[sampled.length - 1].simTime !== lastPoint.simTime) {
+      sampled.push(lastPoint);
+      sampled.sort((a, b) => a.simTime - b.simTime);
+    }
+
+    return sampled;
+  }, [result]);
+
   // Drag-to-resize handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -209,6 +270,7 @@ export default function SimResultsPanel({
   const healthScore = result.healthScore;
   const waitP = result.waitTimePercentiles;
   const cycleP = result.cycleTimePercentiles;
+  const resolvedKpis = resolveKpiMetrics(simConfig.kpiMetrics, result);
 
   // Build percentile data for spectrum chart (using plain English labels & verified percentiles)
   const percentileData = [
@@ -218,62 +280,6 @@ export default function SimResultsPanel({
     { name: "Peak Rush (90%)", wait: waitP?.p90 ?? 0, total: Math.max(0.1, cycleP?.p90 ?? 0) },
     { name: "Worst-Case (99%)", wait: waitP?.p99 ?? 0, total: Math.max(0.1, cycleP?.p99 ?? 0) },
   ];
-
-  // Calculate maximum active workload
-  const maxWip = useMemo(() => {
-    if (result.timeline && result.timeline.length > 0) {
-      return Math.max(
-        1,
-        ...result.timeline.map((t) => {
-          const depthObj = t.depth || {};
-          return t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
-        })
-      );
-    }
-    return Math.max(1, result.totalArrived - result.totalCompleted);
-  }, [result.timeline, result.totalArrived, result.totalCompleted]);
-
-  // Build WIP timeline data (downsample to <= 180 points if large, preserving peak)
-  const wipChartData = useMemo(() => {
-    if (!result.timeline || result.timeline.length === 0) {
-      return [];
-    }
-
-    const raw = result.timeline.map((t) => {
-      const depthObj = t.depth || {};
-      const sumWip = t.wip !== undefined ? t.wip : Object.values(depthObj).reduce((a, b) => a + b, 0);
-      return {
-        simTime: t.simTime,
-        wip: sumWip,
-        completed: t.completed,
-      };
-    });
-
-    if (raw.length <= 180) {
-      return raw;
-    }
-
-    const maxWipPoint = raw.reduce((max, p) => (p.wip > max.wip ? p : max), raw[0]);
-    const step = Math.ceil(raw.length / 180);
-    const sampled: typeof raw = [];
-
-    for (let i = 0; i < raw.length; i += step) {
-      sampled.push(raw[i]);
-    }
-
-    if (!sampled.some((p) => p.simTime === maxWipPoint.simTime)) {
-      sampled.push(maxWipPoint);
-      sampled.sort((a, b) => a.simTime - b.simTime);
-    }
-
-    const lastPoint = raw[raw.length - 1];
-    if (sampled[sampled.length - 1].simTime !== lastPoint.simTime) {
-      sampled.push(lastPoint);
-      sampled.sort((a, b) => a.simTime - b.simTime);
-    }
-
-    return sampled;
-  }, [result.timeline]);
 
   return (
     <div
@@ -627,6 +633,46 @@ export default function SimResultsPanel({
                     </div>
                   </motion.div>
                 </div>
+
+                {/* ── Domain KPIs Bar (Type-Specific Metrics) ── */}
+                {resolvedKpis.length > 0 && (
+                  <div className="rounded-2xl bg-white/90 border border-indigo-100/70 p-3.5 shadow-sm">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-gray-500">
+                        Domain KPIs: {simConfig.label}
+                      </span>
+                      <span className="text-[10px] font-bold text-[#5742FF] bg-indigo-50 px-2 py-0.5 rounded-full">
+                        {resolvedKpis.length} Metrics Active
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                      {resolvedKpis.map((kpi, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-xl bg-gradient-to-b from-gray-50/80 to-white border border-gray-100 flex flex-col justify-between"
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[10.5px] font-bold text-gray-500 truncate" title={kpi.label}>
+                              {kpi.label}
+                            </span>
+                            <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700">
+                              {kpi.chartType.replace("_", " ")}
+                            </span>
+                          </div>
+                          <div className="text-[15px] font-black text-gray-900 leading-tight">
+                            {kpi.displayValue}
+                          </div>
+                          {kpi.series && kpi.series.length > 0 && (
+                            <div className="text-[9.5px] text-gray-400 mt-0.5 truncate">
+                              {kpi.series.map((s) => `${s.name}: ${s.value}`).join(", ")}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* ── 3. Visual Interactive Flow Rail (Station Chain) ── */}
                 <div className="rounded-2xl bg-white/90 border border-indigo-100/70 p-4 shadow-sm">
