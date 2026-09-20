@@ -93,6 +93,14 @@ export default function WorkspacePage() {
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeRightPanel, setActiveRightPanel] = useState<"ai" | "properties">("properties");
+  const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
+  useEffect(() => {
+    selectedNodeIdRef.current = selectedNodeId;
+  }, [selectedNodeId]);
+  const activeRightPanelRef = useRef<"ai" | "properties">(activeRightPanel);
+  useEffect(() => {
+    activeRightPanelRef.current = activeRightPanel;
+  }, [activeRightPanel]);
   const [galleryDismissed, setGalleryDismissed] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
@@ -474,10 +482,12 @@ export default function WorkspacePage() {
     recordHistory(nodesRef.current, edgesRef.current);
   }
 
-  function handleSelectNode(id: string | null) {
+  const handleSelectNode = useCallback((id: string | null) => {
     setSelectedNodeId(id);
-    if (id) setActiveRightPanel("properties");
-  }
+    if (id && id !== selectedNodeIdRef.current && activeRightPanelRef.current !== "ai") {
+      setActiveRightPanel("properties");
+    }
+  }, []);
 
   function triggerAutoSave(n: any[], e: any[]) {
     setSaved(false);
