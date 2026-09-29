@@ -3,6 +3,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { ReactLenis } from "lenis/react";
+import { MotionConfig } from "framer-motion";
 import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import TickerSection from "@/components/landing/TickerSection";
@@ -16,6 +17,8 @@ import Footer from "@/components/layout/Footer";
 export default function LandingPage() {
   return (
     <ReactLenis root>
+      {/* Honour the OS "reduce motion" setting for every animation below */}
+      <MotionConfig reducedMotion="user">
       <div
         className="relative min-h-screen"
         style={{ background: "var(--bg-primary)" }}
@@ -35,6 +38,7 @@ export default function LandingPage() {
         </main>
         <Footer />
       </div>
+      </MotionConfig>
     </ReactLenis>
   );
 }

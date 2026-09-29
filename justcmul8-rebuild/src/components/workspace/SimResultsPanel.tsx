@@ -703,25 +703,44 @@ export default function SimResultsPanel({
 
                     {/* All Intermediate Stations with Dynamic Cards */}
                     {statsEntries.map(([id, s], i) => {
-                      const util = s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
+                      const isServer = ["resource", "priority_resource", "service"].includes(s.nodeType);
+                      const isWaitingNode = ["queue", "store"].includes(s.nodeType);
+                      // "% busy" only means something for servers; queues are judged by how many are stuck in them.
+                      const util = isServer && s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
+                      const backlog = s.currentDepth ?? 0;
                       const isChoke = result.bottleneckNodeId === id;
+                      const severity: "bad" | "warn" | "ok" | "none" = isServer
+                        ? util! > 85 ? "bad" : util! > 60 ? "warn" : "ok"
+                        : isWaitingNode
+                        ? backlog >= 50 ? "bad" : backlog >= 10 ? "warn" : "ok"
+                        : "none";
                       const statusColor =
-                        util === null
+                        severity === "none"
                           ? "bg-gray-50 border-gray-200"
-                          : util > 85
+                          : severity === "bad"
                           ? "bg-rose-50/90 border-rose-200 shadow-[0_2px_10px_rgba(244,63,94,0.15)]"
-                          : util > 60
+                          : severity === "warn"
                           ? "bg-amber-50/90 border-amber-200"
                           : "bg-emerald-50/90 border-emerald-200";
 
                       const dotColor =
-                        util === null
+                        severity === "none"
                           ? "bg-gray-400"
-                          : util > 85
+                          : severity === "bad"
                           ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"
-                          : util > 60
+                          : severity === "warn"
                           ? "bg-amber-500"
                           : "bg-emerald-500";
+
+                      const headline = isServer
+                        ? `${util}% Busy`
+                        : isWaitingNode
+                        ? `${backlog.toLocaleString()} still waiting`
+                        : s.nodeType === "source"
+                        ? `${(s.entitiesOut ?? 0).toLocaleString()} sent`
+                        : s.nodeType === "sink"
+                        ? `${(s.entitiesIn ?? 0).toLocaleString()} received`
+                        : "Router";
 
                       return (
                         <div key={id} className="flex items-center gap-2.5 shrink-0">
@@ -736,11 +755,14 @@ export default function SimResultsPanel({
                               </span>
                             </div>
                             <div className="text-[11px] font-extrabold text-gray-600">
-                              {util !== null ? `${util}% Busy` : "Router"}
+                              {headline}
                             </div>
-                            <div className="text-[10.5px] font-medium text-gray-500 mt-0.5">
-                              {formatTimeFriendly(s.avgWaitTime ?? 0)} line
-                            </div>
+                            {/* Only steps where people actually queue have a "line"; arrival/exit/router don't. */}
+                            {(isServer || isWaitingNode) && (
+                              <div className="text-[10.5px] font-medium text-gray-500 mt-0.5">
+                                {formatTimeFriendly(s.avgWaitTime ?? 0)} line
+                              </div>
+                            )}
                           </motion.div>
                           {i < statsEntries.length - 1 && (
                             <ArrowRight size={15} className="text-indigo-300 shrink-0" />

@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -15,7 +15,7 @@ import { applyNodeChanges, applyEdgeChanges, type NodeChange, type EdgeChange } 
 import { PyodideSimEngine } from "@/lib/simulation/pyodideEngine";
 import { validateGraphConnectivity } from "@/components/workspace/NodeCanvas";
 import type { NodeCanvasHandle } from "@/components/workspace/NodeCanvas";
-import { usePresence } from "@/lib/realtime/usePresence";
+import { usePresence, type GraphOp } from "@/lib/realtime/usePresence";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import type { OptimizerFix } from "@/app/api/ai/optimize/route";
 
@@ -32,6 +32,7 @@ import MonteCarloPanel from "@/components/workspace/MonteCarloPanel";
 import DigitalTwinCanvas, { type TwinViewport, type TwinFrameInfo } from "@/components/workspace/DigitalTwinCanvas";
 import PlaybackControls from "@/components/workspace/PlaybackControls";
 import LiveCursor from "@/components/workspace/LiveCursor";
+import WorkspaceLoader from "@/components/workspace/WorkspaceLoader";
 import { CodeInspectorPanel } from "@/components/workspace/CodeInspectorPanel";
 
 export type SimState = "idle" | "running" | "paused";
@@ -64,6 +65,11 @@ function graphToSimNodes(rfNodes: any[], rfEdges: any[]): SimGraph {
     })),
   };
 }
+
+const GRAPH_OPS: GraphOp["kind"][] = ["nodes", "edges", "nodeData", "snapshot"];
+
+// Selection and measured sizes are per-viewer: never saved, never sent to peers.
+const isSharedChange = (c: NodeChange | EdgeChange) => c.type !== "select" && c.type !== "dimensions";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +121,16 @@ export default function WorkspacePage() {
   const [twinFrame, setTwinFrame] = useState<TwinFrameInfo>({ index: 0, total: 0, simTime: 0 });
   // Every tick of the current run; the SimPy worker finishes in a burst, so the twin replays from this buffer at a watchable pace.
   const tickBufferRef = useRef<SimTick[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  // Collaboration: my role on this project, and which peers may send graph edits.
+  const [role, setRole] = useState<"owner" | "editor" | "viewer" | null>(null);
+  const canEdit = role === "owner" || role === "editor";
+  const canEditRef = useRef(false);
+  const editorIdsRef = useRef<Set<string>>(new Set());
+  const accessRefreshRef = useRef<Promise<void> | null>(null);
+  // Set by local edits only; remote edits and the initial load never trigger a save or rebroadcast.
+  const localDirtyRef = useRef(false);
+  const snapshotTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Simulation state placeholders
   const [simState, setSimState] = useState<SimState>("idle");
@@ -177,7 +192,7 @@ export default function WorkspacePage() {
   const { users: remoteUsers, broadcastOp, onRemoteOp, updatePresence } = usePresence(
     project?.id || "",
     currentUser?.id || "",
-    currentUser?.email?.split("@")[0] || "Someone"
+    currentUser?.name || "Someone"
   );
 
   useEffect(() => {
@@ -283,6 +298,7 @@ export default function WorkspacePage() {
   const canRedo = historyIndex >= 0 && historyIndex < history.length - 1;
 
   const handleUndo = useCallback(() => {
+    if (!canEditRef.current) return;
     const curIdx = historyIndexRef.current;
     if (curIdx <= 0 || historyRef.current.length === 0) return;
 
@@ -297,9 +313,8 @@ export default function WorkspacePage() {
     const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
     const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
 
-    setNodes(restoredNodes);
-    setEdges(restoredEdges);
-    triggerAutoSave(restoredNodes, restoredEdges);
+    onUpdateNodes(restoredNodes);
+    onUpdateEdges(restoredEdges);
     toast.info("Action undone", "Undo");
 
     setTimeout(() => {
@@ -308,6 +323,7 @@ export default function WorkspacePage() {
   }, []);
 
   const handleRedo = useCallback(() => {
+    if (!canEditRef.current) return;
     const curIdx = historyIndexRef.current;
     if (curIdx >= historyRef.current.length - 1 || curIdx < 0) return;
 
@@ -322,9 +338,8 @@ export default function WorkspacePage() {
     const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
     const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
 
-    setNodes(restoredNodes);
-    setEdges(restoredEdges);
-    triggerAutoSave(restoredNodes, restoredEdges);
+    onUpdateNodes(restoredNodes);
+    onUpdateEdges(restoredEdges);
     toast.info("Action redone", "Redo");
 
     setTimeout(() => {
@@ -369,19 +384,23 @@ export default function WorkspacePage() {
   }, [id]);
 
   async function loadProject() {
+    const startedAt = performance.now();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push("/login");
       return;
     }
-    setCurrentUser({ id: user.id, email: user.email || "" });
+    const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    setCurrentUser({ id: user.id, email: user.email || "", name: profile?.display_name || user.email?.split("@")[0] || "Someone" });
 
     const { data, error } = await supabase.from("projects").select("*").eq("id", id).single();
     if (error || !data) {
       console.error("Failed to load project", error);
+      toast.error("You don't have access to this simulation, or it no longer exists.", "Can't open project");
       router.push("/dashboard");
       return;
     }
+    await refreshAccess();
 
     setProject(data);
     projectRef.current = data;
@@ -398,38 +417,106 @@ export default function WorkspacePage() {
     setHistoryIndex(0);
     historyIndexRef.current = 0;
     
+    // Let the loader's intro finish on fast connections instead of flashing for a frame.
+    await new Promise((r) => setTimeout(r, Math.max(0, 1300 - (performance.now() - startedAt))));
     setLoading(false);
   }
 
-  // Auto-save logic
+  // Re-reads my role and the set of users allowed to edit. Concurrent callers share one request.
+  function refreshAccess() {
+    accessRefreshRef.current ??= (async () => {
+      const [{ data: myRole }, { data: people }] = await Promise.all([
+        supabase.rpc("project_role", { pid: id }),
+        supabase.rpc("project_collaborators", { pid: id }),
+      ]);
+      if (!myRole) {
+        toast.error("Your access to this simulation was removed.", "Access changed");
+        router.push("/dashboard");
+        return;
+      }
+      canEditRef.current = myRole === "owner" || myRole === "editor";
+      setRole(myRole);
+      editorIdsRef.current = new Set(
+        (people || []).filter((p: any) => p.user_id && p.role !== "viewer").map((p: any) => p.user_id)
+      );
+    })().finally(() => { accessRefreshRef.current = null; });
+    return accessRefreshRef.current;
+  }
+
+  // Merge a peer's full graph, keeping what is local-only: selection, measured size, a node being dragged here.
+  function applySnapshot(snap: { nodes: any[]; edges: any[] }) {
+    setNodes((prev) => {
+      const local = new Map(prev.map((n) => [n.id, n]));
+      return snap.nodes.map((n) => {
+        const l = local.get(n.id);
+        if (!l) return { ...n, selected: false };
+        return { ...n, selected: l.selected, measured: l.measured, ...(l.dragging ? { position: l.position, dragging: true } : {}) };
+      });
+    });
+    setEdges((prev) => {
+      const selected = new Set(prev.filter((e) => e.selected).map((e) => e.id));
+      return snap.edges.map((e) => ({ ...e, selected: selected.has(e.id) }));
+    });
+  }
+
+  function broadcastSnapshot() {
+    broadcastOp({ kind: "snapshot", changes: [{ nodes: nodesRef.current, edges: edgesRef.current }] });
+  }
+
+  // Auto-save logic. onUpdate* = local edits (saved + synced); remote edits go through setNodes/setEdges directly.
   function onUpdateNodes(newNodes: any[] | ((n: any[]) => any[])) {
+    localDirtyRef.current = true;
     setNodes((prev) => {
       return typeof newNodes === "function" ? newNodes(prev) : newNodes;
     });
   }
 
   function onUpdateEdges(newEdges: any[] | ((e: any[]) => any[])) {
+    localDirtyRef.current = true;
     setEdges((prev) => {
       return typeof newEdges === "function" ? newEdges(prev) : newEdges;
     });
   }
 
   useEffect(() => {
-    if (project && (nodes.length > 0 || edges.length > 0)) {
-      triggerAutoSave(nodes, edges);
-    }
+    if (!project || !localDirtyRef.current || !canEditRef.current) return;
+    localDirtyRef.current = false;
+    triggerAutoSave(nodes, edges);
+    // Granular ops only cover canvas drags/connects; the snapshot converges everything else
+    // (properties, AI edits, templates, undo) and repairs any op a peer missed.
+    // ponytail: last-writer-wins on concurrent edits; move to Yjs if people co-edit the same block a lot.
+    if (snapshotTimer.current) clearTimeout(snapshotTimer.current);
+    snapshotTimer.current = setTimeout(broadcastSnapshot, 300);
   }, [nodes, edges]);
 
+  // Re-registered every render so the handler never sees stale state.
   useEffect(() => {
-    onRemoteOp((op) => {
-      if (op.kind === "nodes") {
-        onUpdateNodes((prev) => applyNodeChanges(op.changes, prev));
+    onRemoteOp(async (op) => {
+      if (op.kind === "access") {
+        refreshAccess();
+        return;
+      }
+      if (op.kind === "sync-request") {
+        if (canEditRef.current) broadcastSnapshot();
+        return;
+      }
+      if (GRAPH_OPS.includes(op.kind) && !editorIdsRef.current.has(op.fromUserId)) {
+        // Could be someone who just joined via link; re-check once, then drop edits from non-editors.
+        await refreshAccess();
+        if (!editorIdsRef.current.has(op.fromUserId)) return;
+      }
+      if (op.kind === "snapshot") {
+        const snap = op.changes?.[0];
+        if (snap && Array.isArray(snap.nodes) && Array.isArray(snap.edges)) applySnapshot(snap);
+      } else if (op.kind === "nodes") {
+        const changes = op.changes.map((c: any) => (c.type === "position" ? { ...c, dragging: false } : c));
+        setNodes((prev) => applyNodeChanges(changes, prev));
       } else if (op.kind === "edges") {
-        onUpdateEdges((prev) => applyEdgeChanges(op.changes, prev));
+        setEdges((prev) => applyEdgeChanges(op.changes, prev));
       } else if (op.kind === "nodeData") {
         const payload = op.changes?.[0];
         if (payload && payload.id && payload.partialData) {
-          onUpdateNodes((prev) =>
+          setNodes((prev) =>
             prev.map((n) =>
               n.id === payload.id
                 ? {
@@ -448,10 +535,12 @@ export default function WorkspacePage() {
         }
       }
     });
-  }, [onRemoteOp]);
+  });
 
   function handleNodesChange(changes: NodeChange[]) {
-    onUpdateNodes((prev) => {
+    const shared = changes.filter(isSharedChange);
+    if (shared.length > 0 && canEditRef.current) localDirtyRef.current = true;
+    setNodes((prev) => {
       const next = applyNodeChanges(changes, prev);
       const hasStructureChange = changes.some(
         (c) => c.type === "add" || c.type === "remove" || c.type === "replace"
@@ -461,11 +550,13 @@ export default function WorkspacePage() {
       }
       return next;
     });
-    broadcastOp({ kind: "nodes", changes });
+    if (shared.length > 0 && canEditRef.current) broadcastOp({ kind: "nodes", changes: shared });
   }
 
   function handleEdgesChange(changes: EdgeChange[]) {
-    onUpdateEdges((prev) => {
+    const shared = changes.filter(isSharedChange);
+    if (shared.length > 0 && canEditRef.current) localDirtyRef.current = true;
+    setEdges((prev) => {
       const next = applyEdgeChanges(changes, prev);
       const hasStructureChange = changes.some(
         (c) => c.type === "add" || c.type === "remove" || c.type === "replace"
@@ -475,7 +566,7 @@ export default function WorkspacePage() {
       }
       return next;
     });
-    broadcastOp({ kind: "edges", changes });
+    if (shared.length > 0 && canEditRef.current) broadcastOp({ kind: "edges", changes: shared });
   }
 
   function handleNodeDragStop() {
@@ -496,15 +587,23 @@ export default function WorkspacePage() {
   }
 
   async function autoSave(n: any[], e: any[]) {
-    if (!project) return;
-    await supabase.from("projects").update({
-      graph_json: { nodes: n, edges: e },
+    if (!project || !canEditRef.current) return;
+    const strip = (items: any[]) => items.map(({ selected, dragging, ...rest }) => rest);
+    const { data, error } = await supabase.from("projects").update({
+      graph_json: { nodes: strip(n), edges: strip(e) },
       updated_at: new Date().toISOString(),
-    }).eq("id", project.id);
+    }).eq("id", project.id).select("id");
+    if (error || !data?.length) {
+      // RLS silently matches 0 rows when edit access was revoked.
+      toast.error(error?.message || "Your changes could not be saved.", "Save failed");
+      refreshAccess();
+      return;
+    }
     setSaved(true);
   }
 
   function applyOptimizerFix(fix: OptimizerFix) {
+    if (!canEditRef.current) return toast.info("You have view-only access to this simulation.", "View only");
     const updatedNodes = nodes.map((n) => {
       if (n.id === fix.nodeId) {
         return {
@@ -595,31 +694,19 @@ export default function WorkspacePage() {
       target: e.target,
     }));
     
-    setNodes(rfNodes);
-    setEdges(rfEdges);
+    if (!canEditRef.current) return;
+    onUpdateNodes(rfNodes);
+    onUpdateEdges(rfEdges);
     recordHistory(rfNodes, rfEdges);
-    triggerAutoSave(rfNodes, rfEdges);
   }
 
-  if (loading) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F8F9FE]">
-        <div className="relative flex items-center justify-center mb-6">
-          {/* Subtle glowing pulse */}
-          <div className="absolute inset-0 bg-[#5742FF] rounded-[20px] blur-[20px] opacity-20 animate-pulse" />
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center relative z-10 border border-[#E5E0FF]">
-            <Loader2 className="w-7 h-7 animate-spin text-[#5742FF]" />
-          </div>
-        </div>
-        <h3 className="text-[#111827] font-extrabold tracking-tight text-xl mb-1.5">Preparing Workspace</h3>
-        <p className="text-gray-500 text-[13px]">Initializing your simulation environment...</p>
-      </div>
-    );
-  }
 
-  const showTemplateGallery = nodes.length === 0 && !galleryDismissed;
+  const showTemplateGallery = canEdit && nodes.length === 0 && !galleryDismissed;
 
   return (
+    <>
+    <AnimatePresence>{loading && <WorkspaceLoader key="workspace-loader" />}</AnimatePresence>
+    {!loading && (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-white relative z-30">
@@ -651,8 +738,14 @@ export default function WorkspacePage() {
             </div>
           </div>
 
+          {!canEdit && (
+            <div className="flex items-center gap-1.5 h-7 px-3 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11.5px] font-bold shrink-0" title="You can see live changes but not edit. Ask the owner for editor access.">
+              <Eye size={13} /> View only
+            </div>
+          )}
+
           {/* Undo / Redo Toolbar Controls */}
-          <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-full p-0.5 shadow-xs shrink-0">
+          {canEdit && <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-full p-0.5 shadow-xs shrink-0">
             <button
               type="button"
               onClick={handleUndo}
@@ -674,7 +767,7 @@ export default function WorkspacePage() {
             >
               <Redo2 size={14} strokeWidth={2.4} />
             </button>
-          </div>
+          </div>}
         </div>
 
         {/* Right Section: Simulation Status, Controls, HUD, More Tools, Actions */}
@@ -1053,10 +1146,12 @@ export default function WorkspacePage() {
           />
         )}
         
-        <NodePalette
-          simType={project?.sim_type || "human_queue"}
-          onAddNode={(type) => canvasRef.current?.addNode(type)}
-        />
+        {canEdit && (
+          <NodePalette
+            simType={project?.sim_type || "human_queue"}
+            onAddNode={(type) => canvasRef.current?.addNode(type)}
+          />
+        )}
 
         <div className="flex-1 relative overflow-hidden">
           <NodeCanvas
@@ -1076,6 +1171,7 @@ export default function WorkspacePage() {
               broadcastOp({ kind: "cursor", changes: [cursor] })
             }
             onViewportChange={setTwinViewport}
+            readOnly={!canEdit}
           />
 
           {digitalTwinActive && (
@@ -1207,10 +1303,10 @@ export default function WorkspacePage() {
                 simState={simState}
                 onSelectNode={(nodeId) => setSelectedNodeId(nodeId)}
                 onApplyChanges={(newNodes, newEdges) => {
-                  setNodes(newNodes);
-                  setEdges(newEdges);
+                  if (!canEditRef.current) return toast.info("You have view-only access to this simulation.", "View only");
+                  onUpdateNodes(newNodes);
+                  onUpdateEdges(newEdges);
                   recordHistory(newNodes, newEdges);
-                  setSaved(false);
                 }}
               />
             )}
@@ -1227,7 +1323,12 @@ export default function WorkspacePage() {
         />
       )}
 
-      <ShareExportModal open={shareModalOpen} onClose={() => setShareModalOpen(false)} projectId={project?.id || ""} />
+      <ShareExportModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        projectId={project?.id || ""}
+        onAccessChanged={() => { broadcastOp({ kind: "access", changes: [] }); refreshAccess(); }}
+      />
       
       <AdvancedResultsDashboard
         open={dashboardOpen}
@@ -1259,5 +1360,7 @@ export default function WorkspacePage() {
         result={simResult}
       />
     </div>
+    )}
+    </>
   );
 }

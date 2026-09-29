@@ -13,7 +13,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .from("projects")
     .select("name, sim_type, graph_json")
     .eq("id", id)
-    .eq("user_id", user.id)
     .single();
   if (error || !project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });

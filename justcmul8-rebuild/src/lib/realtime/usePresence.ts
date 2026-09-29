@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface PresenceUser {
-  id: string;
+  id: string; // per-tab client id, so one account open in two tabs still syncs
+  userId?: string;
   name: string;
   color: string;
   cursor?: { x: number; y: number } | null;
@@ -13,18 +14,24 @@ export interface PresenceUser {
 }
 
 export interface GraphOp {
-  kind: "nodes" | "edges" | "cursor" | "nodeData";
+  // snapshot = full graph (after non-granular edits / answering a sync-request);
+  // sync-request = a new joiner asking editors for the live graph;
+  // access = the owner changed sharing, everyone re-checks their role.
+  kind: "nodes" | "edges" | "cursor" | "nodeData" | "snapshot" | "sync-request" | "access";
   changes: any[];
   fromUserId: string;
+  fromClientId?: string;
 }
 
 const CURSOR_COLORS = ["#2f6fed", "#8b5cf6", "#12a150", "#d9a400", "#ff6d5a", "#0ea5a5"];
 
 export function usePresence(projectId: string, selfId: string, selfName: string) {
   const supabase = createClient();
+  const [clientId] = useState(() => crypto.randomUUID());
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const trackedPayloadRef = useRef<{ id: string; name: string; color: string; selectedNodeId?: string | null; editingNodeId?: string | null }>({
-    id: selfId,
+  const trackedPayloadRef = useRef<{ id: string; userId: string; name: string; color: string; selectedNodeId?: string | null; editingNodeId?: string | null }>({
+    id: clientId,
+    userId: selfId,
     name: selfName,
     color: "#2f6fed",
   });
@@ -38,7 +45,8 @@ export function usePresence(projectId: string, selfId: string, selfName: string)
     const color = CURSOR_COLORS[Math.abs(hashCode(selfId)) % CURSOR_COLORS.length];
     trackedPayloadRef.current = {
       ...trackedPayloadRef.current,
-      id: selfId,
+      id: clientId,
+      userId: selfId,
       name: selfName,
       color,
     };
@@ -57,24 +65,25 @@ export function usePresence(projectId: string, selfId: string, selfName: string)
       }
 
       const channel = supabase.channel(`project:${projectId}`, {
-        config: { private: true, presence: { key: selfId } },
+        config: { private: true, presence: { key: clientId } },
       });
 
       channel.on("presence", { event: "sync" }, () => {
         const state = channel.presenceState() as Record<string, any[]>;
         const list: PresenceUser[] = Object.values(state)
           .map((entries) => entries[0])
-          .filter((u) => u.id !== selfId);
-        setUsers(list);
+          .filter((u) => u.id !== clientId);
+        // Presence payloads don't carry cursors; keep the last broadcast position per user.
+        setUsers((prev) => list.map((u) => ({ ...u, cursor: prev.find((p) => p.id === u.id)?.cursor ?? null })));
       });
 
       channel.on("broadcast", { event: "graph-op" }, ({ payload }) => {
-        if (payload.fromUserId !== selfId) {
+        if (payload.fromClientId !== clientId) {
           if (payload.kind === "cursor") {
             const newCursor = payload.changes?.[0];
             setUsers((prev) =>
               prev.map((u) =>
-                u.id === payload.fromUserId
+                u.id === payload.fromClientId
                   ? {
                       ...u,
                       cursor: newCursor && newCursor.x !== null && newCursor.y !== null ? newCursor : null,
@@ -91,6 +100,9 @@ export function usePresence(projectId: string, selfId: string, selfName: string)
       channel.subscribe(async (status) => {
         if (status === "SUBSCRIBED" && !cancelled) {
           await channel.track(trackedPayloadRef.current);
+          channel.send({ type: "broadcast", event: "graph-op", payload: { kind: "sync-request", changes: [], fromUserId: selfId, fromClientId: clientId } });
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn("[usePresence] realtime channel", status, "- check the realtime.messages policies in supabase/collaboration.sql");
         }
       });
 
@@ -110,28 +122,27 @@ export function usePresence(projectId: string, selfId: string, selfName: string)
         channelRef.current = null;
       }
     };
-  }, [projectId, selfId, selfName, supabase]);
+  }, [projectId, selfId, selfName, supabase, clientId]);
 
-  function updatePresence(partial: Partial<PresenceUser>) {
-    if (!channelRef.current) return;
+  const updatePresence = useCallback((partial: Partial<PresenceUser>) => {
     trackedPayloadRef.current = {
       ...trackedPayloadRef.current,
       ...partial,
     };
-    channelRef.current.track(trackedPayloadRef.current);
-  }
+    channelRef.current?.track(trackedPayloadRef.current);
+  }, []);
 
-  function broadcastOp(op: Omit<GraphOp, "fromUserId">) {
+  const broadcastOp = useCallback((op: Omit<GraphOp, "fromUserId">) => {
     channelRef.current?.send({
       type: "broadcast",
       event: "graph-op",
-      payload: { ...op, fromUserId: selfId },
+      payload: { ...op, fromUserId: selfId, fromClientId: clientId },
     });
-  }
+  }, [selfId, clientId]);
 
-  function onRemoteOp(handler: (op: GraphOp) => void) {
+  const onRemoteOp = useCallback((handler: (op: GraphOp) => void) => {
     opHandlerRef.current = handler;
-  }
+  }, []);
 
   return { users, broadcastOp, onRemoteOp, updatePresence };
 }

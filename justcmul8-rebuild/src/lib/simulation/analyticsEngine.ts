@@ -82,7 +82,7 @@ export function calculatePercentiles(samples: number[]): PercentileStats {
 /**
  * Reconstructs the microscopic journey of every entity from the chronological log stream.
  */
-export function reconstructEntityJourneys(logs: SimLog[]): EntityJourney[] {
+export function reconstructEntityJourneys(logs: SimLog[], endTime?: number): EntityJourney[] {
   if (!logs || logs.length === 0) return [];
 
   const journeysMap = new Map<number, {
@@ -206,6 +206,35 @@ export function reconstructEntityJourneys(logs: SimLog[]): EntityJourney[] {
           status: "completed",
         });
         break;
+    }
+  }
+
+  // Entities still waiting when the run ended never got a "service_start", so their wait window
+  // was left open and counted as 0. In an overloaded system that is most of the crowd, which
+  // pulled the median wait to 0 while the 95th percentile read tens of minutes. Close the open
+  // window at the end of the run (a lower bound on their true wait). The queue node and its
+  // downstream resource log "queued" at the same instant, so take the longest open window
+  // instead of summing them.
+  const runEnd = endTime ?? logs.reduce((m, l) => Math.max(m, l.simTime), 0);
+  for (const item of journeysMap.values()) {
+    if (item.status !== "in_flight") continue;
+    let openWait = 0;
+    for (const step of item.stepsMap.values()) {
+      if (step.serviceStartedAt === undefined && step.enteredAt !== undefined) {
+        openWait = Math.max(openWait, runEnd - step.enteredAt);
+      }
+    }
+    if (openWait > 0) {
+      item.orderedSteps.push({
+        nodeId: "still_waiting",
+        nodeLabel: "Still waiting at end of run",
+        nodeType: "queue",
+        enteredAt: runEnd - openWait,
+        exitedAt: runEnd,
+        waitTime: openWait,
+        serviceTime: 0,
+        status: "in_progress",
+      } as EntityJourneyStep);
     }
   }
 
@@ -697,7 +726,7 @@ export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResu
     return rawResult;
   }
 
-  const journeys = reconstructEntityJourneys(rawResult.logs || []);
+  const journeys = reconstructEntityJourneys(rawResult.logs || [], rawResult.totalSimTime);
   // F-10: keep zero-wait entities. Dropping them makes every percentile
   // conditional on having waited at all, which overstates the median wait by
   // ~46% at rho=0.8 and gets worse as the system gets less congested.

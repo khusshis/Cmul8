@@ -40,6 +40,11 @@
 }
 
 @layer base {
+  /* Decorative blobs bleed past the edge; clip (not hidden) keeps position: sticky working */
+  html {
+    overflow-x: clip;
+  }
+
   body {
     background-color: var(--color-bg);
     color: var(--color-text-primary);
@@ -118,6 +123,15 @@ input[type="password"]::-ms-clear {
   scrollbar-color: #c7c5e8 #f1f0fb;
 }
 
+/* Native page scrollbar hidden: <PageScrollbar /> draws the only one
+   (some Chrome builds draw their overlay scrollbar on top of a styled one) */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -136,3 +150,40 @@ input[type="password"]::-ms-clear {
     font-family: var(--font-great-vibes), cursive;
   }
 }
+
+/* Landing loops run as CSS so the compositor drives them, not JS every frame */
+@keyframes lp-marquee { to { transform: translate3d(-50%, 0, 0); } }
+@keyframes lp-float { 50% { transform: translate3d(0, -8px, 0); } }
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+@keyframes lp-bar { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+@keyframes lp-chart { to { transform: translateX(-100px); } } /* SVG user units: one chart period */
+@keyframes lp-meter { 0%, 100% { transform: scaleX(.42); } 50% { transform: scaleX(.88); } }
+@keyframes lp-wheel { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(8px); opacity: 0; } 100% { transform: translateY(0); opacity: 0; } }
+@keyframes lp-dash { to { stroke-dashoffset: -24; } }
+@keyframes lp-pulse { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(1.18); } }
+.lp-marquee { animation: lp-marquee 30s linear infinite; }
+.lp-float { animation: lp-float 6s ease-in-out infinite; }
+.lp-float-slow { animation: lp-float 7s ease-in-out infinite reverse; }
+.lp-spin { animation: lp-spin 6s linear infinite; }
+.lp-bar { animation: lp-bar 1.2s ease-in-out infinite; transform-origin: bottom; }
+.lp-chart { animation: lp-chart 8s linear infinite; }
+.lp-pulse { animation: lp-pulse 1.6s ease-out 1.2s infinite; }
+.lp-dash { animation: lp-dash 1s linear infinite; }
+.lp-pause:hover .lp-marquee { animation-play-state: paused; }
+@keyframes lp-sheen { 0%, 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(420%) skewX(-18deg); } }
+.lp-sheen { animation: lp-sheen 5s ease-in-out infinite; }
+.lp-wheel { animation: lp-wheel 1.6s cubic-bezier(.4,0,.2,1) infinite; }
+.lp-meter { animation: lp-meter 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee, .lp-float, .lp-float-slow, .lp-spin, .lp-bar, .lp-chart, .lp-pulse, .lp-dash, .lp-meter, .lp-pause:hover .lp-marquee { animation-play-state: paused; }
+@keyframes lp-sheen { 0%, 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(420%) skewX(-18deg); } }
+.lp-sheen { animation: lp-sheen 5s ease-in-out infinite; }
+.lp-wheel { animation: none; }
+}
+
+/* Dashboard workflow previews: connections flow while the card is hovered */
+.wf-flow { stroke-dasharray: 6 12; opacity: 0; transition: opacity .3s; }
+@keyframes wf-dash { to { stroke-dashoffset: -18; } }
+.group:hover .wf-flow { opacity: 1; animation: wf-dash .6s linear infinite; }
+.wf-flow-always { animation: wf-dash 1.2s linear infinite; stroke-dasharray: 4 5; }
+@media (prefers-reduced-motion: reduce) { .group:hover .wf-flow, .wf-flow-always { animation: none; } }

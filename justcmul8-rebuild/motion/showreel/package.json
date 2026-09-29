@@ -1,0 +1,11 @@
+{
+  "name": "justcmul8-showreel",
+  "private": true,
+  "description": "20s landing-page showreel. Open scene.html in a browser to preview; `npm run render` for 4K60.",
+  "scripts": {
+    "icons": "node icons.mjs",
+    "stills": "node stills.js 1.4 3.6 7.5 11.2 15 18.9",
+    "render": "node render.js justcmul8-showreel-4k.mp4 60 2 4 0 20"
+  },
+  "dependencies": { "ffmpeg-static": "^5.2.0", "playwright": "1.57.0" }
+}

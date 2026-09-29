@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 import SmoothScroll from "@/components/SmoothScroll";
 import SplashScreen from "@/components/SplashScreen";
 import ToastContainer from "@/components/ui/Toast";
+import PageScrollbar from "@/components/PageScrollbar";
 
 export default function RootLayout({
   children,
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <SplashScreen />
         <ToastContainer />
+        <PageScrollbar />
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

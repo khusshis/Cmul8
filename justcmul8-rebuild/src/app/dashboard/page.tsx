@@ -4,11 +4,16 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, CheckCircle2, ArrowRight, FolderPlus, MoreVertical, Loader2, Calendar, Users, Car, Droplet, Factory, Package, Radio, Box, BarChart3, Shield } from "lucide-react";
+import {
+  Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, ArrowRight, FolderPlus, MoreHorizontal, Loader2,
+  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, type LucideIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
-import { getAllSimTypes } from "@/lib/simulation/simTypeRegistry";
 import { toast } from "@/components/ui/Toast";
+import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
+import { WorkflowPreview, graphStats } from "@/components/dashboard/WorkflowPreview";
+import { Diorama, TYPES as SCENES } from "@/components/landing/SimTypesSection";
 
 interface Project {
   id: string;
@@ -16,6 +21,35 @@ interface Project {
   sim_type: string;
   updated_at: string;
   user_id: string;
+  graph_json?: unknown;
+}
+
+// Domains, styled like the landing page. `scene` points at the matching landing diorama.
+const DOMAINS: { id: string; label: string; sub: string; icon: LucideIcon; color: string; tint: string; scene: string }[] = [
+  { id: "human_queue", label: "People & Service", sub: "People, lines, service systems", icon: Users, color: "#6d5bff", tint: "#eeebff", scene: "human" },
+  { id: "vehicle", label: "Traffic & Vehicles", sub: "Traffic, vehicles, transport", icon: Car, color: "#f43f5e", tint: "#ffecef", scene: "vehicle" },
+  { id: "liquid", label: "Liquid & Material", sub: "Flow of liquids or materials", icon: Droplets, color: "#0ea5e9", tint: "#e6f6fe", scene: "liquid" },
+  { id: "manufacturing", label: "Manufacturing", sub: "Production lines, machines", icon: Factory, color: "#10b981", tint: "#e7f8f1", scene: "mfg" },
+  { id: "logistics", label: "Logistics", sub: "Warehousing, supply chain", icon: Package, color: "#f97316", tint: "#fff1e6", scene: "logistics" },
+  { id: "network_signal", label: "Network & Signal", sub: "Networks, signals, comms", icon: RadioTower, color: "#8b5cf6", tint: "#f3eeff", scene: "network" },
+];
+const domainOf = (id: string) => DOMAINS.find((d) => d.id === id) ?? DOMAINS[0];
+
+const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+function timeAgo(iso: string) {
+  const s = (new Date(iso).getTime() - Date.now()) / 1000;
+  const steps: [number, Intl.RelativeTimeFormatUnit][] = [[60, "second"], [60, "minute"], [24, "hour"], [7, "day"], [4.345, "week"], [12, "month"], [Infinity, "year"]];
+  let v = s;
+  for (const [n, unit] of steps) {
+    if (Math.abs(v) < n) return rtf.format(Math.round(v), unit);
+    v /= n;
+  }
+  return "";
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 }
 
 export default function DashboardPage() {
@@ -25,45 +59,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const [showModal, setShowModal] = React.useState(false);
   const [newName, setNewName] = React.useState("");
-  
-  const simTypes = getAllSimTypes();
-  const [newType, setNewType] = React.useState(simTypes[0]?.id || "human_queue");
+  const [newType, setNewType] = React.useState(DOMAINS[0].id);
   const [creating, setCreating] = React.useState(false);
-  
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
   const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
+  // RLS returns owned + shared projects together; split them like Drive's "My Drive" / "Shared with me".
+  const [userId, setUserId] = React.useState<string | null>(null);
+  const [userName, setUserName] = React.useState("");
+  const [view, setView] = React.useState<"mine" | "shared">("mine");
 
-  React.useEffect(() => {
-    loadData();
-    
-    // Listen for custom event from Navbar
-    const handleOpenModal = () => setShowModal(true);
-    window.addEventListener('open-new-sim-modal', handleOpenModal);
-
-    // Close options dropdown on outside click
-    const handleOutsideClick = () => setMenuOpenId(null);
-    window.addEventListener('click', handleOutsideClick);
-
-    return () => {
-      window.removeEventListener('open-new-sim-modal', handleOpenModal);
-      window.removeEventListener('click', handleOutsideClick);
-    };
-  }, []);
-
-  async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-    
-    const { data } = await supabase.from("projects").select("*").order("updated_at", { ascending: false });
-    
-    // Artificial delay so the beautiful skeleton loader is actually visible
-    await new Promise(r => setTimeout(r, 1200));
-    
-    setProjects(data || []);
-    setLoading(false);
-  }
+  const mine = projects.filter((p) => p.user_id === userId);
+  const shared = projects.filter((p) => p.user_id !== userId);
+  const q = query.trim().toLowerCase();
+  const visible = (view === "mine" ? mine : shared).filter((p) => !q || p.name.toLowerCase().includes(q));
 
   async function createProject() {
     if (!newName.trim()) return;
@@ -76,7 +87,7 @@ export default function DashboardPage() {
       graph_json: JSON.stringify({ nodes: [], edges: [] }),
       updated_at: new Date().toISOString(),
     }).select().single();
-    
+
     if (!error && data) {
       setShowModal(false);
       setNewName("");
@@ -91,631 +102,433 @@ export default function DashboardPage() {
 
   async function deleteProject(id: string) {
     const { error } = await supabase.from("projects").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to delete project: " + error.message);
-      return;
-    }
+    if (error) { toast.error("Failed to delete project: " + error.message); return; }
     setProjects((p) => p.filter((x) => x.id !== id));
     setDeleteId(null);
     toast.success("Simulation deleted successfully");
   }
 
   async function renameProject(id: string) {
-    if (!renameValue.trim()) { 
-      setRenamingId(null); 
-      return; 
-    }
-    
+    if (!renameValue.trim()) { setRenamingId(null); return; }
     const { error } = await supabase.from("projects").update({ name: renameValue.trim() }).eq("id", id);
-    if (error) {
-      toast.error("Failed to rename project: " + error.message);
-      return;
-    }
-    setProjects((p) => p.map((x) => x.id === id ? { ...x, name: renameValue.trim() } : x));
+    if (error) { toast.error("Failed to rename project: " + error.message); return; }
+    setProjects((p) => p.map((x) => (x.id === id ? { ...x, name: renameValue.trim() } : x)));
     setRenamingId(null);
     toast.success("Simulation renamed successfully");
   }
 
-  const getType = (id: string) => simTypes.find((t) => t.id === id) || simTypes[0];
+  React.useEffect(() => {
+    // Load the user and their projects (owned + shared via RLS).
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { router.push("/login"); return; }
+      setUserId(user.id);
+      const meta = user.user_metadata as { full_name?: string; name?: string } | undefined;
+      setUserName((meta?.full_name || meta?.name || user.email?.split("@")[0] || "").split(" ")[0]);
+      const { data } = await supabase.from("projects").select("*").order("updated_at", { ascending: false });
+      setProjects(data || []);
+      setLoading(false);
+    });
+    // The navbar's "New Simulation" button opens the modal through this event.
+    const handleOpenModal = () => setShowModal(true);
+    window.addEventListener("open-new-sim-modal", handleOpenModal);
+    const handleOutsideClick = () => setMenuOpenId(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => {
+      window.removeEventListener("open-new-sim-modal", handleOpenModal);
+      window.removeEventListener("click", handleOutsideClick);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const lastEdited = mine[0]?.updated_at;
+  const chosen = domainOf(newType);
+  const scene = SCENES.find((s) => s.id === chosen.scene) ?? SCENES[0];
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: "#F4F5FB" }}>
-      {/* Decorative Wave Background */}
-      <svg className="absolute bottom-0 right-0 w-[800px] h-auto pointer-events-none opacity-40 z-0" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M800 0C800 0 718.5 125.5 531 217.5C343.5 309.5 240 458 131.5 600H800V0Z" fill="url(#paint0_linear)"/>
-        <path d="M800 137.5C800 137.5 727.5 253.5 540 345.5C352.5 437.5 249 586 140.5 728H800V137.5Z" fill="url(#paint1_linear)"/>
-        <path d="M800 275C800 275 736.5 381.5 549 473.5C361.5 565.5 258 714 149.5 856H800V275Z" fill="url(#paint2_linear)"/>
-        <defs>
-          <linearGradient id="paint0_linear" x1="465.5" y1="300" x2="800" y2="300" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#5742FF" stopOpacity="0.05"/>
-            <stop offset="1" stopColor="#5742FF" stopOpacity="0.15"/>
-          </linearGradient>
-          <linearGradient id="paint1_linear" x1="470.25" y1="432.75" x2="800" y2="432.75" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#8B5CF6" stopOpacity="0.04"/>
-            <stop offset="1" stopColor="#8B5CF6" stopOpacity="0.12"/>
-          </linearGradient>
-          <linearGradient id="paint2_linear" x1="474.75" y1="565.5" x2="800" y2="565.5" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#D946EF" stopOpacity="0.03"/>
-            <stop offset="1" stopColor="#D946EF" stopOpacity="0.09"/>
-          </linearGradient>
-        </defs>
-      </svg>
-
-      {/* Navbar */}
+    <div className="min-h-screen relative overflow-x-clip bg-[#fafaff]">
+      <Backdrop tone="a" />
       <Navbar />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-32 pb-20 relative z-10">
-        {/* Header with curvy underline */}
-        <div className="flex items-end justify-between mb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-20 relative z-10">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
-            <p className="text-[13px] font-semibold uppercase tracking-[0.15em] mb-2" style={{ color: "#5742FF" }}>Workspace</p>
-            <div className="relative inline-block mb-3">
-              <h1 className="font-extrabold text-4xl tracking-tight text-[#111827]">My Simulations</h1>
-              {/* Curvy SVG underline */}
-              <svg className="absolute -bottom-2 left-0 w-full" height="8" viewBox="0 0 200 8" fill="none" preserveAspectRatio="none">
-                <path d="M0 4 C40 0, 60 8, 100 4 C140 0, 160 8, 200 4" stroke="url(#purple-grad)" strokeWidth="3" strokeLinecap="round" fill="none" />
-                <defs>
-                  <linearGradient id="purple-grad" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#5742FF" />
-                    <stop offset="100%" stopColor="#8B5CF6" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <p className="text-[#6B7280] text-[15px]">Create, manage and run your simulation projects.</p>
+            <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-[14px] font-semibold text-[#64748b]">
+              {greeting()}{userName ? `, ${userName}` : ""} 👋
+            </motion.p>
+            <h1 className="mt-1 font-space font-bold text-[2.25rem] sm:text-[2.75rem] leading-[1.05] tracking-[-0.035em] text-[#161622]">
+              <SplitWords text="My" accent="Simulations" animateNow breakBeforeAccent={false} />
+            </h1>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.5 }} className="mt-4 flex flex-wrap gap-2">
+              {[
+                { icon: Layers, label: `${mine.length} simulation${mine.length === 1 ? "" : "s"}` },
+                { icon: Share2, label: `${shared.length} shared with you` },
+                ...(lastEdited ? [{ icon: Clock, label: `Last edited ${timeAgo(lastEdited)}` }] : []),
+              ].map(({ icon: Icon, label }) => (
+                <span key={label} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ecebf7] bg-white px-3 text-[12px] font-semibold text-[#475569] shadow-[0_1px_2px_rgba(16,24,40,.04)]">
+                  <Icon size={13} className="text-[#5742FF]" /> {label}
+                </span>
+              ))}
+            </motion.div>
           </div>
-          {/* New Simulation button removed from here as it's now in the Navbar */}
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.9, 0.2)} className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            {/* Search */}
+            <label className="relative flex h-11 items-center rounded-full border border-[#ecebf7] bg-white pl-4 pr-3 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-[#c4b5fd] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] transition-shadow sm:w-64">
+              <Search size={16} className="text-[#94a3b8] shrink-0" />
+              <span className="sr-only">Search simulations</span>
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search simulations" className="ml-2 w-full bg-transparent text-[13.5px] font-medium text-[#161622] placeholder:text-[#94a3b8] outline-none" />
+              {query && (
+                <button onClick={() => setQuery("")} aria-label="Clear search" className="text-[#94a3b8] hover:text-[#161622]"><X size={14} /></button>
+              )}
+            </label>
+            {/* Mine / shared: sliding pill */}
+            <div className="relative flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist">
+              {([["mine", "My simulations", mine.length], ["shared", "Shared with me", shared.length]] as const).map(([key, label, n]) => (
+                <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 rounded-full px-4 text-[13px] font-semibold">
+                  {view === key && (
+                    <motion.span layoutId="dash-view-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />
+                  )}
+                  <span className={`relative transition-colors ${view === key ? "text-[#161622]" : "text-[#64748b] hover:text-[#161622]"}`}>
+                    {label}
+                    {n > 0 && <span className="ml-1.5 text-[11px] text-[#94a3b8]">{n}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="hidden sm:inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-5 text-[13.5px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+            >
+              <Plus size={16} strokeWidth={2.5} /> New
+            </button>
+          </motion.div>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white/80 backdrop-blur-sm rounded-[22px] border border-gray-100 flex flex-col h-[340px] animate-pulse overflow-hidden shadow-sm">
-                <div className="h-[145px] bg-gradient-to-b from-gray-100/70 to-gray-50/50 flex items-center justify-center relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gray-200/60" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-3xl border border-[#ecebf7] bg-white overflow-hidden h-[330px] relative">
+                <div className="h-[168px] bg-[#f6f5fc]" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-3/4 rounded-full bg-[#f1f0fa]" />
+                  <div className="h-3 w-1/2 rounded-full bg-[#f1f0fa]" />
+                  <div className="h-10 rounded-xl bg-[#f6f5fc] mt-6" />
                 </div>
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="h-4 bg-gray-200/70 rounded-full w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded-full w-1/2" />
-                  </div>
-                  <div className="w-full h-px bg-gray-100 my-2" />
-                  <div className="flex gap-2.5">
-                    <div className="h-10 bg-gray-200/50 rounded-xl flex-1" />
-                    <div className="w-10 h-10 bg-gray-100 rounded-xl" />
-                  </div>
-                </div>
+                {/* Shimmer sweep */}
+                <motion.div
+                  className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                  animate={{ x: ["0%", "400%"] }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: "linear", delay: i * 0.1 }}
+                />
               </div>
             ))}
           </div>
-        ) : projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center space-y-6">
-            <div className="w-20 h-20 rounded-3xl bg-[#F5F3FF] flex items-center justify-center">
-              <FolderPlus size={32} className="text-[#5742FF]" />
+        ) : visible.length === 0 ? (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.9)} className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-white border border-[#ecebf7] shadow-[0_12px_28px_-14px_rgba(16,24,40,.25)] flex items-center justify-center mb-6">
+              {q ? <Search size={30} className="text-[#5742FF]" /> : view === "shared" ? <Users size={30} className="text-[#5742FF]" /> : <FolderPlus size={30} className="text-[#5742FF]" />}
             </div>
-            <div>
-              <h2 className="font-bold text-xl mb-2 text-[#111827]">No simulations yet</h2>
-              <p className="text-sm text-gray-400">Create your first simulation to get started.</p>
-            </div>
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 py-2.5 px-6 rounded-2xl text-white font-semibold transition-all hover:shadow-[0_8px_24px_-6px_rgba(87,66,255,0.45)] hover:scale-[1.02] active:scale-[0.98]" style={{ background: "linear-gradient(135deg, #5742FF, #4531E5)" }}>
-              <Plus size={18} strokeWidth={2.5} /> Create First Simulation
-            </button>
-          </div>
+            <h2 className="font-space font-bold text-[22px] tracking-[-0.02em] text-[#161622]">
+              {q ? `No simulations match “${query}”` : view === "shared" ? "Nothing shared with you yet" : "No simulations yet"}
+            </h2>
+            <p className="mt-2 text-sm text-[#64748b] max-w-sm">
+              {q ? "Try a different name." : view === "shared" ? "Simulations other people share with your email will show up here." : "Create your first simulation to get started."}
+            </p>
+            {!q && view === "mine" && (
+              <button onClick={() => setShowModal(true)} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+                <Plus size={17} strokeWidth={2.5} /> Create first simulation
+              </button>
+            )}
+          </motion.div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
-            {projects.map((proj, i) => {
-              const type = getType(proj.sim_type);
-              const isRenaming = renamingId === proj.id;
-              
-              return (
-                <motion.div 
-                  key={proj.id} 
-                  initial={{ opacity: 0, y: 24 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: i * 0.05, type: "spring", stiffness: 260, damping: 20 }}
-                  className="h-full"
-                >
-                  <div className="group bg-white rounded-[22px] border border-gray-100/90 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(87,66,255,0.14)] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col h-[340px] relative">
-                    
-                    {/* Top Preview Banner — single artwork focal point */}
-                    <div 
-                      className="h-[145px] relative flex items-center justify-center shrink-0 border-b border-gray-100/70 overflow-hidden"
-                      style={{
-                        background: `radial-gradient(110% 120% at 50% 15%, ${type.color}14 0%, #fafbfc 75%)`,
-                      }}
-                    >
-                      {/* Subtle dot pattern grid */}
-                      <div 
-                        className="absolute inset-0 opacity-[0.45] pointer-events-none"
-                        style={{
-                          backgroundImage: "radial-gradient(#94a3b8 1px, transparent 1px)",
-                          backgroundSize: "14px 14px",
-                        }}
-                      />
-
-                      {/* Top Left: Category badge pill */}
-                      <div className="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-gray-100 shadow-[0_2px_6px_rgba(0,0,0,0.03)]">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: type.color }} />
-                        <span className="text-[10px] font-extrabold tracking-wider uppercase text-gray-700">
-                          {type.label}
-                        </span>
-                      </div>
-
-                      {/* Top Right: Options menu trigger */}
-                      <div className="absolute top-3.5 right-3.5 z-20">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpenId(menuOpenId === proj.id ? null : proj.id);
-                          }}
-                          className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-white/90 transition-all"
-                          title="More options"
-                        >
-                          <MoreVertical size={16} strokeWidth={2.5} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {menuOpenId === proj.id && (
-                          <div 
-                            className="absolute top-8 right-0 z-30 w-44 bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-gray-100 py-1.5 overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => {
-                                setMenuOpenId(null);
-                                setRenamingId(proj.id);
-                                setRenameValue(proj.name);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-[#F5F3FF] hover:text-[#5742FF] transition-colors text-left"
-                            >
-                              <Edit2 size={14} /> Rename
-                            </button>
-                            <Link
-                              href={`/dashboard/project/${proj.id}`}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-gray-700 hover:bg-[#F5F3FF] hover:text-[#5742FF] transition-colors text-left"
-                            >
-                              <ExternalLink size={14} /> Open Editor
-                            </Link>
-                            <div className="h-px bg-gray-100 my-1" />
-                            <button
-                              onClick={() => {
-                                setMenuOpenId(null);
-                                setDeleteId(proj.id);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50 transition-colors text-left"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Single 3D Simulation Graphic with hover scale */}
-                      <div className="relative z-10 w-20 h-20 flex items-center justify-center transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 ease-out">
-                        <img 
-                          src={`/icons/${proj.sim_type}.png`} 
-                          alt={type.label} 
-                          className="w-full h-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.08)] mix-blend-multiply" 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <AnimatePresence initial={true}>
+              {visible.map((proj, i) => {
+                const dom = domainOf(proj.sim_type);
+                const DomIcon = dom.icon;
+                const stats = graphStats(proj.graph_json);
+                const isRenaming = renamingId === proj.id;
+                const own = proj.user_id === userId;
+                return (
+                  <motion.div
+                    key={proj.id}
+                    layout
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ ...spring(13, 0.85, Math.min(i, 10) * 0.04), opacity: { duration: 0.3, delay: Math.min(i, 10) * 0.04 } }}
+                  >
+                    <div className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#ecebf7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(16,24,40,.28)]">
+                      {/* Workflow preview */}
+                      <Link href={`/dashboard/project/${proj.id}`} className="relative block h-[168px] shrink-0 overflow-hidden border-b border-[#f1f0fa]" style={{ background: `linear-gradient(180deg, #fff, ${dom.tint})` }} aria-label={`Open ${proj.name}`}>
+                        <div
+                          aria-hidden
+                          className="absolute inset-0"
+                          style={{ backgroundImage: "radial-gradient(rgba(22,22,34,.09) 1px, transparent 1.5px)", backgroundSize: "16px 16px" }}
                         />
-                      </div>
-                    </div>
-                    
-                    {/* Content Section — NO duplicate icon */}
-                    <div className="p-5 flex flex-col flex-1 bg-white relative z-10">
-                      
-                      {/* Title row with inline rename */}
-                      {isRenaming ? (
-                        <div className="flex items-center gap-2 mb-1">
-                          <input 
-                            autoFocus
-                            className="w-full px-2.5 py-1 text-sm font-bold border-2 rounded-lg focus:outline-none focus:border-[#5742FF] transition-colors bg-gray-50 text-gray-900"
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && renameProject(proj.id)}
-                            onBlur={() => renameProject(proj.id)}
-                          />
-                          <button onClick={() => renameProject(proj.id)} className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0">
-                            <Check size={16} strokeWidth={2.5} />
-                          </button>
+                        <div className="absolute inset-3 transition-transform duration-500 group-hover:scale-[1.04]">
+                          <WorkflowPreview graph={proj.graph_json} accent={dom.color} />
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between group/title mb-1.5">
-                          <Link 
-                            href={`/dashboard/project/${proj.id}`} 
-                            className="font-extrabold text-[17px] text-[#111827] truncate tracking-[-0.02em] hover:text-[#5742FF] transition-colors"
-                            title={proj.name}
+                        {stats.blocks > 0 && (
+                          <span className="absolute bottom-2.5 left-3 rounded-full bg-white/90 border border-white px-2 py-0.5 text-[10.5px] font-semibold text-[#64748b] shadow-[0_2px_6px_-2px_rgba(16,24,40,.15)]">
+                            {stats.blocks} blocks · {stats.links} links
+                          </span>
+                        )}
+                        <span className="absolute bottom-2.5 right-3 inline-flex items-center gap-1 rounded-full bg-[#161622] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                          Open editor <ArrowRight size={12} />
+                        </span>
+                      </Link>
+
+                      {/* Menu */}
+                      {own && (
+                        <div className="absolute top-3 right-3 z-20">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === proj.id ? null : proj.id); }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 border border-white text-[#64748b] shadow-[0_2px_6px_-2px_rgba(16,24,40,.2)] hover:text-[#161622] transition-colors"
+                            aria-label="More options"
                           >
-                            {proj.name}
-                          </Link>
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation();
-                              setRenamingId(proj.id); 
-                              setRenameValue(proj.name); 
-                            }} 
-                            className="opacity-0 group-hover/title:opacity-100 transition-all p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-700 shrink-0 ml-1"
-                            title="Rename simulation"
-                          >
-                            <Edit2 size={13} strokeWidth={2.5} />
+                            <MoreHorizontal size={16} />
                           </button>
+                          <AnimatePresence>
+                            {menuOpenId === proj.id && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-10 w-44 origin-top-right rounded-2xl border border-[#ecebf7] bg-white p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,.25)]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button onClick={() => { setMenuOpenId(null); setRenamingId(proj.id); setRenameValue(proj.name); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#334155] hover:bg-[#f6f4ff] hover:text-[#5742FF]">
+                                  <Edit2 size={14} /> Rename
+                                </button>
+                                <Link href={`/dashboard/project/${proj.id}`} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#334155] hover:bg-[#f6f4ff] hover:text-[#5742FF]">
+                                  <ExternalLink size={14} /> Open editor
+                                </Link>
+                                <div className="my-1 h-px bg-[#f1f0fa]" />
+                                <button onClick={() => { setMenuOpenId(null); setDeleteId(proj.id); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-red-600 hover:bg-red-50">
+                                  <Trash2 size={14} /> Delete
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
 
-                      {/* Metadata Row */}
-                      <div className="flex items-center justify-between text-[12px] font-semibold text-gray-400 mt-1">
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={13} strokeWidth={2} />
-                          {new Date(proj.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {/* Body */}
+                      <div className="flex flex-1 flex-col p-4 sm:p-5">
+                        <span className="inline-flex w-max items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold" style={{ background: dom.tint, color: dom.color }}>
+                          <DomIcon size={12} strokeWidth={2.4} /> {dom.label}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Ready
-                        </span>
-                      </div>
 
-                      <div className="w-full h-px bg-gray-100 my-4" />
-                      
-                      {/* Bottom Actions Row */}
-                      <div className="flex items-center gap-2.5 mt-auto">
-                        <Link 
-                          href={`/dashboard/project/${proj.id}`} 
-                          className="flex-1 flex justify-center items-center gap-2 py-2.5 rounded-[12px] text-[13.5px] font-bold text-[#5742FF] bg-[#F8F7FF] hover:bg-[#5742FF] hover:text-white border border-[#EBE9FF] hover:border-[#5742FF] transition-all duration-200 shadow-sm group/btn"
-                        >
-                          <span>Open</span>
-                          <ArrowRight size={15} strokeWidth={2.5} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                        </Link>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(proj.id);
-                          }} 
-                          className="flex items-center justify-center w-[40px] h-[40px] rounded-[12px] border border-gray-200/80 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all duration-200 shrink-0"
-                          title="Delete simulation"
-                        >
-                          <Trash2 size={16} strokeWidth={2} />
-                        </button>
+                        {isRenaming ? (
+                          <div className="mt-2.5 flex items-center gap-2">
+                            <input
+                              autoFocus
+                              className="w-full rounded-xl border-2 border-[#c4b5fd] bg-[#faf9ff] px-2.5 py-1.5 text-[15px] font-bold text-[#161622] outline-none"
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && renameProject(proj.id)}
+                              onBlur={() => renameProject(proj.id)}
+                            />
+                            <button onClick={() => renameProject(proj.id)} className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50" aria-label="Save name">
+                              <Check size={16} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Link href={`/dashboard/project/${proj.id}`} className="mt-2.5 truncate font-space text-[18px] font-bold tracking-[-0.02em] text-[#161622] hover:text-[#5742FF] transition-colors" title={proj.name}>
+                            {proj.name}
+                          </Link>
+                        )}
+
+                        <div className="mt-1.5 flex items-center justify-between text-[12px] font-medium text-[#94a3b8]">
+                          <span className="flex items-center gap-1.5" title={new Date(proj.updated_at).toLocaleString()}>
+                            <Clock size={13} /> Edited {timeAgo(proj.updated_at)}
+                          </span>
+                          {!own && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#f6f4ff] px-2 py-0.5 text-[10.5px] font-bold text-[#5742FF]">
+                              <Share2 size={10} /> Shared
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-auto flex items-center gap-2 pt-4">
+                          <Link
+                            href={`/dashboard/project/${proj.id}`}
+                            className="group/btn flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-[#ebe9ff] bg-[#f8f7ff] text-[13.5px] font-bold text-[#5742FF] transition-colors hover:border-[#5742FF] hover:bg-[#5742FF] hover:text-white"
+                          >
+                            Open <ArrowRight size={15} strokeWidth={2.5} className="transition-transform group-hover/btn:translate-x-0.5" />
+                          </Link>
+                          {own && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteId(proj.id); }}
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#ecebf7] bg-white text-[#94a3b8] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                              aria-label="Delete simulation"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
 
-            {/* Create New Simulation Card */}
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: projects.length * 0.06, type: "spring", stiffness: 260, damping: 20 }}>
-              <div 
-                onClick={() => setShowModal(true)}
-                className="w-full h-[340px] rounded-[22px] border-2 border-dashed border-indigo-200/90 bg-white/70 hover:bg-white hover:border-[#5742FF] flex flex-col items-center justify-center p-6 relative transition-all duration-300 group hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,0.12)] hover:-translate-y-1.5 cursor-pointer text-center"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-[#F5F3FF] text-[#5742FF] flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-[#5742FF] group-hover:text-white transition-all duration-300 shadow-inner">
-                  <Plus size={28} strokeWidth={2.5} />
-                </div>
-                <h3 className="font-extrabold text-[18px] text-[#111827] mb-1.5 group-hover:text-[#5742FF] transition-colors">
-                  Create New Simulation
-                </h3>
-                <p className="text-[13px] text-gray-500 max-w-[200px] leading-relaxed mb-6">
-                  Start building your next simulation model from scratch.
-                </p>
-                <span 
-                  className="px-5 py-2.5 rounded-xl text-white text-[13px] font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 group-hover:scale-[1.02] active:scale-[0.98]" 
-                  style={{ background: "linear-gradient(135deg, #5742FF, #4531E5)" }}
+              {/* New simulation card */}
+              {view === "mine" && !q && (
+                <motion.button
+                  key="__new"
+                  layout
+                  onClick={() => setShowModal(true)}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={spring(13, 0.85, Math.min(visible.length, 10) * 0.04)}
+                  className="group relative flex min-h-[330px] flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-[#d9d3fb] bg-white/60 p-6 text-center transition-[border-color,background-color,transform,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#5742FF] hover:bg-white hover:shadow-[0_24px_48px_-24px_rgba(87,66,255,.35)]"
                 >
-                  <Plus size={16} strokeWidth={2.5} />
-                  New Simulation
-                </span>
-              </div>
-            </motion.div>
+                  <span className="relative mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f5f3ff] text-[#5742FF] transition-all duration-300 group-hover:rotate-90 group-hover:bg-[#5742FF] group-hover:text-white">
+                    <Plus size={28} strokeWidth={2.5} />
+                  </span>
+                  <span className="font-space text-[18px] font-bold tracking-[-0.02em] text-[#161622] group-hover:text-[#5742FF] transition-colors">New simulation</span>
+                  <span className="mt-1.5 max-w-[210px] text-[13px] leading-relaxed text-[#64748b]">Start from a blank canvas in any of six domains.</span>
+                  <span className="mt-5 flex -space-x-2">
+                    {DOMAINS.map((d) => (
+                      <span key={d.id} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-sm" style={{ background: d.tint, color: d.color }}>
+                        <d.icon size={14} />
+                      </span>
+                    ))}
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </main>
 
-      {/* Create Modal */}
+      {/* Create modal */}
       <AnimatePresence>
         {showModal && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#161622]/40 p-4 md:p-6 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           >
-            <motion.div 
-              initial={{ scale: 0.96, opacity: 0, y: 14 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0, y: 14 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.96, opacity: 0, y: 14 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white w-full max-w-[1020px] rounded-[28px] shadow-[0_24px_70px_-12px_rgba(0,0,0,0.22)] relative p-7 sm:p-9 md:p-10 max-h-[92vh] overflow-y-auto custom-scrollbar"
+              className="custom-scrollbar relative grid max-h-[92vh] w-full max-w-[1040px] grid-cols-1 overflow-y-auto rounded-[28px] bg-white shadow-[0_24px_70px_-12px_rgba(0,0,0,0.3)] lg:grid-cols-[1fr_440px]"
               onClick={(e) => e.stopPropagation()}
             >
-              
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowModal(false)} 
-                className="absolute top-6 right-6 p-2 rounded-xl bg-gray-100/70 hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors z-20"
-                title="Close"
-              >
+              <button onClick={() => setShowModal(false)} className="absolute right-5 top-5 z-20 rounded-full bg-white/90 p-2 text-[#94a3b8] shadow-sm hover:text-[#161622]" aria-label="Close">
                 <X size={18} strokeWidth={2.5} />
               </button>
 
-              {/* Main 2-Column Layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-                
-                {/* ── Left Column: Form Steps (7 cols) ── */}
-                <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
-                  
-                  {/* Header */}
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50/80 border border-indigo-100/60 flex items-center justify-center text-[#5742FF] shadow-sm shrink-0">
-                      <Box size={24} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-[22px] md:text-[24px] text-[#111827] tracking-tight">
-                        New Simulation
-                      </h2>
-                      <p className="text-[#6B7280] text-[13.5px]">
-                        Create a new simulation project to model, analyze and optimize.
-                      </p>
-                    </div>
-                  </div>
+              {/* Form */}
+              <div className="flex flex-col p-6 sm:p-8">
+                <h2 className="font-space text-[26px] font-bold tracking-[-0.03em] text-[#161622]">New simulation</h2>
+                <p className="mt-1 text-[14px] text-[#64748b]">Name it, pick a domain, and you&apos;re in the editor.</p>
 
-                  {/* Step 1: Project Name */}
-                  <div>
-                    <div className="flex items-start gap-2.5 mb-2.5">
-                      <span className="w-6 h-6 rounded-full bg-indigo-50 text-[#5742FF] font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">
-                        1
-                      </span>
-                      <div>
-                        <h3 className="text-[14.5px] font-bold text-[#111827]">Project Name</h3>
-                        <p className="text-[12.5px] text-gray-400">Give your simulation a clear and descriptive name.</p>
-                      </div>
-                    </div>
+                <label className="mt-7 text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]" htmlFor="new-sim-name">Project name</label>
+                <input
+                  id="new-sim-name"
+                  autoFocus
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#e7e5f6] bg-[#fafaff] px-4 text-[15px] font-medium text-[#161622] outline-none transition-shadow placeholder:text-[#94a3b8] focus:border-[#c4b5fd] focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Bank teller optimisation"
+                  onKeyDown={(e) => e.key === "Enter" && newName.trim() && createProject()}
+                />
 
-                    <div className="relative mt-2">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                        <Calendar size={17} />
-                      </div>
-                      <input 
-                        autoFocus 
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5742FF]/15 focus:border-[#5742FF] text-[#111827] placeholder-gray-400 font-medium transition-all text-sm shadow-sm" 
-                        value={newName} 
-                        onChange={(e) => setNewName(e.target.value)}
-                        placeholder="e.g. Bank Teller Optimization" 
-                        onKeyDown={(e) => e.key === "Enter" && newName.trim() && createProject()} 
-                      />
-                    </div>
-                  </div>
-
-                  {/* Step 2: Simulation Domain */}
-                  <div>
-                    <div className="flex items-start gap-2.5 mb-2.5">
-                      <span className="w-6 h-6 rounded-full bg-indigo-50 text-[#5742FF] font-bold text-[12px] flex items-center justify-center shrink-0 mt-0.5">
-                        2
-                      </span>
-                      <div>
-                        <h3 className="text-[14.5px] font-bold text-[#111827]">Simulation Domain</h3>
-                        <p className="text-[12.5px] text-gray-400">Select the domain that best matches your simulation.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2.5 mt-2.5">
-                      {[
-                        { 
-                          id: "human_queue" as const, 
-                          label: "HUMAN QUEUE", 
-                          sub: "People, lines, service systems",
-                          icon: Users,
-                          bg: "bg-indigo-50",
-                          text: "text-indigo-600"
-                        },
-                        { 
-                          id: "vehicle" as const, 
-                          label: "VEHICLE", 
-                          sub: "Traffic, vehicles, transport systems",
-                          icon: Car,
-                          bg: "bg-red-50",
-                          text: "text-red-500"
-                        },
-                        { 
-                          id: "liquid" as const, 
-                          label: "LIQUID / MATERIAL", 
-                          sub: "Flow of liquids or materials",
-                          icon: Droplet,
-                          bg: "bg-blue-50",
-                          text: "text-blue-500"
-                        },
-                        { 
-                          id: "manufacturing" as const, 
-                          label: "MANUFACTURING", 
-                          sub: "Production lines, machines, operations",
-                          icon: Factory,
-                          bg: "bg-emerald-50",
-                          text: "text-emerald-600"
-                        },
-                        { 
-                          id: "logistics" as const, 
-                          label: "LOGISTICS", 
-                          sub: "Warehousing, supply chain, distribution",
-                          icon: Package,
-                          bg: "bg-orange-50",
-                          text: "text-orange-500"
-                        },
-                        { 
-                          id: "network_signal" as const, 
-                          label: "NETWORK / SIGNAL", 
-                          sub: "Networks, signals, communication",
-                          icon: Radio,
-                          bg: "bg-purple-50",
-                          text: "text-purple-600"
-                        }
-                      ].map((type) => {
-                        const isSelected = newType === type.id;
-                        const IconComponent = type.icon;
-
-                        return (
-                          <button 
-                            key={type.id} 
-                            onClick={() => setNewType(type.id)}
-                            className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl transition-all border text-center min-h-[140px]
-                              ${isSelected 
-                                ? "border-2 border-[#5742FF] bg-[#F8F7FF] shadow-sm" 
-                                : "border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50/50"}`}
-                          >
-                            {isSelected && (
-                              <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-[#5742FF] text-white flex items-center justify-center shadow-sm">
-                                <Check size={11} strokeWidth={3} />
-                              </div>
-                            )}
-                            
-                            {/* Icon Squircle */}
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2.5 ${type.bg} ${type.text}`}>
-                              <IconComponent size={22} strokeWidth={2.2} />
-                            </div>
-
-                            <div className="text-[11px] font-extrabold tracking-wider text-[#111827] uppercase mb-1">
-                              {type.label}
-                            </div>
-                            <div className="text-[10px] text-gray-500 leading-tight px-0.5">
-                              {type.sub}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                <span className="mt-6 text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">Domain</span>
+                <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {DOMAINS.map((d) => {
+                    const on = newType === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => setNewType(d.id)}
+                        className={`relative flex flex-col items-start rounded-2xl border p-3 text-left transition-[border-color,box-shadow,background-color] ${on ? "bg-white shadow-[0_10px_24px_-14px_rgba(16,24,40,.3)]" : "border-[#ecebf7] bg-white hover:border-[#dcd8f3]"}`}
+                        style={on ? { borderColor: d.color, boxShadow: `0 0 0 3px ${d.color}22` } : undefined}
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors" style={{ background: on ? d.color : d.tint, color: on ? "#fff" : d.color }}>
+                          <d.icon size={18} strokeWidth={2.2} />
+                        </span>
+                        <span className="mt-2.5 text-[13px] font-bold text-[#161622]">{d.label}</span>
+                        <span className="text-[11.5px] leading-snug text-[#94a3b8]">{d.sub}</span>
+                        {on && (
+                          <motion.span layoutId="domain-check" className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ background: d.color }} transition={spring(20, 0.8)}>
+                            <Check size={11} strokeWidth={3} />
+                          </motion.span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* ── Right Column: Info & 3D Layer Showcase (5 cols) ── */}
-                <div className="lg:col-span-5 lg:border-l lg:border-gray-100 lg:pl-8 flex flex-col justify-between pt-2 lg:pt-0">
-                  <div>
-                    <span className="text-[10.5px] font-extrabold tracking-[0.16em] uppercase text-[#5742FF] block mb-1.5">
-                      SIMULATE SMARTER
-                    </span>
-                    <h3 className="text-[22px] font-bold text-[#111827] leading-tight tracking-tight mb-2">
-                      Turn your ideas <br className="hidden sm:block" />into insights.
-                    </h3>
-                    <p className="text-[13px] text-gray-500 leading-relaxed mb-4">
-                      Build, analyze, and optimize real-world systems with powerful simulation tools.
-                    </p>
-
-                    {/* Isometric Floating Glass Layers Illustration */}
-                    <div className="relative w-full h-[155px] flex flex-col items-center justify-center my-3 overflow-hidden rounded-2xl bg-gradient-to-b from-[#FAF8FF] to-[#F3EFFF] border border-indigo-50">
-                      {/* Ambient Grid Dots */}
-                      <div 
-                        className="absolute inset-0 opacity-[0.35] pointer-events-none"
-                        style={{
-                          backgroundImage: "radial-gradient(#8b5cf6 1px, transparent 1px)",
-                          backgroundSize: "14px 14px",
-                        }}
-                      />
-
-                      {/* 3D Stacked Layers */}
-                      <div className="relative w-44 h-16 flex items-center justify-center mb-1">
-                        {/* Top-right Floating Analytics Pill */}
-                        <div className="absolute -top-2 right-1 z-30 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/95 shadow-[0_4px_14px_rgba(87,66,255,0.18)] border border-indigo-100/90">
-                          <span className="text-[10px] font-black text-[#5742FF]">E</span>
-                          <BarChart3 size={13} strokeWidth={2.5} className="text-[#5742FF]" />
-                        </div>
-
-                        {/* Layer 3: Bottom colored base */}
-                        <div 
-                          className="absolute w-28 h-12 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] opacity-90 shadow-[0_8px_20px_rgba(99,102,241,0.28)]"
-                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(0px)" }}
-                        />
-                        {/* Layer 2: Middle frosted layer */}
-                        <div 
-                          className="absolute w-28 h-12 rounded-xl bg-white/80 backdrop-blur-md border border-white shadow-[0_6px_18px_rgba(99,102,241,0.15)]"
-                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(16px)" }}
-                        />
-                        {/* Layer 1: Top glass layer */}
-                        <div 
-                          className="absolute w-28 h-12 rounded-xl bg-white/95 backdrop-blur-md border border-indigo-100 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
-                          style={{ transform: "rotateX(60deg) rotateZ(-45deg) translateZ(32px)" }}
-                        />
-                      </div>
-
-                      {/* Model → Analyze → Optimize pill */}
-                      <div className="relative z-10 px-3 py-0.5 rounded-full bg-white/95 border border-indigo-100 shadow-sm text-[10.5px] font-semibold text-[#5742FF]">
-                        Model → Analyze → Optimize
-                      </div>
-                    </div>
-
-                    {/* 3 Value Propositions */}
-                    <div className="space-y-3.5 mt-5">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
-                          <BarChart3 size={16} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                          <h4 className="text-[13px] font-bold text-[#111827]">Make better decisions</h4>
-                          <p className="text-[11.5px] text-gray-400 leading-tight">Test ideas before real-world implementation.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
-                          <Clock size={16} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                          <h4 className="text-[13px] font-bold text-[#111827]">Save time & resources</h4>
-                          <p className="text-[11.5px] text-gray-400 leading-tight">Identify bottlenecks and optimize processes.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#5742FF] flex items-center justify-center shrink-0 mt-0.5">
-                          <Shield size={16} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                          <h4 className="text-[13px] font-bold text-[#111827]">Built for innovators</h4>
-                          <p className="text-[11.5px] text-gray-400 leading-tight">Flexible, powerful, and easy to use.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="mt-8 flex items-center justify-end gap-3 border-t border-[#f1f0fa] pt-6">
+                  <button onClick={() => setShowModal(false)} className="h-11 rounded-full px-5 text-[14px] font-semibold text-[#475569] hover:bg-black/[0.04]">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={createProject}
+                    disabled={creating || !newName.trim()}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {creating && <Loader2 size={16} className="animate-spin" />}
+                    Create project <ArrowRight size={15} strokeWidth={2.5} />
+                  </button>
                 </div>
               </div>
 
-              {/* Bottom Actions Bar */}
-              <div className="pt-6 mt-8 border-t border-gray-100 flex items-center justify-between">
-                <button 
-                  onClick={() => setShowModal(false)} 
-                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-[13.5px] hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={createProject} 
-                  disabled={creating || !newName.trim()} 
-                  className="px-7 py-2.5 rounded-xl text-white font-bold text-[13.5px] flex items-center gap-2 transition-all bg-[#5742FF] hover:bg-[#4531E5] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-[0_4px_16px_rgba(87,66,255,0.35)] active:scale-[0.99]"
-                >
-                  {creating && <Loader2 size={16} className="animate-spin" />}
-                  <span>Create Project</span>
-                  <ArrowRight size={15} strokeWidth={2.5} />
-                </button>
+              {/* Live preview of the chosen domain (the landing diorama) */}
+              <div className="relative hidden min-h-[460px] overflow-hidden lg:block" style={{ background: `linear-gradient(180deg, #ffffff 0%, ${chosen.tint} 100%)` }}>
+                <div aria-hidden className="absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(22,22,34,.08) 1.1px, transparent 1.6px)", backgroundSize: "22px 22px" }} />
+                <div className="absolute left-6 top-6 z-10">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: chosen.color }}>Preview</div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div key={chosen.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="font-space text-[20px] font-bold tracking-[-0.02em] text-[#161622]">
+                      {chosen.label}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div key={scene.id} className="absolute inset-x-0 bottom-4 top-16" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} transition={{ duration: 0.3 }}>
+                    <div className="lp-float-slow absolute inset-0">
+                      <Diorama t={scene} live />
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
-
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Delete Confirm Modal */}
+      {/* Delete confirm */}
       <AnimatePresence>
         {deleteId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              className="card-surface p-6 rounded-2xl w-full max-w-sm space-y-4 text-center border" style={{ borderColor: "var(--color-border)" }}>
-              <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: "var(--color-error-light, #fee2e2)", color: "var(--color-error)" }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-[#161622]/40 p-4 backdrop-blur-sm" onClick={() => setDeleteId(null)}>
+            <motion.div
+              initial={{ scale: 0.95, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 10, opacity: 0 }}
+              transition={spring(16, 0.85)}
+              className="w-full max-w-sm rounded-[24px] bg-white p-6 text-center shadow-[0_24px_60px_-12px_rgba(0,0,0,.3)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500">
                 <Trash2 size={24} />
               </div>
-              <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>Delete Simulation</h3>
-              <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Are you sure you want to delete this simulation? This action cannot be undone.</p>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-2 rounded-full text-sm font-medium border" style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)" }}>Cancel</button>
-                <button onClick={() => deleteProject(deleteId)} className="flex-1 py-2 rounded-full text-white text-sm font-medium" style={{ backgroundColor: "var(--color-error)" }}>Delete</button>
+              <h3 className="font-space text-[20px] font-bold tracking-[-0.02em] text-[#161622]">Delete simulation?</h3>
+              <p className="mt-1.5 text-[14px] text-[#64748b]">This can&apos;t be undone.</p>
+              <div className="mt-6 flex gap-3">
+                <button onClick={() => setDeleteId(null)} className="h-11 flex-1 rounded-full border border-[#e7e5f6] text-[14px] font-semibold text-[#334155] hover:bg-[#fafaff]">Cancel</button>
+                <button onClick={() => deleteProject(deleteId)} className="h-11 flex-1 rounded-full bg-red-500 text-[14px] font-semibold text-white hover:bg-red-600">Delete</button>
               </div>
             </motion.div>
           </motion.div>
