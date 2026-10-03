@@ -25,14 +25,14 @@ const PLANS: Plan[] = [
   {
     id: "free", name: "Free", tagline: "For exploring and your first models.", icon: Gift,
     price: { monthly: 0, yearly: 0 },
-    features: ["1 active project", "Full visual builder", "Real-time execution", "Standard KPIs", "AI chat (limited)"],
+    features: ["100 credits / month", "Full visual builder", "Real-time execution", "Standard KPIs", "JSON export"],
     cta: "Start for free", href: "/signup",
   },
   {
     id: "pro", name: "Pro", tagline: "For serious builders and professionals.", icon: Rocket,
     price: { monthly: 29, yearly: 23 }, inherits: "Free",
-    features: ["Unlimited projects", "Priority execution", "Custom sprite uploads", "Advanced KPI exports", "Unlimited AI chat"],
-    cta: "Upgrade to Pro", href: "/signup", featured: true,
+    features: ["500 credits / month", "Invite collaborators", "Share links", "CSV exports", "14-day free trial"],
+    cta: "Start 14-day free trial", href: "/signup?plan=pro", featured: true,
   },
   {
     id: "enterprise", name: "Enterprise", tagline: "For teams with security and scale needs.", icon: Building2,
@@ -43,11 +43,10 @@ const PLANS: Plan[] = [
 ];
 
 const COMPARE: { label: string; values: (boolean | string)[] }[] = [
-  { label: "Active projects", values: ["1", "Unlimited", "Unlimited"] },
+  { label: "Credits per month", values: ["100", "500", "Custom"] },
   { label: "Visual builder & live results", values: [true, true, true] },
-  { label: "AI assistant", values: ["Limited", "Unlimited", "Unlimited"] },
-  { label: "Custom sprites", values: [false, true, true] },
-  { label: "KPI exports (CSV / PDF)", values: [false, true, true] },
+  { label: "AI assistant", values: ["Uses credits", "Uses credits", "Uses credits"] },
+  { label: "CSV results export", values: [false, true, true] },
   { label: "Team collaboration", values: [false, "Share links", "Full"] },
   { label: "SSO & dedicated compute", values: [false, false, true] },
 ];
@@ -131,7 +130,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       </div>
 
       <Link
-        href={plan.href}
+        href={plan.id === "pro" ? `${plan.href}&billing=${billing}` : plan.href}
         className={`group/cta relative mt-7 inline-flex h-12 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full text-[14.5px] font-semibold transition-transform hover:scale-[1.02] active:scale-[0.98] ${
           f ? "bg-white text-[#5742FF] shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)]" : "bg-[#161622] text-white hover:bg-[#2a2940]"
         }`}

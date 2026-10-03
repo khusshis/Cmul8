@@ -14,6 +14,10 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     if (isDashboard) return;
 
     const lenis = new Lenis({
+      // <html> is h-full so it never resizes; watch <body> so the scroll limit grows with pages that load content late.
+      content: document.body,
+      // Let inner scroll areas (onboarding's question panel, modal bodies) scroll natively instead of Lenis eating the wheel.
+      allowNestedScroll: true,
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",

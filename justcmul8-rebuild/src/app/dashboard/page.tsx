@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, ArrowRight, FolderPlus, MoreHorizontal, Loader2,
-  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, type LucideIcon,
+  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, Coins, type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/Toast";
 import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
 import { WorkflowPreview, graphStats } from "@/components/dashboard/WorkflowPreview";
 import { Diorama, TYPES as SCENES } from "@/components/landing/SimTypesSection";
+import { CREDIT_COSTS, creditErrorMessage, type Billing } from "@/lib/billing/plans";
 
 interface Project {
   id: string;
@@ -70,6 +71,7 @@ export default function DashboardPage() {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [userName, setUserName] = React.useState("");
   const [view, setView] = React.useState<"mine" | "shared">("mine");
+  const [billing, setBilling] = React.useState<Billing | null>(null);
 
   const mine = projects.filter((p) => p.user_id === userId);
   const shared = projects.filter((p) => p.user_id !== userId);
@@ -91,11 +93,13 @@ export default function DashboardPage() {
     if (!error && data) {
       setShowModal(false);
       setNewName("");
+      setBilling((b) => (b ? { ...b, credits: b.credits - CREDIT_COSTS.create_simulation } : b));
       toast.success("Simulation created successfully!", "Project Ready");
       router.push(`/dashboard/project/${data.id}`);
     } else {
       console.error("Supabase Error:", error);
-      toast.error(error?.message || "Failed to create project", "Creation Error");
+      const noCredits = creditErrorMessage(error?.message);
+      toast.error(noCredits || error?.message || "Failed to create project", noCredits ? "Out of credits" : "Creation Error");
     }
     setCreating(false);
   }
@@ -122,11 +126,14 @@ export default function DashboardPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push("/login"); return; }
       setUserId(user.id);
+      // The profile row is the source of truth for the name (Settings edits it there).
+      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
       const meta = user.user_metadata as { full_name?: string; name?: string } | undefined;
-      setUserName((meta?.full_name || meta?.name || user.email?.split("@")[0] || "").split(" ")[0]);
+      setUserName((profile?.display_name || meta?.full_name || meta?.name || user.email?.split("@")[0] || "").split(" ")[0]);
       const { data } = await supabase.from("projects").select("*").order("updated_at", { ascending: false });
       setProjects(data || []);
       setLoading(false);
+      fetch("/api/billing").then((r) => (r.ok ? r.json() : null)).then(setBilling).catch(() => {});
     });
     // The navbar's "New Simulation" button opens the modal through this event.
     const handleOpenModal = () => setShowModal(true);
@@ -151,7 +158,7 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-20 relative z-10">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        <div className="flex flex-col gap-5 mb-8">
           <div>
             <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-[14px] font-semibold text-[#64748b]">
               {greeting()}{userName ? `, ${userName}` : ""} 👋
@@ -164,6 +171,7 @@ export default function DashboardPage() {
                 { icon: Layers, label: `${mine.length} simulation${mine.length === 1 ? "" : "s"}` },
                 { icon: Share2, label: `${shared.length} shared with you` },
                 ...(lastEdited ? [{ icon: Clock, label: `Last edited ${timeAgo(lastEdited)}` }] : []),
+                ...(billing ? [{ icon: Coins, label: `${billing.credits} credits · ${billing.status === "trialing" ? "Pro trial" : billing.plan === "free" ? "Free" : "Pro"}` }] : []),
               ].map(({ icon: Icon, label }) => (
                 <span key={label} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ecebf7] bg-white px-3 text-[12px] font-semibold text-[#475569] shadow-[0_1px_2px_rgba(16,24,40,.04)]">
                   <Icon size={13} className="text-[#5742FF]" /> {label}
@@ -174,7 +182,7 @@ export default function DashboardPage() {
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.9, 0.2)} className="flex flex-col sm:flex-row gap-3 sm:items-center">
             {/* Search */}
-            <label className="relative flex h-11 items-center rounded-full border border-[#ecebf7] bg-white pl-4 pr-3 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-[#c4b5fd] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] transition-shadow sm:w-64">
+            <label className="relative flex h-11 items-center rounded-full border border-[#ecebf7] bg-white pl-4 pr-3 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-[#c4b5fd] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] transition-shadow sm:flex-1 sm:max-w-sm">
               <Search size={16} className="text-[#94a3b8] shrink-0" />
               <span className="sr-only">Search simulations</span>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search simulations" className="ml-2 w-full bg-transparent text-[13.5px] font-medium text-[#161622] placeholder:text-[#94a3b8] outline-none" />
@@ -183,9 +191,9 @@ export default function DashboardPage() {
               )}
             </label>
             {/* Mine / shared: sliding pill */}
-            <div className="relative flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist">
+            <div className="relative sm:ml-auto flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist">
               {([["mine", "My simulations", mine.length], ["shared", "Shared with me", shared.length]] as const).map(([key, label, n]) => (
-                <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 rounded-full px-4 text-[13px] font-semibold">
+                <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold">
                   {view === key && (
                     <motion.span layoutId="dash-view-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />
                   )}
@@ -198,7 +206,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="hidden sm:inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-5 text-[13.5px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              className="hidden sm:inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-5 text-[13.5px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <Plus size={16} strokeWidth={2.5} /> New
             </button>
@@ -236,7 +244,7 @@ export default function DashboardPage() {
               {q ? "Try a different name." : view === "shared" ? "Simulations other people share with your email will show up here." : "Create your first simulation to get started."}
             </p>
             {!q && view === "mine" && (
-              <button onClick={() => setShowModal(true)} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+              <button onClick={() => setShowModal(true)} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
                 <Plus size={17} strokeWidth={2.5} /> Create first simulation
               </button>
             )}
@@ -477,10 +485,10 @@ export default function DashboardPage() {
                   <button
                     onClick={createProject}
                     disabled={creating || !newName.trim()}
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {creating && <Loader2 size={16} className="animate-spin" />}
-                    Create project <ArrowRight size={15} strokeWidth={2.5} />
+                    Create project · {CREDIT_COSTS.create_simulation} credits <ArrowRight size={15} strokeWidth={2.5} />
                   </button>
                 </div>
               </div>
@@ -528,7 +536,7 @@ export default function DashboardPage() {
               <p className="mt-1.5 text-[14px] text-[#64748b]">This can&apos;t be undone.</p>
               <div className="mt-6 flex gap-3">
                 <button onClick={() => setDeleteId(null)} className="h-11 flex-1 rounded-full border border-[#e7e5f6] text-[14px] font-semibold text-[#334155] hover:bg-[#fafaff]">Cancel</button>
-                <button onClick={() => deleteProject(deleteId)} className="h-11 flex-1 rounded-full bg-red-500 text-[14px] font-semibold text-white hover:bg-red-600">Delete</button>
+                <button onClick={() => deleteProject(deleteId)} className="h-11 flex-1 rounded-full bg-red-500 border border-red-400 text-[14px] font-semibold text-white hover:bg-red-600">Delete</button>
               </div>
             </motion.div>
           </motion.div>

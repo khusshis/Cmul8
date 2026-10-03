@@ -187,3 +187,49 @@ html::-webkit-scrollbar {
 .group:hover .wf-flow { opacity: 1; animation: wf-dash .6s linear infinite; }
 .wf-flow-always { animation: wf-dash 1.2s linear infinite; stroke-dasharray: 4 5; }
 @media (prefers-reduced-motion: reduce) { .group:hover .wf-flow, .wf-flow-always { animation: none; } }
+/* ── Canvas controls & minimap: same pill/card language as the dashboard ── */
+.react-flow__controls.jc-controls {
+  background: #fff;
+  border: 1px solid #ecebf7;
+  border-radius: 16px;
+  padding: 4px;
+  gap: 2px;
+  box-shadow: 0 10px 28px -12px rgba(16, 24, 40, 0.22), 0 1px 2px rgba(16, 24, 40, 0.04);
+  overflow: hidden;
+}
+.jc-controls .react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: #64748b;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.jc-controls .react-flow__controls-button svg {
+  width: 13px;
+  height: 13px;
+  max-width: 13px;
+  max-height: 13px;
+  fill: currentColor;
+}
+.jc-controls .react-flow__controls-button:hover {
+  background: #f5f3ff;
+  color: #5742ff;
+}
+.jc-controls .react-flow__controls-button:active {
+  transform: scale(0.92);
+}
+.jc-controls .react-flow__controls-button:disabled {
+  opacity: 0.35;
+  background: transparent;
+  color: #64748b;
+}
+.react-flow__minimap.jc-minimap {
+  background: #fff;
+  border: 1px solid #ecebf7;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px -12px rgba(16, 24, 40, 0.22), 0 1px 2px rgba(16, 24, 40, 0.04);
+}

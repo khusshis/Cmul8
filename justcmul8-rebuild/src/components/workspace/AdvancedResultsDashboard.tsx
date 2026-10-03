@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { toast } from "@/components/ui/Toast";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import { generateExecutiveHtmlReport } from "@/lib/simulation/reportGenerator";
 import { generateExecutivePdfReport } from "@/lib/simulation/pdfReportGenerator";
@@ -171,13 +172,27 @@ export default function AdvancedResultsDashboard({
                   <span className="hidden sm:inline">HTML Report</span>
                 </button>
 
-                <a
-                  href={`/api/projects/${projectId}/export?format=csv`}
+                <button
+                  onClick={async () => {
+                    // CSV export is Pro-only: show the server's reason instead of navigating to an error body.
+                    const res = await fetch(`/api/projects/${projectId}/export?format=csv`);
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      toast.error(err.error || "Export failed", res.status === 402 ? "Pro feature" : "Export failed");
+                      return;
+                    }
+                    const url = URL.createObjectURL(await res.blob());
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "results.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-50 shadow-xs transition-all"
                 >
                   <Download size={14} />
                   <span className="hidden sm:inline">CSV Export</span>
-                </a>
+                </button>
 
                 <button
                   onClick={onClose}

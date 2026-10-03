@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requirePaid } from "@/lib/billing/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -65,6 +66,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const linkRole = body.role;
   if (!["restricted", "anyone"].includes(access) || !["viewer", "editor"].includes(linkRole)) {
     return NextResponse.json({ error: "Invalid access settings" }, { status: 400 });
+  }
+  // Turning the link off stays allowed, so a downgraded owner can still lock things down.
+  if (access === "anyone") {
+    const locked = await requirePaid(supabase, "Link sharing");
+    if (locked) return locked;
   }
 
   const { data: row, error } = await supabase

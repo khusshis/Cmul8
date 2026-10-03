@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
+import { requirePaid } from "@/lib/billing/server";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ROLES = ["viewer", "editor"];
@@ -69,6 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const supabase = await createClient();
   const auth = await requireOwner(supabase, id);
   if (auth.error) return auth.error;
+  const locked = await requirePaid(supabase, "Inviting collaborators");
+  if (locked) return locked;
 
   const { email, role } = await readBody(req);
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });

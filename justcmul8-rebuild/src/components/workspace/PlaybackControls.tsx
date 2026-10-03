@@ -38,7 +38,7 @@ export default function PlaybackControls({
       {/* Play / Pause */}
       <button
         onClick={onTogglePlay}
-        className="w-8 h-8 rounded-xl bg-[#5742FF] hover:bg-[#4531E5] text-white flex items-center justify-center transition-all shadow-xs"
+        className="w-8 h-8 rounded-xl bg-[#5742FF] border border-[#8d80ff] hover:bg-[#4531E5] text-white flex items-center justify-center transition-all shadow-xs"
         title={playing ? "Pause animation layer" : "Resume animation layer"}
       >
         {playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
@@ -47,7 +47,7 @@ export default function PlaybackControls({
       {onReplay && (
         <button
           onClick={onReplay}
-          className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all"
+          className="w-8 h-8 rounded-xl bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all"
           title="Replay the run from the start"
         >
           <RotateCcw size={14} />

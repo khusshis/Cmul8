@@ -1,3 +1,4 @@
+import { withCredits } from "@/lib/billing/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
@@ -113,7 +114,7 @@ function summarizeTelemetry(simResult: any) {
   };
 }
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   // ── Auth: this route spends a paid quota and must not be open to the internet.
   const supabase = await createClient();
   const {
@@ -270,3 +271,6 @@ ${prompt}`;
     model: generation.model,
   });
 }
+
+// Charged per call; refunded automatically if the handler fails.
+export const POST = (req: Request) => withCredits("ai_chat", req, handle);

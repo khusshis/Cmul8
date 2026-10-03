@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
-import { X, ChevronUp, ChevronDown, Plus, Search } from "lucide-react";
+import { PanelLeftClose, ChevronUp, ChevronDown, Plus, Search } from "lucide-react";
+import Tooltip from "@/components/ui/Tooltip";
 
 export interface NodePaletteProps {
   simType: string;
   onAddNode: (type: string) => void;
+  onMinimize?: () => void;
 }
 
 const CATEGORY_STYLES: Record<string, { label: string; iconBg: string; iconColor: string; dotColor: string }> = {
@@ -17,7 +19,7 @@ const CATEGORY_STYLES: Record<string, { label: string; iconBg: string; iconColor
   ADVANCED:  { label: "text-violet-600", iconBg: "bg-violet-50",  iconColor: "text-violet-600",  dotColor: "bg-violet-400" },
 };
 
-export default function NodePalette({ simType, onAddNode }: NodePaletteProps) {
+export default function NodePalette({ simType, onAddNode, onMinimize }: NodePaletteProps) {
   const simConfig = SIM_TYPE_REGISTRY[simType as SimTypeId] || SIM_TYPE_REGISTRY.human_queue;
   const paletteNodes = simConfig.paletteNodes || [];
   const [search, setSearch] = useState("");
@@ -52,9 +54,11 @@ export default function NodePalette({ simType, onAddNode }: NodePaletteProps) {
           </div>
           <h2 className="text-[14px] font-bold text-[#111827] tracking-tight">Block Palette</h2>
         </div>
-        <button className="p-1 hover:bg-gray-50 rounded-lg text-gray-400 transition-colors">
-          <X size={15} strokeWidth={2.5} />
-        </button>
+        <Tooltip label="Hide blocks" shortcut="[" align="end">
+          <button onClick={onMinimize} aria-label="Hide blocks" className="p-1 hover:bg-gray-50 hover:text-gray-700 rounded-lg text-gray-400 transition-colors">
+            <PanelLeftClose size={15} strokeWidth={2.25} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Search */}

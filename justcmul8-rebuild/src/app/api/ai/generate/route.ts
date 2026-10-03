@@ -1,3 +1,4 @@
+import { withCredits } from "@/lib/billing/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { AIRouterError, extractJSON, generateJSON } from "@/lib/ai/modelRouter";
@@ -56,7 +57,7 @@ export const maxDuration = 120;
  * working (and now authenticated, on the shared model router) because it is a
  * public endpoint that spends the same paid quota as the chat route.
  */
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -128,3 +129,6 @@ ${domainPrompt}`;
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
+
+// Charged per call; refunded automatically if the handler fails.
+export const POST = (req: Request) => withCredits("ai_generate", req, handle);

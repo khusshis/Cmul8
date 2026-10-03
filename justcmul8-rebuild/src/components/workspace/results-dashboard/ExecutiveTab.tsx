@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/Toast";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -137,6 +138,8 @@ export default function ExecutiveTab({
       const data = await res.json();
       if (data.recommendations && Array.isArray(data.recommendations)) {
         setAiRecs(data.recommendations);
+      } else if (data.error) {
+        toast.error(data.error, res.status === 402 ? "Out of credits" : "Optimizer unavailable");
       }
     } catch (err) {
       console.error("AI Optimizer Request Failed:", err);
@@ -429,7 +432,7 @@ export default function ExecutiveTab({
             <button
               onClick={runAiOptimizer}
               disabled={aiLoading}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-[#5742FF] to-indigo-600 hover:from-[#4531E5] hover:to-indigo-700 text-white text-[11px] font-black shadow-xs transition-all disabled:opacity-60"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-[#5742FF] to-indigo-600 border border-[#8d80ff] hover:from-[#4531E5] hover:to-indigo-700 text-white text-[11px] font-black shadow-xs transition-all disabled:opacity-60"
             >
               {aiLoading ? (
                 <>

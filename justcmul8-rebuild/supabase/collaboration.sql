@@ -112,7 +112,8 @@ DROP POLICY IF EXISTS "Users can update their own projects" ON public.projects;
 DROP POLICY IF EXISTS "Collaborators can view projects" ON public.projects;
 DROP POLICY IF EXISTS "Owners and editors can update projects" ON public.projects;
 CREATE POLICY "Collaborators can view projects" ON public.projects
-  FOR SELECT USING (public.project_role(id) IS NOT NULL);
+  -- user_id check first: on INSERT ... RETURNING, project_role() cannot see the new row yet.
+  FOR SELECT USING (auth.uid() = user_id OR public.project_role(id) IS NOT NULL);
 CREATE POLICY "Owners and editors can update projects" ON public.projects
   FOR UPDATE USING (public.project_role(id) IN ('owner', 'editor'))
   WITH CHECK (public.project_role(id) IN ('owner', 'editor'));

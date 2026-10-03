@@ -413,7 +413,7 @@ export default function SimResultsPanel({
                 {isActive && (
                   <motion.div
                     layoutId="activeResultsTabPill"
-                    className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5742FF] to-[#7C3AED] shadow-[0_2px_10px_rgba(87,66,255,0.3)]"
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5742FF] to-[#7C3AED] border border-[#8d80ff] shadow-[0_2px_10px_rgba(87,66,255,0.3)]"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}

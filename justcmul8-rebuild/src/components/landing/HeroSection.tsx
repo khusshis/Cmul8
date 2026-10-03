@@ -248,7 +248,7 @@ function PromptBar({ delay }: { delay: number }) {
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.97 }}
           transition={spring(22, 0.7)}
-          className="group relative overflow-hidden w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] text-white px-7 py-3.5 rounded-full font-bold shadow-[0_10px_24px_-8px_rgba(87,66,255,.6)] shrink-0 text-sm"
+          className="group relative overflow-hidden w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] border border-[#8d80ff] text-white px-7 py-3.5 rounded-full font-bold shadow-[0_10px_24px_-8px_rgba(87,66,255,.6)] shrink-0 text-sm"
         >
           <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/45 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
           Generate with AI

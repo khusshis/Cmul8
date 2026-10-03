@@ -23,17 +23,29 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect /dashboard and /settings routes
-  if (!user && (request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/settings"))) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
+  const path = request.nextUrl.pathname;
+  const redirectTo = (pathname: string, params: Record<string, string> = {}) => {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname;
+    url.search = "";
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c)); // keep refreshed session
+    return res;
+  };
+
+  // Every matched route needs a session.
+  if (!user) return redirectTo("/login", { redirect: path });
+
+  // New accounts finish onboarding before anything else. The flag lives in
+  // user_metadata (no extra query); it is a UX gate, not a security boundary.
+  const onboarded = user.user_metadata?.onboarded === true;
+  if (!onboarded && !path.startsWith("/onboarding")) return redirectTo("/onboarding", { next: path });
+  if (onboarded && path.startsWith("/onboarding")) return redirectTo("/dashboard");
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*"],
+  matcher: ["/dashboard/:path*", "/settings/:path*", "/onboarding"],
 };

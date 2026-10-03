@@ -359,7 +359,10 @@ export default function AIChatPanel({
     const applied = applyAIOps(nodesRef.current, edgesRef.current, ops);
     if (!applied.changed) return { ...nothing, warnings: applied.warnings };
 
-    const next = applied.needsFullLayout
+    // A fresh build (full replace, or blocks added to an empty canvas) always gets the real workflow
+    // layout; the model's own coordinates, or chaining each block to the right of the last, give one long row.
+    const freshBuild = ops.actionType === "REPLACE_GRAPH" || (nodesRef.current.length === 0 && applied.nodes.length > 1);
+    const next = applied.needsFullLayout || freshBuild
       ? applyDagreLayout(applied.nodes, applied.edges, LAYOUT_OPTIONS)
       : { nodes: applied.nodes, edges: applied.edges };
 
@@ -905,7 +908,7 @@ export default function AIChatPanel({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={confirmClearChat}
-                    className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10.5px] font-extrabold shadow-xs transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-rose-600 border border-rose-400 hover:bg-rose-700 text-white text-[10.5px] font-extrabold shadow-xs transition-colors"
                   >
                     Clear
                   </button>
@@ -950,7 +953,7 @@ export default function AIChatPanel({
           <button
             type="submit"
             disabled={!input.trim() || generating}
-            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] border border-[#8d80ff] text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             title="Send prompt"
           >
             {generating ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}

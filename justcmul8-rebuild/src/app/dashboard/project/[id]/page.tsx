@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
+import Tooltip from "@/components/ui/Tooltip";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -13,7 +14,7 @@ import type { SimTick, SimResult, SimTypeId, PyodideStatus, SimGraph, Simulation
 import { toSimulationRunRow } from "@/lib/simulation/resultPersistence";
 import { applyNodeChanges, applyEdgeChanges, type NodeChange, type EdgeChange } from "@xyflow/react";
 import { PyodideSimEngine } from "@/lib/simulation/pyodideEngine";
-import { validateGraphConnectivity } from "@/components/workspace/NodeCanvas";
+import { validateGraphConnectivity, graphToSimNodes } from "@/components/workspace/NodeCanvas";
 import type { NodeCanvasHandle } from "@/components/workspace/NodeCanvas";
 import { usePresence, type GraphOp } from "@/lib/realtime/usePresence";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
@@ -49,27 +50,71 @@ interface HistorySnapshot {
   edges: any[];
 }
 
-function graphToSimNodes(rfNodes: any[], rfEdges: any[]): SimGraph {
-  return {
-    nodes: rfNodes.map((n) => ({
-      id: n.id,
-      nodeType: (n.data as any).nodeType,
-      label: (n.data as any).label,
-      params: (n.data as any).params || {},
-      position: n.position,
-    })),
-    edges: rfEdges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-    })),
-  };
-}
-
 const GRAPH_OPS: GraphOp["kind"][] = ["nodes", "edges", "nodeData", "snapshot"];
 
 // Selection and measured sizes are per-viewer: never saved, never sent to peers.
 const isSharedChange = (c: NodeChange | EdgeChange) => c.type !== "select" && c.type !== "dimensions";
+
+const PANEL_EASE = "cubic-bezier(.32,.72,0,1)";
+
+/*
+ * Minimizable side panel. Only transform/opacity animate (compositor-only, no
+ * per-frame layout), so it stays smooth on low-end devices. The slot width
+ * snaps once per toggle; the panel is absolutely positioned so it can slide
+ * out over the canvas while the canvas resizes a single time.
+ */
+function SidePanel({ side, open, width, animate, children }: { side: "left" | "right"; open: boolean; width: number; animate: boolean; children: React.ReactNode }) {
+  const off = side === "left" ? "-100%" : "100%";
+  return (
+    <div className="relative h-full shrink-0 z-20" style={{ width: open ? width : 0 }}>
+      <div
+        inert={!open}
+        aria-hidden={!open}
+        className={`absolute top-0 h-full ${side === "left" ? "left-0" : "right-0"} motion-reduce:!transition-none`}
+        style={{
+          width,
+          transform: open ? "translate3d(0,0,0)" : `translate3d(${off},0,0)`,
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? undefined : "none",
+          transition: animate ? `transform 320ms ${PANEL_EASE}, opacity ${open ? 200 : 260}ms ease` : "none",
+          willChange: "transform",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ReopenButton({ side, visible, animate, onClick, label, shortcut }: { side: "left" | "right"; visible: boolean; animate: boolean; onClick: () => void; label: string; shortcut: string }) {
+  const Icon = side === "left" ? PanelLeftOpen : PanelRightOpen;
+  const delay = visible ? 140 : 0; // appear after the panel has mostly slid away; vanish immediately on reopen
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`absolute top-3 ${side === "left" ? "left-3" : "right-3"} z-30 motion-reduce:!transition-none`}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translate3d(0,0,0) scale(1)" : `translate3d(${side === "left" ? -8 : 8}px,0,0) scale(.96)`,
+        pointerEvents: visible ? undefined : "none",
+        transition: animate ? `transform 260ms ${PANEL_EASE} ${delay}ms, opacity 180ms ease ${delay}ms` : "none",
+      }}
+    >
+      <Tooltip label={`Show ${label}`} shortcut={shortcut} align={side === "left" ? "start" : "end"}>
+        <button
+          type="button"
+          onClick={onClick}
+          tabIndex={visible ? 0 : -1}
+          aria-label={`Show ${label}`}
+          className={`flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white border border-gray-200 text-[12px] font-bold text-gray-700 shadow-[0_4px_14px_rgba(16,24,40,0.08)] hover:bg-gray-50 transition-colors ${side === "right" ? "flex-row-reverse" : ""}`}
+        >
+          <Icon size={15} strokeWidth={2.25} className="text-[#5742FF]" />
+          {label}
+        </button>
+      </Tooltip>
+    </div>
+  );
+}
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
@@ -99,6 +144,40 @@ export default function WorkspacePage() {
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeRightPanel, setActiveRightPanel] = useState<"ai" | "properties">("properties");
+  const [paletteOpen, setPaletteOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [panelsReady, setPanelsReady] = useState(false);
+
+  // Restore saved panel state before first paint, then enable animations so the restore doesn't animate.
+  useLayoutEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from localStorage; can't run during SSR render
+      if (localStorage.getItem("ws.paletteOpen") === "0") setPaletteOpen(false);
+      if (localStorage.getItem("ws.rightOpen") === "0") setRightOpen(false);
+    } catch {}
+    const raf = requestAnimationFrame(() => setPanelsReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  useEffect(() => {
+    if (!panelsReady) return;
+    try {
+      localStorage.setItem("ws.paletteOpen", paletteOpen ? "1" : "0");
+      localStorage.setItem("ws.rightOpen", rightOpen ? "1" : "0");
+    } catch {}
+  }, [paletteOpen, rightOpen, panelsReady]);
+
+  // [ toggles the block palette, ] toggles the right panel.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.key === "[") { e.preventDefault(); setPaletteOpen((o) => !o); }
+      else if (e.key === "]") { e.preventDefault(); setRightOpen((o) => !o); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
   useEffect(() => {
     selectedNodeIdRef.current = selectedNodeId;
@@ -111,6 +190,7 @@ export default function WorkspacePage() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [monteCarloOpen, setMonteCarloOpen] = useState(false);
+  const [compareSend, setCompareSend] = useState<{ slot: "A" | "B"; at: number } | null>(null);
   const [digitalTwinActive, setDigitalTwinActive] = useState(false);
   const [codeInspectorOpen, setCodeInspectorOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -425,10 +505,15 @@ export default function WorkspacePage() {
   // Re-reads my role and the set of users allowed to edit. Concurrent callers share one request.
   function refreshAccess() {
     accessRefreshRef.current ??= (async () => {
-      const [{ data: myRole }, { data: people }] = await Promise.all([
+      const [{ data: myRole, error: roleError }, { data: people }] = await Promise.all([
         supabase.rpc("project_role", { pid: id }),
         supabase.rpc("project_collaborators", { pid: id }),
       ]);
+      // A failed lookup (network, missing migration) is not the same as losing access; don't kick the user out.
+      if (roleError) {
+        console.error("Failed to check project access", roleError);
+        return;
+      }
       if (!myRole) {
         toast.error("Your access to this simulation was removed.", "Access changed");
         router.push("/dashboard");
@@ -1147,13 +1232,20 @@ export default function WorkspacePage() {
         )}
         
         {canEdit && (
-          <NodePalette
-            simType={project?.sim_type || "human_queue"}
-            onAddNode={(type) => canvasRef.current?.addNode(type)}
-          />
+          <SidePanel side="left" open={paletteOpen} width={280} animate={panelsReady}>
+            <NodePalette
+              simType={project?.sim_type || "human_queue"}
+              onAddNode={(type) => canvasRef.current?.addNode(type)}
+              onMinimize={() => setPaletteOpen(false)}
+            />
+          </SidePanel>
         )}
 
         <div className="flex-1 relative overflow-hidden">
+          {canEdit && (
+            <ReopenButton side="left" shortcut="[" animate={panelsReady} visible={!paletteOpen} onClick={() => setPaletteOpen(true)} label="Blocks" />
+          )}
+          <ReopenButton side="right" shortcut="]" animate={panelsReady} visible={!rightOpen} onClick={() => setRightOpen(true)} label={activeRightPanel === "ai" ? "AI Assistant" : "Properties"} />
           <NodeCanvas
             ref={canvasRef}
             nodes={nodes}
@@ -1173,6 +1265,29 @@ export default function WorkspacePage() {
             onViewportChange={setTwinViewport}
             readOnly={!canEdit}
           />
+
+          {/* Box-selected nodes can be sent straight into an A/B comparison. */}
+          {(() => {
+            const selectedCount = nodes.filter((n) => n.selected).length;
+            if (selectedCount === 0 || simState !== "idle") return null;
+            const send = (slot: "A" | "B") => {
+              setCompareSend({ slot, at: Date.now() });
+              setMonteCarloOpen(true);
+            };
+            return (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 pl-4 rounded-full bg-white/95 backdrop-blur border border-indigo-100 shadow-[0_8px_30px_rgba(87,66,255,0.15)]">
+                <span className="text-[12px] font-bold text-gray-600 mr-1">
+                  {selectedCount} node{selectedCount > 1 ? "s" : ""} selected
+                </span>
+                <button onClick={() => send("A")} className="px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] font-extrabold border border-blue-200 transition-colors">
+                  Compare as A
+                </button>
+                <button onClick={() => send("B")} className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[12px] font-extrabold border border-emerald-200 transition-colors">
+                  Compare as B
+                </button>
+              </div>
+            );
+          })()}
 
           {digitalTwinActive && (
             <>
@@ -1204,6 +1319,7 @@ export default function WorkspacePage() {
           )}
         </div>
 
+        <SidePanel side="right" open={rightOpen} width={330} animate={panelsReady}>
         <div className="w-[330px] border-l border-gray-100 bg-[#fcfcfd] h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
           {/* Top Unified Header with Circular Pill Shaped Animated Tab Switcher */}
           <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between gap-2 shrink-0">
@@ -1221,7 +1337,7 @@ export default function WorkspacePage() {
                   <motion.div
                     layoutId="activeRightSidebarTabPill"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    className="absolute inset-0 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
+                    className="absolute inset-0 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] border border-[#8d80ff] rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
                   />
                 )}
                 <Sparkles size={13} className={activeRightPanel === "ai" ? "text-white" : "text-gray-400"} />
@@ -1248,6 +1364,16 @@ export default function WorkspacePage() {
                 Properties
               </button>
             </div>
+            <Tooltip label="Hide panel" shortcut="]" align="end">
+              <button
+                type="button"
+                onClick={() => setRightOpen(false)}
+                aria-label="Hide panel"
+                className="p-1.5 shrink-0 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <PanelRightClose size={15} strokeWidth={2.25} />
+              </button>
+            </Tooltip>
           </div>
 
           {/* Panel Content */}
@@ -1312,6 +1438,7 @@ export default function WorkspacePage() {
             )}
           </div>
         </div>
+        </SidePanel>
       </div>
 
       {simResult && (
@@ -1344,6 +1471,9 @@ export default function WorkspacePage() {
         open={monteCarloOpen}
         onClose={() => setMonteCarloOpen(false)}
         currentGraph={graphToSimNodes(nodes, edges)}
+        canvasNodes={nodes}
+        canvasEdges={edges}
+        sendRequest={compareSend}
         simType={(project?.sim_type as SimTypeId) || "human_queue"}
         durationSeconds={Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60))}
         speed={speed}

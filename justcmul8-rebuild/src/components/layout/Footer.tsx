@@ -132,7 +132,7 @@ function CtaPanel() {
           <Magnetic>
             <Link
               href="/signup"
-              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
+              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] border border-[#8d80ff] font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
             >
               <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
               Start building free

@@ -58,7 +58,7 @@ export function SubmitButton({ loading, children }: { loading: boolean; children
       whileHover={loading ? undefined : { y: -1 }}
       whileTap={loading ? undefined : { scale: 0.98 }}
       transition={spring(22, 0.7)}
-      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
+      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] border border-[#8d80ff] shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
     >
       <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/45 to-transparent translate-x-0 group-hover:translate-x-[520%] transition-transform duration-700 ease-out" />
       <AnimatePresence mode="wait" initial={false}>

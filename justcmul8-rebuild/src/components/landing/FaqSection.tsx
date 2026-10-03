@@ -129,10 +129,10 @@ function SupportCard() {
         </div>
 
         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-          <a href="mailto:hello@justcmul8.com" className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-[#5742FF] shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <a href="mailto:hello@justcmul8.com" className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white border border-white/60 text-[14px] font-semibold text-[#5742FF] shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <Mail size={16} /> Email us
           </a>
-          <Link href="/signup" className="group inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/10 text-[14px] font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20">
+          <Link href="/signup" className="group inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/10 border border-white/20 text-[14px] font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20">
             Start free <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>

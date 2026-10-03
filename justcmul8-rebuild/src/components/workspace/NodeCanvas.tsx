@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ReactFlow, ReactFlowProvider,
   Background, Controls, MiniMap, addEdge, useReactFlow, useViewport,
-  Handle, Position, BaseEdge, getBezierPath, EdgeLabelRenderer,
-  type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges
+  Handle, Position, BaseEdge, getBezierPath, getStraightPath, getSmoothStepPath, EdgeLabelRenderer,
+  type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges, SelectionMode
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
-import type { SimTick, NodeStats, NodeType } from "@/lib/simulation/types";
-import { AlertCircle, X } from "lucide-react";
+import type { SimTick, NodeStats, NodeType, SimGraph } from "@/lib/simulation/types";
+import { AlertCircle, X, Layers } from "lucide-react";
 import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 import type { PresenceUser } from "@/lib/realtime/usePresence";
 import LiveCursor from "@/components/workspace/LiveCursor";
@@ -55,97 +55,255 @@ export const NODE_BASE_COLORS: Record<string, string> = {
 };
 
 
-// ─── Live Glow Color resolver (Exact Thresholds) ──────────────────────────────
-function resolveNodeGlowColor(nodeType: string, stats: NodeStats | undefined): {
-  color: string;
-  isDimmed: boolean;
-} {
-  if (!stats) return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: true };
+// ─── SimEdge (styled edge) ──────────────────────────────────────────────────
+export type EdgeShape = "curve" | "straight" | "step";
+type Offset = { dx: number; dy: number };
+/** `points` are user bend points, stored as offsets from the source–target midpoint so they follow moved blocks. */
+export type SimEdgeData = { shape?: EdgeShape; points?: Offset[]; bend?: Offset /* legacy single bend */ };
+type XY = { x: number; y: number };
 
-  switch (nodeType) {
-    case "resource":
-    case "priority_resource":
-    case "service": {
-      const u = stats.utilization ?? 0;
-      if (u > 0.8) return { color: "var(--color-error)", isDimmed: false };
-      if (u > 0.5) return { color: "var(--color-warning)", isDimmed: false };
-      return { color: "var(--color-success)", isDimmed: false };
-    }
-    case "queue":
-    case "store": {
-      const d = stats.currentDepth ?? 0;
-      if (d > 10) return { color: "var(--color-error)", isDimmed: false };
-      if (d > 0) return { color: "var(--color-warning)", isDimmed: false };
-      return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: true };
-    }
-    case "source":
-      return { color: "var(--color-info)", isDimmed: stats.entitiesIn === 0 };
-    case "sink":
-      return { color: "var(--color-text-secondary)", isDimmed: stats.entitiesOut === 0 };
-    default:
-      return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: false };
+// Lets an edge persist its own shape/points through the canvas' onEdgesChange (saved, undoable, synced).
+const EdgeEditContext = createContext<{ updateEdgeData: (id: string, patch: SimEdgeData) => void; readOnly: boolean }>({
+  updateEdgeData: () => {},
+  readOnly: true,
+});
+
+/**
+ * SVG path through source → points → target, plus `mids`: one spot per segment that lies
+ * ON the drawn line, where the "+ add point" handle goes.
+ */
+function simEdgePath(
+  shape: EdgeShape, pts: XY[],
+  p: { sourceX: number; sourceY: number; targetX: number; targetY: number; sourcePosition: Position; targetPosition: Position },
+): { d: string; mids: XY[] } {
+  if (pts.length === 0) {
+    const [d, x, y] =
+      shape === "straight" ? getStraightPath(p)
+      : shape === "step" ? getSmoothStepPath({ ...p, borderRadius: 10 })
+      : getBezierPath(p);
+    return { d, mids: [{ x, y }] };
   }
+  const S = { x: p.sourceX, y: p.sourceY };
+  const T = { x: p.targetX, y: p.targetY };
+  const V = [S, ...pts, T];
+  const segs = V.slice(0, -1).map((a, k) => [a, V[k + 1]] as const);
+  if (shape === "straight") {
+    return { d: `M ${V.map((v) => `${v.x},${v.y}`).join(" L ")}`, mids: segs.map(([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })) };
+  }
+  if (shape === "step") {
+    // Leave the source horizontally, pass through every point with right angles, enter the target horizontally.
+    return {
+      d: `M ${S.x},${S.y}` + pts.map((q) => ` H ${q.x} V ${q.y}`).join("") + ` V ${T.y} H ${T.x}`,
+      mids: segs.map(([a, b], k) =>
+        k < segs.length - 1 ? { x: (a.x + b.x) / 2, y: a.y } : { x: a.x, y: (a.y + b.y) / 2 }
+      ),
+    };
+  }
+  // Smooth curve through every vertex (Catmull-Rom converted to cubic Béziers).
+  let d = `M ${S.x},${S.y}`;
+  const mids: XY[] = [];
+  for (let i = 0; i < V.length - 1; i++) {
+    const p0 = V[Math.max(0, i - 1)], p1 = V[i], p2 = V[i + 1], p3 = V[Math.min(V.length - 1, i + 2)];
+    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+    d += ` C ${c1.x},${c1.y} ${c2.x},${c2.y} ${p2.x},${p2.y}`;
+    mids.push({ x: (p1.x + 3 * c1.x + 3 * c2.x + p2.x) / 8, y: (p1.y + 3 * c1.y + 3 * c2.y + p2.y) / 8 }); // B(0.5)
+  }
+  return { d, mids };
 }
 
-// ─── SimEdge (styled edge) ──────────────────────────────────────────────────
-function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd, style, animated }: EdgeProps) {
-  const { setEdges, getNode } = useReactFlow();
-  const { simState } = useContext(LiveStatsContext);
-  const isRunning = simState === "running";
-  
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX, sourceY, targetX, targetY,
-    sourcePosition, targetPosition,
-  });
+// Positioned wrapper only — no CSS transition or hover scaling here, or the handle drifts off the line.
+const HANDLE_STYLE = (x: number, y: number): React.CSSProperties => ({
+  position: "absolute",
+  transform: `translate(-50%, -50%) translate(${x}px,${y}px)`,
+  pointerEvents: "all",
+  zIndex: 1000,
+});
 
-  // Get edge color dynamically based on the source node type!
+function SimEdge({ id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, style, data }: EdgeProps) {
+  const { getNode, deleteElements, screenToFlowPosition } = useReactFlow();
+  const { simState } = useContext(LiveStatsContext);
+  const { updateEdgeData, readOnly } = useContext(EdgeEditContext);
+  const isRunning = simState === "running";
+  const edgeData = (data || {}) as SimEdgeData;
+  const shape: EdgeShape = edgeData.shape || "curve";
+  // While dragging, points live here; they are committed once on release so history gets one entry.
+  const [dragPoints, setDragPoints] = useState<Offset[] | null>(null);
+  const [hovered, setHovered] = useState(false);
+  const offsets = dragPoints ?? edgeData.points ?? (edgeData.bend ? [edgeData.bend] : []);
+
+  const midX = (sourceX + targetX) / 2;
+  const midY = (sourceY + targetY) / 2;
+  const pts = offsets.map((o) => ({ x: midX + o.dx, y: midY + o.dy }));
+  const { d: edgePath, mids } = simEdgePath(shape, pts, { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+
+  /** Drags point `index` of `start`; commits the whole list on release. */
+  function dragPoint(e: React.PointerEvent, start: Offset[], index: number) {
+    e.stopPropagation();
+    e.preventDefault();
+    let current = start;
+    setDragPoints(current);
+    const move = (ev: PointerEvent) => {
+      const f = screenToFlowPosition({ x: ev.clientX, y: ev.clientY });
+      current = current.map((o, i) => (i === index ? { dx: f.x - midX, dy: f.y - midY } : o));
+      setDragPoints(current);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      updateEdgeData(id, { points: current, bend: undefined });
+      setDragPoints(null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  // Calm neutral lines; brand purple when hovered/selected; the source block colour while items flow.
   const sourceNode = getNode(source);
-  const nodeType = (sourceNode?.data?.nodeType || "source") as NodeType;
-  const edgeColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
+  const targetNode = getNode(target);
+  const sourceType = (sourceNode?.data?.nodeType || "source") as NodeType;
+  const sourceColor = NODE_BASE_COLORS[sourceType] || "var(--color-info)";
+  const editing = selected && !readOnly && !isRunning;
+  const active = hovered || selected;
+  const lineColor = active ? "#5742FF" : isRunning ? `color-mix(in srgb, ${sourceColor}, white 35%)` : "#b6b3cb";
+
+  // Decision blocks: show what share of items takes this path.
+  const route = sourceType === "decision"
+    ? ((sourceNode?.data?.params as any)?.routes as { targetId: string; probability: number }[] | undefined)?.find((r) => r.targetId === target)
+    : undefined;
+  const share = route ? Math.round((Number(route.probability) || 0) * 100) : null;
+  const labelAt = mids[Math.floor(mids.length / 2)];
+  const sourceLabel = (sourceNode?.data?.label as string) || "Block";
+  const targetLabel = (targetNode?.data?.label as string) || "Block";
+  const arrowId = `edge-arrow-${id}`;
 
   return (
     <>
-      <BaseEdge
-        id={id}
-        path={edgePath}
-        markerEnd={markerEnd}
-        interactionWidth={20}
-        className={isRunning ? "animate-[dash_1s_linear_infinite]" : ""}
-        style={{
-          stroke: selected ? "var(--color-info)" : edgeColor,
-          strokeWidth: selected ? 2 : 1.5,
-          transition: "stroke 0.3s ease, stroke-width 0.3s ease",
-          strokeDasharray: isRunning ? "4 4" : "none",
-          opacity: 0.6,
-          ...style,
-        }}
-      />
+      <g onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <defs>
+          <marker id={arrowId} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+            <path d="M0 0.5 L10 5 L0 9.5 L2.5 5 Z" fill={lineColor} style={{ transition: "fill 0.2s ease" }} />
+          </marker>
+        </defs>
 
-      {isRunning && (
-        <circle r="4" fill={edgeColor}>
-          <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
-        </circle>
+        {/* Soft halo on hover/selection */}
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="#5742FF"
+          strokeWidth={8}
+          strokeLinecap="round"
+          pointerEvents="none"
+          style={{ opacity: active ? 0.12 : 0, transition: "opacity 0.2s ease" }}
+        />
+
+        <BaseEdge
+          id={id}
+          path={edgePath}
+          markerEnd={`url(#${arrowId})`}
+          interactionWidth={22}
+          style={{
+            stroke: lineColor,
+            strokeWidth: active ? 2.25 : 1.75,
+            strokeLinecap: "round",
+            transition: "stroke 0.2s ease, stroke-width 0.2s ease",
+            ...style,
+          }}
+        />
+
+        {/* Running: items travelling along the line */}
+        {isRunning && [0, 1, 2].map((i) => (
+          <circle key={i} r="3.5" fill={sourceColor} stroke="#fff" strokeWidth="1.5" pointerEvents="none">
+            <animateMotion dur="1.8s" begin={`${-i * 0.6}s`} repeatCount="indefinite" path={edgePath} />
+          </circle>
+        ))}
+      </g>
+
+      {!editing && labelAt && (share !== null || hovered) && (
+        <EdgeLabelRenderer>
+          <div
+            style={{ position: "absolute", transform: `translate(-50%, -50%) translate(${labelAt.x}px,${labelAt.y}px)`, pointerEvents: "none", zIndex: 1000 }}
+            className="nodrag nopan"
+          >
+            <div
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[10.5px] font-bold text-gray-700 shadow-[0_4px_14px_-4px_rgba(16,24,40,0.22)]"
+              style={{ border: `1px solid ${share !== null ? `color-mix(in srgb, ${sourceColor}, white 60%)` : "#e5e3f0"}` }}
+            >
+              {share !== null && <span style={{ color: sourceColor }}>{share}%</span>}
+              {hovered && (
+                <span className="text-gray-500 font-semibold">
+                  {share !== null ? `go to ${targetLabel}` : <>{sourceLabel} <span className="text-gray-300">→</span> {targetLabel}</>}
+                </span>
+              )}
+            </div>
+          </div>
+        </EdgeLabelRenderer>
       )}
 
-      {/* Delete Button when selected */}
-      {selected && (
+      {/* Selected: drag points to reshape, drag a "+" to add a point, double-click a point to remove it. */}
+      {editing && (
         <EdgeLabelRenderer>
+          {/* 22px hit area; the visible dot is the inner span so hover styling never moves the target. */}
+          {mids.map((m, k) => (
+            <div
+              key={`add-${k}`}
+              onPointerDown={(e) => {
+                const next = [...offsets];
+                next.splice(k, 0, { dx: m.x - midX, dy: m.y - midY });
+                dragPoint(e, next, k);
+              }}
+              style={HANDLE_STYLE(m.x, m.y)}
+              className="nodrag nopan group w-[22px] h-[22px] flex items-center justify-center cursor-copy"
+            >
+              <span className="w-4 h-4 rounded-full bg-white border border-dashed border-[#5742FF] text-[#5742FF] text-[11px] leading-none font-black flex items-center justify-center shadow-sm group-hover:bg-[#5742FF] group-hover:text-white group-hover:border-solid">
+                +
+              </span>
+            </div>
+          ))}
+          {pts.map((q, i) => (
+            <div
+              key={`pt-${i}`}
+              onPointerDown={(e) => dragPoint(e, offsets, i)}
+              onDoubleClick={() => updateEdgeData(id, { points: offsets.filter((_, j) => j !== i), bend: undefined })}
+              style={{ ...HANDLE_STYLE(q.x, q.y), zIndex: 1001 }}
+              className="nodrag nopan group w-[22px] h-[22px] flex items-center justify-center cursor-move"
+            >
+              <span className="w-3.5 h-3.5 rounded-full bg-white border-2 border-[#5742FF] shadow group-hover:bg-[#5742FF]" />
+            </div>
+          ))}
           <div
             style={{
               position: "absolute",
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(0, -100%) translate(${sourceX + 10}px,${sourceY - 12}px)`,
               pointerEvents: "all",
-              zIndex: 1000,
+              zIndex: 1002,
             }}
-            className="nodrag nopan"
+            className="nodrag nopan flex items-center gap-0.5 p-0.5 rounded-full bg-white border border-indigo-100 shadow-[0_6px_18px_rgba(87,66,255,0.18)]"
           >
+            {([["curve", "Curved", "M2 12 C 6 2, 10 2, 14 12"], ["straight", "Straight", "M2 12 L 14 4"], ["step", "Step", "M2 12 H 8 V 4 H 14"]] as const).map(([s, label, d]) => (
+              <button
+                key={s}
+                onClick={(e) => { e.stopPropagation(); updateEdgeData(id, { shape: s }); }}
+                title={`${label} line`}
+                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${shape === s ? "bg-[#5742FF] text-white" : "text-gray-500 hover:bg-indigo-50 hover:text-[#5742FF]"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+              </button>
+            ))}
+            {offsets.length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); updateEdgeData(id, { points: [], bend: undefined }); }}
+                title="Remove all bend points"
+                className="h-6 px-2 rounded-full text-[10.5px] font-bold text-gray-500 hover:bg-indigo-50 hover:text-[#5742FF]"
+              >
+                Reset
+              </button>
+            )}
+            <span className="w-px h-4 bg-gray-200 mx-0.5" />
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setEdges((eds) => eds.filter((edge) => edge.id !== id));
-              }}
-              className="w-6 h-6 flex items-center justify-center bg-surface border border-error text-error rounded-full shadow-sm hover:bg-error hover:text-white transition-colors text-xs font-bold"
-              title="Delete Edge"
+              onClick={(e) => { e.stopPropagation(); deleteElements({ edges: [{ id }] }); }}
+              title="Delete connection"
+              className="w-6 h-6 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 text-sm font-bold"
             >
               ×
             </button>
@@ -158,18 +316,10 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
 
 const edgeTypes: EdgeTypes = { simEdge: SimEdge as any };
 
-// ─── Handle style helper ──────────────────────────────────────────────────────
-function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
-  return {
-    opacity: 0, // Hidden visually but functional for connecting
-    width: 10,
-    height: 10,
-    background: isConnected ? color : "var(--color-surface)",
-    border: `2px solid ${color}`,
-    borderRadius: "50%",
-    transition: "all 0.2s ease",
-  };
-}
+// Shared by every canvas on the page, so blocks can be copied from the main canvas into a compare pane.
+let clipboard: { nodes: Node[]; edges: Edge[]; pasteCount: number } | null = null;
+// Which canvas receives keyboard shortcuts: the one last pressed on.
+let activeCanvas: object | null = null;
 
 // ─── Non-Technical Plain English Block Summary Formatter ─────────────
 function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any> = {}): string {
@@ -356,6 +506,106 @@ function getNodeDetailedSpecs(
 }
 
 // ─── SimNode ────────────────────────────────────────────────────────────────
+const tint = (c: string, whitePct: number) => `color-mix(in srgb, ${c}, white ${whitePct}%)`;
+
+/** Plain-English role shown above each block's name. */
+const NODE_ROLE: Record<string, string> = {
+  source: "Arrivals",
+  queue: "Waiting area",
+  resource: "Served by",
+  priority_resource: "VIP service",
+  service: "Processing",
+  decision: "Splits flow",
+  sink: "Finish",
+  container: "Storage tank",
+  store: "Storage",
+  channel: "Transfer",
+  broadcaster: "Broadcast",
+  event_trigger: "Trigger",
+  any_of: "Wait for any",
+  all_of: "Wait for all",
+  interrupter: "Interrupts",
+};
+
+/** Short, readable facts about how a block is set up (shown under its name when idle). */
+function getNodeSummary(nodeType: string, params: Record<string, any> = {}): string[] {
+  const pattern = (d?: string) => (d === "deterministic" ? "Steady" : d === "poisson" ? "In bursts" : d === "normal" ? "Around avg" : "Random");
+  switch (nodeType) {
+    case "source":
+      if (Array.isArray(params.schedule) && params.schedule.length > 0) return [`${params.schedule.length} timed waves`];
+      return [`${params.arrivalRate ?? 1} / sec`, pattern(params.distribution)];
+    case "queue": {
+      const unlimited = params.capacity === undefined || params.capacity === -1 || params.capacity === "";
+      const order = params.discipline === "PRIORITY" ? "VIP first" : params.discipline === "LIFO" ? "Newest first" : "First come";
+      return [unlimited ? "No limit" : `Max ${params.capacity}`, order];
+    }
+    case "resource":
+    case "priority_resource": {
+      const cap = Number(params.capacity) || 1;
+      return [cap === 1 ? "1 counter" : `${cap} counters`, `~${params.serviceTimeMean ?? 1}s each`];
+    }
+    case "service":
+      return [`~${params.durationMean ?? 1}s each`, params.distribution === "deterministic" ? "Steady" : "Varies"];
+    case "decision": {
+      const n = params.routes?.length ?? 0;
+      return [n > 0 ? `${n} paths` : "Set paths"];
+    }
+    case "sink":
+      return ["Counts results"];
+    case "store":
+    case "container": {
+      const cap = params.capacity;
+      return [cap === undefined || cap === -1 ? "No limit" : `Holds ${cap}`];
+    }
+    default:
+      return [formatNodeFriendlySubtext(nodeType, params)];
+  }
+}
+
+/** How a block is doing while the simulation runs, in words a non-technical user understands. */
+function getNodeHealth(nodeType: string, s: NodeStats | undefined): { label: string; color: string } | null {
+  if (!s) return null;
+  switch (nodeType) {
+    case "resource":
+    case "priority_resource": {
+      const u = s.utilization ?? 0;
+      if (u > 0.85) return { label: "Overloaded", color: "var(--color-error)" };
+      if (u > 0.6) return { label: "Busy", color: "var(--color-warning)" };
+      return { label: "Smooth", color: "var(--color-success)" };
+    }
+    case "queue":
+    case "store": {
+      const d = s.currentDepth ?? 0;
+      if (d > 10) return { label: "Long line", color: "var(--color-error)" };
+      if (d > 3) return { label: "Building up", color: "var(--color-warning)" };
+      return { label: "Flowing", color: "var(--color-success)" };
+    }
+    case "source":
+      return { label: "Arriving", color: "var(--color-info)" };
+    case "sink":
+      return { label: "Finishing", color: "var(--color-success)" };
+    default:
+      return { label: "Active", color: "var(--color-success)" };
+  }
+}
+
+/** Little row of seats (counters) or people (waiting) — shows capacity and load visually. */
+function Dots({ total, filled, color, max = 8 }: { total: number; filled: number; color: string; max?: number }) {
+  const shown = Math.min(total, max);
+  return (
+    <span className="inline-flex items-center gap-[3px]">
+      {Array.from({ length: shown }, (_, i) => (
+        <span
+          key={i}
+          className="w-[7px] h-[7px] rounded-full transition-colors duration-300"
+          style={{ background: i < filled ? color : "transparent", boxShadow: `inset 0 0 0 1.5px ${color}` }}
+        />
+      ))}
+      {total > max && <span className="text-[9.5px] font-bold text-gray-400 ml-0.5">+{total - max}</span>}
+    </span>
+  );
+}
+
 function SimNode({ data, selected, id }: { data: any; selected: boolean; id: string }) {
   const [showDeleteBtn, setShowDeleteBtn] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -363,34 +613,27 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   const { setNodes, setEdges } = useReactFlow();
   const { stats, bottleneckId, simState, connectedHandles, simType, upstreamQueueDepth, remoteUsers } = useContext(LiveStatsContext);
-  const nodeType = data.nodeType;
+  const nodeType: string = data.nodeType;
+  const params = data.params || {};
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
+  const live = isRunning && !!liveStats;
 
   // Remote presence on this node
   const selectingUsers = remoteUsers.filter((u) => u.selectedNodeId === id || u.editingNodeId === id);
   const primaryRemoteUser = selectingUsers[0];
   const isRemoteEditing = selectingUsers.some((u) => u.editingNodeId === id);
 
-  const remoteShadow = isRemoteEditing
-    ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}`
-    : primaryRemoteUser
-    ? `0 0 0 2px ${primaryRemoteUser.color}`
-    : undefined;
-
   useEffect(() => {
-    if (!selected) {
-      setShowDeleteBtn(false);
-    }
+    if (!selected) setShowDeleteBtn(false);
   }, [selected]);
 
-  const handleMouseEnter = () => {
-    hoverTimerRef.current = setTimeout(() => {
-      setIsHovered(true);
-    }, 120);
-  };
+  useEffect(() => () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); }, []);
 
+  const handleMouseEnter = () => {
+    hoverTimerRef.current = setTimeout(() => setIsHovered(true), 250);
+  };
   const handleMouseLeave = () => {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     setIsHovered(false);
@@ -398,46 +641,35 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   const simConfig = (SIM_TYPE_REGISTRY as any)[simType] || SIM_TYPE_REGISTRY.human_queue;
   const paletteDef = simConfig.paletteNodes?.find((n: any) => n.type === nodeType);
-  const icon = paletteDef?.icon || "";
+  const Icon = (paletteDef?.icon || Layers) as React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  const description: string = paletteDef?.desc || "";
 
   const baseColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
-  const { color: statusColor, isDimmed } = isRunning
-    ? resolveNodeGlowColor(nodeType, liveStats)
-    : { color: baseColor, isDimmed: true };
+  const role = NODE_ROLE[nodeType] || nodeType.replace(/_/g, " ");
+  const health = live ? getNodeHealth(nodeType, liveStats) : null;
 
-  // Check which handles are connected
   const hasTargetConnection = connectedHandles.has(`${id}__target`);
   const hasSourceConnection = connectedHandles.has(`${id}__source`);
-
-  // Determine which handles to show based on node type
   const isSink = nodeType === "sink";
   const isSource = nodeType === "source";
+  const needsConnection = !isRunning && ((!isSource && !hasTargetConnection) || (!isSink && !hasSourceConnection));
 
-  // Stats badge content
-  let statsBadge: string | null = null;
-  if (isRunning && liveStats) {
-    if (nodeType === "resource" || nodeType === "priority_resource") {
-      const cap = Number(data.params?.capacity) || 1;
-      const depth = liveStats.currentDepth ?? 0;
-      const serving = Math.min(depth, cap);
-      const queued = (upstreamQueueDepth[id] ?? 0) + Math.max(0, depth - cap);
-      statsBadge = `${Math.round((liveStats.utilization ?? 0) * 100)}% util | Serving: ${serving}/${cap} | Queue: ${queued}`;
-    } else if (nodeType === "service") {
-      // A service node is a pure delay with UNBOUNDED concurrency (the engine spawns
-      // one timeout per entity, with no resource contention) and no capacity param.
-      // Everything in it is in service, nothing is queued, and there is no server to
-      // be busy — so neither a capacity ratio nor a utilisation figure is meaningful.
-      statsBadge = `${liveStats.currentDepth ?? 0} in progress | Proc: ${liveStats.entitiesOut ?? 0}`;
-    } else if (nodeType === "queue" || nodeType === "store") {
-      statsBadge = `${liveStats.currentDepth ?? 0} waiting | Proc: ${liveStats.entitiesOut ?? 0}`;
-    } else if (nodeType === "source") {
-      statsBadge = `↑${liveStats.entitiesIn ?? 0} arrived`;
-    } else if (nodeType === "sink") {
-      statsBadge = `✓${liveStats.entitiesOut ?? 0} completed`;
-    }
-  }
+  const isCounter = nodeType === "resource" || nodeType === "priority_resource";
+  const capacity = Number(params.capacity) || 1;
+  const depth = liveStats?.currentDepth ?? 0;
+  const busy = Math.min(depth, capacity);
+  const waitingNearby = (upstreamQueueDepth[id] ?? 0) + Math.max(0, depth - capacity);
+  const utilPct = Math.round((liveStats?.utilization ?? 0) * 100);
+  const queueCap = Number(params.capacity) > 0 ? Number(params.capacity) : 20;
 
-  const specs = getNodeDetailedSpecs(nodeType, data.params || {});
+  const specs = getNodeDetailedSpecs(nodeType, params);
+  const summary = getNodeSummary(nodeType, params).join(" · ");
+
+  const shadows = [
+    primaryRemoteUser ? (isRemoteEditing ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}` : `0 0 0 2px ${primaryRemoteUser.color}`) : null,
+    selected ? `0 0 0 3px ${tint(baseColor, 80)}` : null,
+    isHovered || selected ? "0 12px 28px -12px rgba(16,24,40,0.30)" : "0 1px 2px rgba(16,24,40,0.06), 0 6px 16px -10px rgba(16,24,40,0.18)",
+  ].filter(Boolean).join(", ");
 
   return (
     <div
@@ -447,80 +679,106 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         e.stopPropagation();
         setShowDeleteBtn((prev) => !prev);
       }}
-      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center transition-all select-none cursor-pointer ${
-        isHovered ? "z-[9999]" : "z-10"
-      } ${
-        selected ? "scale-105 shadow-lg border-gray-300 ring-2 ring-indigo-500/20" : "hover:shadow-md"
-      }`}
+      className={`sim-node ${selected ? "is-selected" : ""} relative w-[200px] rounded-[14px] bg-white select-none cursor-pointer transition-[box-shadow,border-color,transform] duration-200 ${isHovered && !selected ? "-translate-y-0.5" : ""}`}
       style={{
-        borderLeftColor: baseColor,
-        boxShadow: remoteShadow,
+        border: `1px solid ${selected ? baseColor : isBottleneck ? "var(--color-error)" : health ? tint(health.color, 55) : "rgba(17,24,39,0.09)"}`,
+        boxShadow: shadows,
         zIndex: isHovered ? 9999 : selected ? 50 : 1,
       }}
     >
-      {/* ── Remote User Presence Pill / Editing Badge ── */}
+      {/* ── Remote user presence ── */}
       {primaryRemoteUser && (
         <div
-          className="absolute -top-3 left-2 px-2 py-0.5 rounded-full text-white text-[9.5px] font-bold shadow-sm flex items-center gap-1 pointer-events-none z-30 transition-all"
+          className="absolute -top-3 left-3 px-2 py-0.5 rounded-full text-white text-[9.5px] font-bold shadow-sm flex items-center gap-1 pointer-events-none z-30"
           style={{ backgroundColor: primaryRemoteUser.color }}
         >
           {isRemoteEditing && <span className="text-[9px]">✏️</span>}
           <span className="truncate max-w-[70px]">{primaryRemoteUser.name}</span>
-          {selectingUsers.length > 1 && (
-            <span className="opacity-80 text-[8.5px]">+{selectingUsers.length - 1}</span>
-          )}
+          {selectingUsers.length > 1 && <span className="opacity-80 text-[8.5px]">+{selectingUsers.length - 1}</span>}
         </div>
       )}
-      {/* ── Sleek Light Theme Hover Details Tooltip ── */}
+
+      {/* ── Bottleneck tag (post-run) ── */}
+      {isBottleneck && !showDeleteBtn && (
+        <div className="absolute -top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-[var(--color-error)] border border-[color-mix(in_srgb,var(--color-error),white_35%)] px-2 py-0.5 text-[9.5px] font-bold text-white shadow-[0_4px_12px_-4px_rgba(217,70,63,0.6)] pointer-events-none">
+          <AlertCircle size={10} strokeWidth={3} /> Slowest step
+        </div>
+      )}
+
+      {/* ── Hover details card ── */}
       <AnimatePresence>
         {isHovered && !showDeleteBtn && (
           <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.96 }}
+            initial={{ opacity: 0, y: 6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 3, scale: 0.96 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] pointer-events-none w-52 bg-white/98 text-gray-900 backdrop-blur-md border border-gray-200/90 rounded-xl p-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.14)] text-left"
+            exit={{ opacity: 0, y: 4, scale: 0.97 }}
+            transition={{ duration: 0.14, ease: "easeOut" }}
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-[9999] pointer-events-none w-64 rounded-2xl bg-white border border-gray-200/90 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.28)] text-left overflow-hidden"
           >
-            {/* Header with Category Badge & ID */}
-            <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
-              <span
-                className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border"
-                style={{
-                  backgroundColor: `${baseColor}15`,
-                  borderColor: `${baseColor}30`,
-                  color: baseColor,
-                }}
-              >
-                {nodeType.replace("_", " ")}
-              </span>
-              <span className="text-[9.5px] font-bold text-gray-400 truncate max-w-[85px]">{data.label}</span>
+            <div className="px-3.5 pt-3 pb-2.5" style={{ background: `linear-gradient(180deg, ${tint(baseColor, 90)}, #fff)` }}>
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: tint(baseColor, 82), color: baseColor }}>
+                  <Icon size={13} strokeWidth={2.25} />
+                </span>
+                <span className="text-[12.5px] font-bold text-gray-900 truncate">{data.label}</span>
+                <span className="ml-auto shrink-0 text-[9px] font-extrabold uppercase tracking-wider" style={{ color: baseColor }}>{role}</span>
+              </div>
+              {description && <p className="mt-1.5 text-[11px] leading-snug text-gray-600">{description}.</p>}
             </div>
 
-            {/* Config Specs */}
-            <div className="space-y-1">
+            <div className="px-3.5 py-2.5 space-y-1.5 border-t border-gray-100">
               {specs.map((spec, i) => (
-                <div key={i} className="flex items-center justify-between text-[10px] leading-tight">
-                  <span className="text-gray-500 font-medium">{spec.label}</span>
-                  <span className="text-gray-900 font-bold truncate max-w-[115px]">{spec.value}</span>
+                <div key={i} className="flex items-center justify-between gap-3 text-[11px] leading-tight">
+                  <span className="text-gray-500">{spec.label}</span>
+                  <span className="text-gray-900 font-semibold truncate max-w-[140px]">{spec.value}</span>
                 </div>
               ))}
             </div>
 
-            {/* Live Stats Row if Running */}
-            {isRunning && liveStats && (
-              <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[9.5px] font-bold text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-lg border border-emerald-100/60">
-                <span className="flex items-center gap-1">⚡ Live Status</span>
-                <span>{liveStats.entitiesOut ?? 0} finished</span>
+            {live && (
+              <div className="px-3.5 py-2.5 border-t border-gray-100 bg-gray-50/70">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  <span>Right now</span>
+                  {health && <span style={{ color: health.color }}>{health.label}</span>}
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 text-center">
+                  {[
+                    ["Came in", liveStats.entitiesIn ?? 0],
+                    ["Went out", liveStats.entitiesOut ?? 0],
+                    [isCounter ? "Being served" : "Inside", depth],
+                  ].map(([k, v]) => (
+                    <div key={k as string} className="rounded-lg bg-white border border-gray-100 py-1">
+                      <div className="text-[13px] font-bold text-gray-900 tabular-nums">{v}</div>
+                      <div className="text-[9.5px] text-gray-500">{k}</div>
+                    </div>
+                  ))}
+                </div>
+                {isCounter && waitingNearby > 0 && (
+                  <p className="mt-1.5 text-[10.5px] text-gray-600"><b className="text-gray-900">{waitingNearby}</b> waiting for this counter</p>
+                )}
+                {(liveStats.avgWaitTime ?? 0) > 0 && (
+                  <p className="mt-1.5 text-[10.5px] text-gray-600">Average wait: <b className="text-gray-900">{liveStats.avgWaitTime.toFixed(1)}s</b></p>
+                )}
               </div>
             )}
 
-            {/* Triangular pointer notch */}
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-white border-r border-b border-gray-200/90 shadow-xs" />
+            {isBottleneck && (
+              <p className="px-3.5 py-2 border-t border-red-100 bg-red-50 text-[10.5px] leading-snug text-red-700">
+                <b>Things pile up here.</b> Try adding another counter or making this step faster.
+              </p>
+            )}
+            {needsConnection && !isBottleneck && (
+              <p className="px-3.5 py-2 border-t border-amber-100 bg-amber-50 text-[10.5px] leading-snug text-amber-800">
+                Drag from the dot on the {!isSource && !hasTargetConnection ? "left" : "right"} edge to connect this block.
+              </p>
+            )}
+
+            <div className="px-3.5 py-1.5 border-t border-gray-100 text-[10px] text-gray-400">Click to edit · Double-click to delete</div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Circular Red X Delete Button on Double-Click ── */}
+      {/* ── Delete button (double-click) ── */}
       {showDeleteBtn && (
         <button
           type="button"
@@ -529,60 +787,91 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
             setNodes((nds) => nds.filter((n) => n.id !== id));
             setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
           }}
-          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-115 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
+          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
           title="Delete block"
         >
           <X size={12} strokeWidth={3} />
         </button>
       )}
 
-      {/* ── Target Handle (left) ── */}
+      {/* ── Connection ports ── */}
       {!isSource && (
         <Handle
           type="target"
           position={Position.Left}
           id="target"
-          style={handleStyle(baseColor, hasTargetConnection)}
+          className={`sim-port ${hasTargetConnection ? "" : "is-open"}`}
+          style={{ ["--port" as string]: baseColor, background: hasTargetConnection ? baseColor : "#fff" }}
         />
       )}
-
-      {/* ── Source Handle (right) ── */}
       {!isSink && (
         <Handle
           type="source"
           position={Position.Right}
           id="source"
-          style={handleStyle(baseColor, hasSourceConnection)}
+          className={`sim-port ${hasSourceConnection ? "" : "is-open"}`}
+          style={{ ["--port" as string]: baseColor, background: hasSourceConnection ? baseColor : "#fff" }}
         />
       )}
 
-      {/* Bottleneck badge (Post-run) */}
-      {isBottleneck && !showDeleteBtn && (
-        <div className="absolute -top-2 -right-2 bg-error text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm animate-pulse z-20">
-          <AlertCircle size={12} strokeWidth={3} />
+      <div className="relative flex items-center gap-3 pl-2.5 pr-3 py-2.5 pointer-events-none">
+        {/* Solid colour tile = block type at a glance */}
+        <div
+          className="relative w-10 h-10 rounded-[11px] flex items-center justify-center shrink-0 text-white"
+          style={{
+            background: `linear-gradient(145deg, ${tint(baseColor, 18)}, ${baseColor})`,
+            boxShadow: `0 6px 12px -6px ${baseColor}, inset 0 1px 0 rgba(255,255,255,0.28)`,
+          }}
+        >
+          <Icon size={18} strokeWidth={2.2} />
+          {(health || needsConnection) && (
+            <span
+              className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${health ? "animate-pulse" : ""}`}
+              style={{ background: health ? health.color : "#f59e0b" }}
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <h5 className="text-[13px] font-semibold text-[#161622] leading-tight truncate">{data.label}</h5>
+          <p className="mt-1 flex items-center gap-1.5 text-[11px] leading-none text-gray-500 truncate">
+            {live ? (
+              <>
+                {isCounter && <Dots total={capacity} filled={busy} color={health?.color || baseColor} max={5} />}
+                {health && <span className="font-semibold" style={{ color: health.color }}>{health.label}</span>}
+                <span className="truncate">
+                  {isCounter
+                    ? `· ${busy}/${capacity} serving`
+                    : nodeType === "queue" || nodeType === "store"
+                    ? `· ${depth} waiting`
+                    : nodeType === "source"
+                    ? `· ${liveStats.entitiesIn ?? 0} in`
+                    : nodeType === "sink"
+                    ? `· ${liveStats.entitiesOut ?? 0} done`
+                    : `· ${depth} inside`}
+                </span>
+              </>
+            ) : needsConnection ? (
+              <span className="text-amber-600 font-medium">Not connected yet</span>
+            ) : (
+              <span className="truncate">{summary}</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Live load meter — sits inside the bottom edge so the block never grows */}
+      {live && (isCounter || nodeType === "queue" || nodeType === "store") && (
+        <div className="absolute left-3 right-3 bottom-[5px] h-[3px] rounded-full bg-gray-100 overflow-hidden pointer-events-none">
+          <div
+            className="h-full w-full rounded-full origin-left transition-transform duration-500 ease-out"
+            style={{
+              background: health?.color || baseColor,
+              transform: `scaleX(${Math.min(1, isCounter ? utilPct / 100 : depth / queueCap)})`,
+            }}
+          />
         </div>
       )}
-
-      <div style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
-        {(() => {
-          const IconComponent = icon as any;
-          return IconComponent ? <IconComponent size={18} strokeWidth={2} /> : null;
-        })()}
-      </div>
-      <div className="pointer-events-none min-w-0 flex-1">
-        <h5 className="text-[11.5px] font-bold text-gray-900 leading-tight truncate">{data.label}</h5>
-        
-        {/* Static params or live stats */}
-        {statsBadge ? (
-          <p className="text-[9.5px] font-semibold mt-0.5 truncate" style={{ color: !isDimmed ? statusColor : "var(--color-text-secondary)" }}>
-            {statsBadge}
-          </p>
-        ) : (
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5 leading-tight truncate">
-            {formatNodeFriendlySubtext(nodeType, data.params)}
-          </p>
-        )}
-      </div>
     </div>
   );
 }
@@ -645,6 +934,24 @@ export function validateGraphConnectivity(nodes: Node[], edges: Edge[]): GraphVa
   }
 
   return { valid: true, disconnectedNodes: [], message: "Graph is fully connected." };
+}
+
+/** React Flow nodes/edges → the plain graph the simulation engine runs. */
+export function graphToSimNodes(rfNodes: any[], rfEdges: any[]): SimGraph {
+  return {
+    nodes: rfNodes.map((n) => ({
+      id: n.id,
+      nodeType: (n.data as any).nodeType,
+      label: (n.data as any).label,
+      params: (n.data as any).params || {},
+      position: n.position,
+    })),
+    edges: rfEdges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+    })),
+  };
 }
 
 export interface NodeCanvasProps {
@@ -717,9 +1024,79 @@ function NodeCanvasInner({
 }: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-  const { fitView, setNodes, setEdges } = useReactFlow();
+  const { fitView, setNodes, setEdges, deleteElements } = useReactFlow();
   const prevNodeCountRef = useRef(0);
   const cursorThrottleRef = useRef(false);
+  const canvasKey = useRef({});
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
+
+  const edgeEdit = React.useMemo(() => ({
+    readOnly,
+    updateEdgeData: (edgeId: string, patch: SimEdgeData) => {
+      const edge = edgesRef.current.find((e) => e.id === edgeId);
+      if (!edge) return;
+      onEdgesChange([{ type: "replace", id: edgeId, item: { ...edge, data: { ...(edge.data || {}), ...patch } } }]);
+    },
+  }), [onEdgesChange, readOnly]);
+
+  // The first canvas mounted (the main one) owns shortcuts until another is clicked, e.g. a compare pane.
+  useEffect(() => {
+    activeCanvas ??= canvasKey.current;
+    return () => { if (activeCanvas === canvasKey.current) activeCanvas = null; };
+  }, []);
+
+  // Ctrl/⌘ + A, C, X, V, D — like a file manager. Delete/Backspace is handled by React Flow.
+  useEffect(() => {
+    if (readOnly) return;
+    function paste() {
+      if (!clipboard) return;
+      clipboard.pasteCount++;
+      const offset = 40 * clipboard.pasteCount;
+      const idMap = new Map<string, string>();
+      const newNodes = clipboard.nodes.map((n) => {
+        const newId = `node_${crypto.randomUUID().slice(0, 8)}`;
+        idMap.set(n.id, newId);
+        return { ...n, id: newId, selected: true, position: { x: n.position.x + offset, y: n.position.y + offset } };
+      });
+      const newEdges = clipboard.edges.map((e) => ({
+        ...e, id: `e_${crypto.randomUUID().slice(0, 8)}`, source: idMap.get(e.source)!, target: idMap.get(e.target)!, selected: false,
+      }));
+      onNodesChange([
+        ...nodes.filter((n) => n.selected).map((n) => ({ type: "select" as const, id: n.id, selected: false })),
+        ...newNodes.map((item) => ({ type: "add" as const, item })),
+      ]);
+      if (newEdges.length) onEdgesChange(newEdges.map((item) => ({ type: "add" as const, item })));
+    }
+    function copy(selected: Node[]) {
+      const ids = new Set(selected.map((n) => n.id));
+      clipboard = {
+        nodes: JSON.parse(JSON.stringify(selected)),
+        edges: JSON.parse(JSON.stringify(edges.filter((e) => ids.has(e.source) && ids.has(e.target)))),
+        pasteCount: 0,
+      };
+    }
+    function onKey(e: KeyboardEvent) {
+      if (activeCanvas !== canvasKey.current || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      if ((e.target as HTMLElement)?.closest?.("input, textarea, select, [contenteditable='true']")) return;
+      const key = e.key.toLowerCase();
+      const selected = nodes.filter((n) => n.selected);
+      if (key === "a") {
+        e.preventDefault();
+        onNodesChange(nodes.map((n) => ({ type: "select", id: n.id, selected: true })));
+      } else if ((key === "c" || key === "x" || key === "d") && selected.length) {
+        e.preventDefault();
+        copy(selected);
+        if (key === "x") deleteElements({ nodes: selected.map((n) => ({ id: n.id })) });
+        if (key === "d") paste();
+      } else if (key === "v" && clipboard) {
+        e.preventDefault();
+        paste();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [nodes, edges, readOnly, onNodesChange, onEdgesChange, deleteElements]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!onBroadcastCursor || !reactFlowInstance || !reactFlowWrapper.current) return;
@@ -876,8 +1253,8 @@ function NodeCanvasInner({
   const liveEdges = React.useMemo(() => {
     return edges.map((e) => ({
       ...e,
-      type: e.type || "simEdge",
-      animated: simState === "running",
+      type: "simEdge", // one edge style everywhere; older AI-built graphs saved "smoothstep"
+      animated: false, // SimEdge draws its own flowing dots while running
     }));
   }, [edges, simState]);
 
@@ -890,13 +1267,25 @@ function NodeCanvasInner({
 
   return (
     <LiveStatsContext.Provider value={{ stats: liveStats, bottleneckId: bottleneckNodeId, simState, connectedHandles, simType: simType || "human_queue", upstreamQueueDepth, remoteUsers }}>
+    <EdgeEditContext.Provider value={edgeEdit}>
       <div
         ref={reactFlowWrapper}
+        onPointerDownCapture={() => { activeCanvas = canvasKey.current; }}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         className="w-full h-full workspace-canvas relative"
       >
         <style dangerouslySetInnerHTML={{__html: `
+          .sim-node .react-flow__handle.sim-port {
+            width: 12px; height: 12px; border-radius: 9999px;
+            border: 2px solid var(--port); box-shadow: 0 0 0 3px #fff;
+            opacity: 0; transition: opacity .15s ease, transform .15s ease;
+          }
+          .sim-node:hover .sim-port, .sim-node.is-selected .sim-port, .sim-port.is-open,
+          .react-flow__handle.sim-port.connectingfrom, .react-flow__handle.sim-port.connectingto { opacity: 1; }
+          .sim-node .sim-port:hover, .react-flow__handle.sim-port.connectingto { transform: translate(var(--tw-tx, 0), -50%) scale(1.35); }
+          .sim-node .react-flow__handle-left.sim-port { --tw-tx: -50%; left: 0; }
+          .sim-node .react-flow__handle-right.sim-port { --tw-tx: 50%; right: 0; }
           @keyframes dashdraw {
             from { stroke-dashoffset: 10; }
             to { stroke-dashoffset: 0; }
@@ -924,19 +1313,28 @@ function NodeCanvasInner({
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
+          // Left-drag draws a selection box; middle/right-drag or two-finger scroll pans, pinch / ctrl+scroll zooms.
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          panOnDrag={[1, 2]}
+          panOnScroll
           fitView
-          deleteKeyCode="Delete"
+          deleteKeyCode={readOnly ? null : ["Delete", "Backspace"]}
+          // Ctrl/⌘/Shift + click adds or removes a block from the selection.
+          multiSelectionKeyCode={["Control", "Meta", "Shift"]}
         >
           <Background variant={BackgroundVariant.Dots} size={1.5} color="#d6d6de" gap={24} />
-          <Controls className="bg-surface border border-border rounded-md shadow-sm" />
+          <Controls className="jc-controls" />
           <MiniMap
             nodeColor={getMiniMapNodeColor}
-            maskColor="rgba(240, 240, 244, 0.7)"
-            className="border border-border rounded-md shadow-sm bg-surface"
+            nodeBorderRadius={6}
+            maskColor="rgba(245, 243, 255, 0.72)"
+            className="jc-minimap"
           />
           <RemoteCursorsOverlay remoteUsers={remoteUsers} wrapperRef={reactFlowWrapper} />
         </ReactFlow>
       </div>
+    </EdgeEditContext.Provider>
     </LiveStatsContext.Provider>
   );
 }

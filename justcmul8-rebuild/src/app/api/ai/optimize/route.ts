@@ -1,3 +1,4 @@
+import { withCredits } from "@/lib/billing/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateJSON, extractJSON, AIRouterError } from "@/lib/ai/modelRouter";
@@ -37,7 +38,7 @@ export interface OptimizerRecommendation {
   fix?: OptimizerFix;
 }
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -180,3 +181,6 @@ Rules:
     return NextResponse.json({ error: "Optimization engine temporarily unavailable" }, { status: 500 });
   }
 }
+
+// Charged per call; refunded automatically if the handler fails.
+export const POST = (req: Request) => withCredits("ai_optimize", req, handle);

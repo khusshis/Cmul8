@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -43,11 +43,53 @@ import {
   compareScenarios,
 } from "@/lib/simulation/monteCarlo";
 import { runMonteCarlo, type MonteCarloProgress } from "@/lib/simulation/monteCarloRunner";
+import { applyNodeChanges, applyEdgeChanges, type Node, type Edge } from "@xyflow/react";
+import NodeCanvas, { graphToSimNodes, type NodeCanvasHandle } from "@/components/workspace/NodeCanvas";
+import NodePropertiesPanel from "@/components/workspace/NodePropertiesPanel";
+import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+
+type Scenario = { name: string; nodes: Node[]; edges: Edge[]; timestamp: string };
+type Slot = "A" | "B";
+
+const SLOT_STYLE: Record<Slot, { title: string; name: string; badge: string; button: string; ring: string }> = {
+  A: {
+    title: "Scenario A",
+    name: "Baseline",
+    badge: "bg-blue-50 text-blue-700 border-blue-200",
+    button: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200",
+    ring: "border-blue-100",
+  },
+  B: {
+    title: "Scenario B",
+    name: "Optimized",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    button: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200",
+    ring: "border-emerald-100",
+  },
+};
+
+/** Copies the selected nodes (or the whole canvas when nothing is selected) plus the edges between them. */
+function captureScenario(name: string, nodes: Node[], edges: Edge[]): Scenario {
+  const picked = nodes.some((n) => n.selected) ? nodes.filter((n) => n.selected) : nodes;
+  const ids = new Set(picked.map((n) => n.id));
+  const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
+  return {
+    name,
+    nodes: picked.map((n) => ({ ...clone(n), selected: false })),
+    edges: edges.filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => ({ ...clone(e), selected: false })),
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+  };
+}
 
 interface MonteCarloPanelProps {
   open: boolean;
   onClose: () => void;
   currentGraph: SimGraph;
+  /** Live React Flow nodes/edges of the main canvas (selection included) for A/B capture. */
+  canvasNodes: Node[];
+  canvasEdges: Edge[];
+  /** Set by the canvas "Compare as A/B" bar; `at` makes repeated sends to the same slot re-trigger. */
+  sendRequest?: { slot: Slot; at: number } | null;
   simType: SimTypeId;
   durationSeconds: number;
   speed: number;
@@ -58,6 +100,9 @@ export default function MonteCarloPanel({
   open,
   onClose,
   currentGraph,
+  canvasNodes,
+  canvasEdges,
+  sendRequest,
   simType,
   durationSeconds,
   speed,
@@ -71,11 +116,24 @@ export default function MonteCarloPanel({
   const [selectedMetric, setSelectedMetric] = useState<"throughput" | "avgWaitTime" | "utilization" | "healthScore" | "totalCost">("throughput");
 
   // Scenario Comparison state
-  const [scenarioA, setScenarioA] = useState<{ name: string; graph: SimGraph; timestamp: string } | null>(null);
-  const [scenarioB, setScenarioB] = useState<{ name: string; graph: SimGraph; timestamp: string } | null>(null);
+  const [scenarioA, setScenarioA] = useState<Scenario | null>(null);
+  const [scenarioB, setScenarioB] = useState<Scenario | null>(null);
   const [comparisonResult, setComparisonResult] = useState<ScenarioComparisonResult | null>(null);
   const [comparisonRunning, setComparisonRunning] = useState<boolean>(false);
   const [comparisonProgress, setComparisonProgress] = useState<{ phase: string; percent: number } | null>(null);
+  const selectionCount = canvasNodes.filter((n) => n.selected).length;
+
+  function capture(slot: Slot) {
+    const snap = captureScenario(SLOT_STYLE[slot].name, canvasNodes, canvasEdges);
+    (slot === "A" ? setScenarioA : setScenarioB)(snap);
+    setComparisonResult(null);
+  }
+
+  useEffect(() => {
+    if (!sendRequest) return;
+    capture(sendRequest.slot);
+    setActiveTab("scenario_compare");
+  }, [sendRequest]);
 
   // Dedicated Pyodide engine for batch runs
   const engineRef = useRef<PyodideSimEngine | null>(null);
@@ -131,7 +189,7 @@ export default function MonteCarloPanel({
       const resultsA = await runMonteCarlo(
         engine,
         {
-          graph: scenarioA.graph,
+          graph: graphToSimNodes(scenarioA.nodes, scenarioA.edges),
           simType,
           durationSeconds,
           speedMultiplier: speed,
@@ -152,7 +210,7 @@ export default function MonteCarloPanel({
       const resultsB = await runMonteCarlo(
         engine,
         {
-          graph: scenarioB.graph,
+          graph: graphToSimNodes(scenarioB.nodes, scenarioB.edges),
           simType,
           durationSeconds,
           speedMultiplier: speed,
@@ -176,22 +234,6 @@ export default function MonteCarloPanel({
       setComparisonRunning(false);
       setComparisonProgress(null);
     }
-  }
-
-  function handleSnapshotA() {
-    setScenarioA({
-      name: "Baseline",
-      graph: JSON.parse(JSON.stringify(currentGraph)),
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-    });
-  }
-
-  function handleSnapshotB() {
-    setScenarioB({
-      name: "Optimized",
-      graph: JSON.parse(JSON.stringify(currentGraph)),
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-    });
   }
 
   if (!open) return null;
@@ -252,7 +294,7 @@ export default function MonteCarloPanel({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
-          className="w-full h-full max-w-[1240px] max-h-[92vh] bg-[#F8F7FF] rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col border border-indigo-100"
+          className="w-full h-full max-w-[1480px] max-h-[94vh] bg-[#F8F7FF] rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col border border-indigo-100"
         >
           {/* ── Top Header ── */}
           <div className="px-6 py-4 bg-white border-b border-indigo-100/70 flex items-center justify-between shrink-0 shadow-xs">
@@ -302,7 +344,7 @@ export default function MonteCarloPanel({
 
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
               >
                 <X size={16} />
               </button>
@@ -341,7 +383,7 @@ export default function MonteCarloPanel({
                   <button
                     onClick={handleRunMonteCarlo}
                     disabled={running}
-                    className="px-5 py-2.5 rounded-xl bg-[#5742FF] hover:bg-[#4531E5] text-white font-black text-[13px] shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl bg-[#5742FF] border border-[#8d80ff] hover:bg-[#4531E5] text-white font-black text-[13px] shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
                   >
                     {running ? (
                       <>
@@ -568,71 +610,30 @@ export default function MonteCarloPanel({
             ) : (
               /* ── Scenario A/B Compare Tab ── */
               <div className="space-y-6">
-                {/* Snapshot Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Scenario A */}
-                  <div className="bg-white rounded-[20px] border border-indigo-100/80 shadow-sm p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-                        Scenario A (Baseline)
-                      </span>
-                      {scenarioA && (
-                        <span className="text-[11px] font-bold text-gray-400">Captured: {scenarioA.timestamp}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-[16px] font-black text-gray-900">
-                        {scenarioA ? scenarioA.name : "No Baseline Snapshot"}
-                      </h4>
-                      <p className="text-[12px] text-gray-500">
-                        {scenarioA
-                          ? `${scenarioA.graph.nodes.length} stations, ${scenarioA.graph.edges.length} connections recorded.`
-                          : "Snapshot your current canvas design as the baseline reference point."}
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSnapshotA}
-                      className="w-full py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[12px] border border-blue-200 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Layers size={14} /> Snapshot Current Canvas as Baseline (A)
-                    </button>
-                  </div>
-
-                  {/* Scenario B */}
-                  <div className="bg-white rounded-[20px] border border-indigo-100/80 shadow-sm p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Scenario B (Optimized)
-                      </span>
-                      {scenarioB && (
-                        <span className="text-[11px] font-bold text-gray-400">Captured: {scenarioB.timestamp}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-[16px] font-black text-gray-900">
-                        {scenarioB ? scenarioB.name : "No Optimized Snapshot"}
-                      </h4>
-                      <p className="text-[12px] text-gray-500">
-                        {scenarioB
-                          ? `${scenarioB.graph.nodes.length} stations, ${scenarioB.graph.edges.length} connections recorded.`
-                          : "Modify canvas station parameters (e.g. +1 machine capacity) and snapshot as Optimized."}
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSnapshotB}
-                      className="w-full py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[12px] border border-emerald-200 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Sliders size={14} /> Snapshot Current Canvas as Optimized (B)
-                    </button>
-                  </div>
+                {/* Split screen: two independent, editable canvases */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {(["A", "B"] as Slot[]).map((slot) => (
+                    <ScenarioPane
+                      key={slot}
+                      slot={slot}
+                      scenario={slot === "A" ? scenarioA : scenarioB}
+                      setScenario={slot === "A" ? setScenarioA : setScenarioB}
+                      simType={simType}
+                      selectionCount={selectionCount}
+                      onCapture={() => capture(slot)}
+                    />
+                  ))}
                 </div>
+                <p className="text-[11.5px] text-gray-400 text-center -mt-2">
+                  Tip: on the main canvas, left-click and drag to box-select blocks, then use <strong>Compare as A / B</strong>. Edit either side here; drag to box-select, right-drag or two-finger scroll to pan.
+                </p>
 
                 {/* Compare Action Button */}
                 <div className="flex justify-center">
                   <button
                     onClick={handleRunComparison}
                     disabled={!scenarioA || !scenarioB || comparisonRunning}
-                    className="px-6 py-3 rounded-2xl bg-[#5742FF] hover:bg-[#4531E5] text-white font-black text-[13.5px] shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                    className="px-6 py-3 rounded-2xl bg-[#5742FF] border border-[#8d80ff] hover:bg-[#4531E5] text-white font-black text-[13.5px] shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
                   >
                     {comparisonRunning ? (
                       <>
@@ -774,5 +775,128 @@ export default function MonteCarloPanel({
         </motion.div>
       </div>
     </AnimatePresence>
+  );
+}
+
+function ScenarioPane({
+  slot,
+  scenario,
+  setScenario,
+  simType,
+  selectionCount,
+  onCapture,
+}: {
+  slot: Slot;
+  scenario: Scenario | null;
+  setScenario: React.Dispatch<React.SetStateAction<Scenario | null>>;
+  simType: SimTypeId;
+  selectionCount: number;
+  onCapture: () => void;
+}) {
+  const style = SLOT_STYLE[slot];
+  const canvasRef = useRef<NodeCanvasHandle>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedNode = scenario?.nodes.find((n) => n.id === selectedId);
+  const paletteNodes = (SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue).paletteNodes || [];
+
+  function updateNode(id: string, partial: any) {
+    setScenario((s) => s && {
+      ...s,
+      nodes: s.nodes.map((n) =>
+        n.id === id
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                ...partial,
+                params: partial.params ? { ...((n.data as any)?.params || {}), ...partial.params } : (n.data as any)?.params,
+              },
+            }
+          : n
+      ),
+    });
+  }
+
+  return (
+    <div className={`bg-white rounded-[20px] border ${style.ring} shadow-sm overflow-hidden flex flex-col`}>
+      <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
+        <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wider border ${style.badge}`}>
+          {style.title} · {style.name}
+        </span>
+        <span className="text-[11px] font-bold text-gray-400">
+          {scenario ? `${scenario.nodes.length} blocks · ${scenario.edges.length} links · ${scenario.timestamp}` : "Empty"}
+        </span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {scenario && paletteNodes.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => e.target.value && canvasRef.current?.addNode(e.target.value)}
+              className="h-8 px-2 rounded-lg border border-gray-200 bg-white text-[11.5px] font-bold text-gray-700 outline-none focus:border-indigo-300"
+            >
+              <option value="">+ Add block</option>
+              {paletteNodes.map((n) => (
+                <option key={n.type} value={n.type}>{n.label}</option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={onCapture}
+            className={`h-8 px-3 rounded-lg border text-[11.5px] font-extrabold transition-colors flex items-center gap-1.5 ${style.button}`}
+          >
+            <Layers size={13} />
+            {selectionCount > 0 ? `Load ${selectionCount} selected` : "Load full canvas"}
+          </button>
+          {scenario && (
+            <button
+              onClick={() => { setScenario(null); setSelectedId(null); }}
+              title="Clear"
+              className="w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 flex items-center justify-center border border-gray-200"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="relative h-[440px] bg-[#F9F8FD]">
+        {scenario ? (
+          <NodeCanvas
+            ref={canvasRef}
+            nodes={scenario.nodes}
+            edges={scenario.edges}
+            simType={simType}
+            simState="idle"
+            selectedNodeId={selectedId}
+            onSelectNode={setSelectedId}
+            onNodesChange={(changes) => setScenario((s) => s && { ...s, nodes: applyNodeChanges(changes, s.nodes) })}
+            onEdgesChange={(changes) => setScenario((s) => s && { ...s, edges: applyEdgeChanges(changes, s.edges) })}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-[#5742FF] flex items-center justify-center mb-3">
+              <Sliders size={20} />
+            </div>
+            <p className="text-[13px] font-black text-gray-900">No {style.name.toLowerCase()} yet</p>
+            <p className="text-[12px] text-gray-500 max-w-xs mt-1">
+              Box-select blocks on the main canvas and click <strong>Compare as {slot}</strong>, or load the full canvas here.
+            </p>
+          </div>
+        )}
+
+        {selectedNode && (
+          <div className="absolute top-0 right-0 h-full w-[300px] max-w-[85%] border-l border-indigo-100 shadow-[-8px_0_24px_rgba(0,0,0,0.06)] z-30 flex flex-col bg-[#FAF9FF]">
+            <button
+              onClick={() => setSelectedId(null)}
+              className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-white hover:bg-gray-100 text-gray-500 flex items-center justify-center border border-gray-200"
+            >
+              <X size={13} />
+            </button>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <NodePropertiesPanel node={selectedNode} simType={simType} onUpdate={updateNode} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

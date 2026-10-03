@@ -18,8 +18,11 @@ export default function SignupPage() {
   // Where to land after confirming (e.g. an invited project). Same-origin paths only.
   const [redirect, setRedirect] = React.useState("/dashboard");
   React.useEffect(() => {
-    const r = new URLSearchParams(window.location.search).get("redirect");
+    const q = new URLSearchParams(window.location.search);
+    const r = q.get("redirect");
     if (r && r.startsWith("/") && !r.startsWith("//")) setRedirect(r);
+    // Plan picked on the pricing page: pre-select it in onboarding.
+    else if (q.get("plan") === "pro") setRedirect(`/onboarding?plan=pro&billing=${q.get("billing") === "yearly" ? "yearly" : "monthly"}`);
   }, []);
   const callbackUrl = () => `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
 

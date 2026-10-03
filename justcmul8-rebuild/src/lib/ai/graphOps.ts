@@ -429,7 +429,7 @@ function canvasNode(n: AINode, position: { x: number; y: number }, base?: any) {
 }
 
 function canvasEdge(e: AIEdge) {
-  return { id: e.id, source: e.source, target: e.target, animated: true, type: "smoothstep" };
+  return { id: e.id, source: e.source, target: e.target, type: "simEdge" };
 }
 
 /**

@@ -94,7 +94,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
           </button>
           <button
             onClick={downloadCsv}
-            className="px-3 py-1.5 rounded-xl bg-[#5742FF] text-white text-[12px] font-bold hover:bg-[#4531E5] flex items-center gap-1.5 shadow-sm transition-all"
+            className="px-3 py-1.5 rounded-xl bg-[#5742FF] border border-[#8d80ff] text-white text-[12px] font-bold hover:bg-[#4531E5] flex items-center gap-1.5 shadow-sm transition-all"
           >
             <Download size={14} />
             <span>Export CSV</span>

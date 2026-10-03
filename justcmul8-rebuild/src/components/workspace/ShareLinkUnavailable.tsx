@@ -44,7 +44,7 @@ export default function ShareLinkUnavailable({ reason, email }: { reason: "revok
 
       <Link
         href="/signup"
-        className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#5742FF] text-white text-[12.5px] font-bold hover:bg-[#4531E5] transition-colors"
+        className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#5742FF] border border-[#8d80ff] text-white text-[12.5px] font-bold hover:bg-[#4531E5] transition-colors"
       >
         <Rocket size={14} /> Build your own simulation
       </Link>

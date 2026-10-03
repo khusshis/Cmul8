@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requirePaid } from "@/lib/billing/server";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,6 +28,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
   }
+
+  // JSON is the user's own model and stays free; the CSV results export is Pro.
+  const locked = await requirePaid(supabase, "CSV export");
+  if (locked) return locked;
 
   // format === "csv" — pull the most recent run's node stats
   const { data: run } = await supabase
