@@ -11,3 +11,6 @@ __pycache__/
 .venv/
 
 .playwright-mcp/
+
+# Motion renders
+justcmul8-rebuild/motion/**/out/

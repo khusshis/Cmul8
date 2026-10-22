@@ -11,7 +11,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
 import type { SimTick, NodeStats, NodeType, SimGraph } from "@/lib/simulation/types";
-import { AlertCircle, X, Layers } from "lucide-react";
+import { AlertCircle, X, CalendarClock, Users, Shuffle, Star, ListOrdered, ArrowDownWideNarrow, Hourglass, UserRound, Timer, Gauge, Zap, Wrench, Flag, Package, Layers, ArrowDownToLine, ArrowUpFromLine, GitFork } from "lucide-react";
 import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 import type { PresenceUser } from "@/lib/realtime/usePresence";
 import LiveCursor from "@/components/workspace/LiveCursor";
@@ -54,6 +54,38 @@ export const NODE_BASE_COLORS: Record<string, string> = {
   interrupter:      "var(--color-node-interrupter)",
 };
 
+
+// ─── Live Glow Color resolver (Exact Thresholds) ──────────────────────────────
+function resolveNodeGlowColor(nodeType: string, stats: NodeStats | undefined): {
+  color: string;
+  isDimmed: boolean;
+} {
+  if (!stats) return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: true };
+
+  switch (nodeType) {
+    case "resource":
+    case "priority_resource":
+    case "service": {
+      const u = stats.utilization ?? 0;
+      if (u > 0.8) return { color: "var(--color-error)", isDimmed: false };
+      if (u > 0.5) return { color: "var(--color-warning)", isDimmed: false };
+      return { color: "var(--color-success)", isDimmed: false };
+    }
+    case "queue":
+    case "store": {
+      const d = stats.currentDepth ?? 0;
+      if (d > 10) return { color: "var(--color-error)", isDimmed: false };
+      if (d > 0) return { color: "var(--color-warning)", isDimmed: false };
+      return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: true };
+    }
+    case "source":
+      return { color: "var(--color-info)", isDimmed: stats.entitiesIn === 0 };
+    case "sink":
+      return { color: "var(--color-text-secondary)", isDimmed: stats.entitiesOut === 0 };
+    default:
+      return { color: NODE_BASE_COLORS[nodeType] || "var(--color-info)", isDimmed: false };
+  }
+}
 
 // ─── SimEdge (styled edge) ──────────────────────────────────────────────────
 export type EdgeShape = "curve" | "straight" | "step";
@@ -120,7 +152,7 @@ const HANDLE_STYLE = (x: number, y: number): React.CSSProperties => ({
   zIndex: 1000,
 });
 
-function SimEdge({ id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, style, data }: EdgeProps) {
+function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd, style, data }: EdgeProps) {
   const { getNode, deleteElements, screenToFlowPosition } = useReactFlow();
   const { simState } = useContext(LiveStatsContext);
   const { updateEdgeData, readOnly } = useContext(EdgeEditContext);
@@ -129,7 +161,6 @@ function SimEdge({ id, source, target, sourceX, sourceY, targetX, targetY, sourc
   const shape: EdgeShape = edgeData.shape || "curve";
   // While dragging, points live here; they are committed once on release so history gets one entry.
   const [dragPoints, setDragPoints] = useState<Offset[] | null>(null);
-  const [hovered, setHovered] = useState(false);
   const offsets = dragPoints ?? edgeData.points ?? (edgeData.bend ? [edgeData.bend] : []);
 
   const midX = (sourceX + targetX) / 2;
@@ -158,86 +189,34 @@ function SimEdge({ id, source, target, sourceX, sourceY, targetX, targetY, sourc
     window.addEventListener("pointerup", up);
   }
 
-  // Calm neutral lines; brand purple when hovered/selected; the source block colour while items flow.
+  // Get edge color dynamically based on the source node type!
   const sourceNode = getNode(source);
-  const targetNode = getNode(target);
-  const sourceType = (sourceNode?.data?.nodeType || "source") as NodeType;
-  const sourceColor = NODE_BASE_COLORS[sourceType] || "var(--color-info)";
+  const nodeType = (sourceNode?.data?.nodeType || "source") as NodeType;
+  const edgeColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
   const editing = selected && !readOnly && !isRunning;
-  const active = hovered || selected;
-  const lineColor = active ? "#5742FF" : isRunning ? `color-mix(in srgb, ${sourceColor}, white 35%)` : "#b6b3cb";
-
-  // Decision blocks: show what share of items takes this path.
-  const route = sourceType === "decision"
-    ? ((sourceNode?.data?.params as any)?.routes as { targetId: string; probability: number }[] | undefined)?.find((r) => r.targetId === target)
-    : undefined;
-  const share = route ? Math.round((Number(route.probability) || 0) * 100) : null;
-  const labelAt = mids[Math.floor(mids.length / 2)];
-  const sourceLabel = (sourceNode?.data?.label as string) || "Block";
-  const targetLabel = (targetNode?.data?.label as string) || "Block";
-  const arrowId = `edge-arrow-${id}`;
 
   return (
     <>
-      <g onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-        <defs>
-          <marker id={arrowId} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
-            <path d="M0 0.5 L10 5 L0 9.5 L2.5 5 Z" fill={lineColor} style={{ transition: "fill 0.2s ease" }} />
-          </marker>
-        </defs>
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        markerEnd={markerEnd}
+        interactionWidth={20}
+        className={isRunning ? "animate-[dash_1s_linear_infinite]" : ""}
+        style={{
+          stroke: selected ? "var(--color-info)" : edgeColor,
+          strokeWidth: selected ? 2 : 1.5,
+          transition: "stroke 0.3s ease, stroke-width 0.3s ease",
+          strokeDasharray: isRunning ? "4 4" : "none",
+          opacity: 0.6,
+          ...style,
+        }}
+      />
 
-        {/* Soft halo on hover/selection */}
-        <path
-          d={edgePath}
-          fill="none"
-          stroke="#5742FF"
-          strokeWidth={8}
-          strokeLinecap="round"
-          pointerEvents="none"
-          style={{ opacity: active ? 0.12 : 0, transition: "opacity 0.2s ease" }}
-        />
-
-        <BaseEdge
-          id={id}
-          path={edgePath}
-          markerEnd={`url(#${arrowId})`}
-          interactionWidth={22}
-          style={{
-            stroke: lineColor,
-            strokeWidth: active ? 2.25 : 1.75,
-            strokeLinecap: "round",
-            transition: "stroke 0.2s ease, stroke-width 0.2s ease",
-            ...style,
-          }}
-        />
-
-        {/* Running: items travelling along the line */}
-        {isRunning && [0, 1, 2].map((i) => (
-          <circle key={i} r="3.5" fill={sourceColor} stroke="#fff" strokeWidth="1.5" pointerEvents="none">
-            <animateMotion dur="1.8s" begin={`${-i * 0.6}s`} repeatCount="indefinite" path={edgePath} />
-          </circle>
-        ))}
-      </g>
-
-      {!editing && labelAt && (share !== null || hovered) && (
-        <EdgeLabelRenderer>
-          <div
-            style={{ position: "absolute", transform: `translate(-50%, -50%) translate(${labelAt.x}px,${labelAt.y}px)`, pointerEvents: "none", zIndex: 1000 }}
-            className="nodrag nopan"
-          >
-            <div
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[10.5px] font-bold text-gray-700 shadow-[0_4px_14px_-4px_rgba(16,24,40,0.22)]"
-              style={{ border: `1px solid ${share !== null ? `color-mix(in srgb, ${sourceColor}, white 60%)` : "#e5e3f0"}` }}
-            >
-              {share !== null && <span style={{ color: sourceColor }}>{share}%</span>}
-              {hovered && (
-                <span className="text-gray-500 font-semibold">
-                  {share !== null ? `go to ${targetLabel}` : <>{sourceLabel} <span className="text-gray-300">→</span> {targetLabel}</>}
-                </span>
-              )}
-            </div>
-          </div>
-        </EdgeLabelRenderer>
+      {isRunning && (
+        <circle r="4" fill={edgeColor}>
+          <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
+        </circle>
       )}
 
       {/* Selected: drag points to reshape, drag a "+" to add a point, double-click a point to remove it. */}
@@ -321,6 +300,19 @@ let clipboard: { nodes: Node[]; edges: Edge[]; pasteCount: number } | null = nul
 // Which canvas receives keyboard shortcuts: the one last pressed on.
 let activeCanvas: object | null = null;
 
+// ─── Handle style helper ──────────────────────────────────────────────────────
+function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
+  return {
+    opacity: 0, // Hidden visually but functional for connecting
+    width: 10,
+    height: 10,
+    background: isConnected ? color : "var(--color-surface)",
+    border: `2px solid ${color}`,
+    borderRadius: "50%",
+    transition: "all 0.2s ease",
+  };
+}
+
 // ─── Non-Technical Plain English Block Summary Formatter ─────────────
 function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any> = {}): string {
   switch (nodeType) {
@@ -391,221 +383,256 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
   }
 }
 
-// ─── Detailed Spec Formatter for Sleek Hover Tooltip ───────────
-function getNodeDetailedSpecs(
-  nodeType: string,
-  params: Record<string, any> = {}
-): { label: string; value: string }[] {
-  switch (nodeType) {
-    case "source":
-      return [
-        { label: "Arrival Rate", value: `${params.arrivalRate ?? 1} entities/sec` },
-        {
-          label: "Flow Pattern",
-          value:
-            params.distribution === "deterministic"
-              ? "Fixed Spacing"
-              : params.distribution === "poisson"
-              ? "Burst Spikes"
-              : params.distribution === "normal"
-              ? "Clustered Avg"
-              : "Natural Random",
-        },
-        { label: "Item Type", value: params.entityClass || "Standard" },
-        ...(params.priorityLevel && params.priorityLevel !== "standard"
-          ? [
-              {
-                label: "Priority Tier",
-                value: params.priorityLevel === "urgent" ? "🚨 VIP Urgent" : "⚡ Fast-Track",
-              },
-            ]
-          : []),
-      ];
-    case "queue":
-      return [
-        {
-          label: "Max Line Size",
-          value:
-            params.capacity === undefined || params.capacity === -1 || params.capacity === ""
-              ? "♾️ Unlimited"
-              : `${params.capacity} in line`,
-        },
-        {
-          label: "Queue Discipline",
-          value:
-            params.discipline === "PRIORITY"
-              ? "⭐ VIP & Urgent First"
-              : params.discipline === "LIFO"
-              ? "📦 Most Recent First"
-              : "🚶 First Come, First Served",
-        },
-        ...(params.patienceDistribution && params.patienceDistribution !== "none"
-          ? [
-              {
-                label: "Patience Timeout",
-                value: `⏱️ Leaves after ${params.patienceTimeout ?? 5}s`,
-              },
-            ]
-          : []),
-      ];
-    case "resource":
-    case "priority_resource":
-      return [
-        { label: "Station Staff", value: `${params.capacity ?? 1} parallel counter(s)` },
-        { label: "Avg Service Time", value: `${params.serviceTimeMean ?? 1} seconds` },
-        {
-          label: "Duration Pattern",
-          value: params.serviceDistribution === "deterministic" ? "Fixed constant" : "Random duration",
-        },
-        ...(params.isPreemptive ? [{ label: "Fast-Track Override", value: "⚡ Can interrupt" }] : []),
-        ...(params.meanTimeBetweenFailures
-          ? [
-              {
-                label: "Breakdowns",
-                value: `Every ~${params.meanTimeBetweenFailures}s (Fix: ${params.repairTimeMean ?? 1}s)`,
-              },
-            ]
-          : []),
-      ];
-    case "service":
-      return [
-        { label: "Processing Duration", value: `${params.durationMean ?? 1} seconds` },
-        {
-          label: "Speed Consistency",
-          value: params.distribution === "deterministic" ? "Fixed duration" : "Random duration",
-        },
-      ];
-    case "decision":
-      return [
-        { label: "Routing Paths", value: `${params.routes?.length ?? 2} branches` },
-        { label: "Split Method", value: "Probabilistic branch" },
-      ];
-    case "sink":
-      return [
-        { label: "KPI Collection", value: params.collectKPIs !== false ? "✅ Active" : "Disabled" },
-        { label: "Role", value: "Simulation completion" },
-      ];
-    case "store":
-      return [
-        {
-          label: "Storage Limit",
-          value:
-            params.capacity === undefined || params.capacity === -1
-              ? "♾️ Unlimited capacity"
-              : `Max ${params.capacity} units`,
-        },
-      ];
-    case "container":
-      return [{ label: "Tank Capacity", value: `${params.capacity ?? 100} fluid units` }];
-    default:
-      return Object.entries(params || {})
-        .filter(([k]) => !k.startsWith("_"))
-        .slice(0, 3)
-        .map(([k, v]) => ({ label: k, value: String(v) }));
-  }
-}
-
-// ─── SimNode ────────────────────────────────────────────────────────────────
-const tint = (c: string, whitePct: number) => `color-mix(in srgb, ${c}, white ${whitePct}%)`;
-
-/** Plain-English role shown above each block's name. */
-const NODE_ROLE: Record<string, string> = {
-  source: "Arrivals",
-  queue: "Waiting area",
-  resource: "Served by",
-  priority_resource: "VIP service",
-  service: "Processing",
-  decision: "Splits flow",
-  sink: "Finish",
-  container: "Storage tank",
-  store: "Storage",
-  channel: "Transfer",
-  broadcaster: "Broadcast",
-  event_trigger: "Trigger",
-  any_of: "Wait for any",
-  all_of: "Wait for all",
-  interrupter: "Interrupts",
+// ─── Hover details card ─────────────────────────────────────────────────────
+const plural = (n: number, one: string, many = /(s|ch|sh|x)$/.test(one) ? `${one}es` : `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const nounPlural = (one: string) => (/(s|ch|sh|x)$/.test(one) ? `${one}es` : `${one}s`);
+const perMinute = (perSec: number) => {
+  const m = perSec * 60;
+  return m >= 10 ? String(Math.round(m)) : m.toFixed(1);
 };
 
-/** Short, readable facts about how a block is set up (shown under its name when idle). */
-function getNodeSummary(nodeType: string, params: Record<string, any> = {}): string[] {
-  const pattern = (d?: string) => (d === "deterministic" ? "Steady" : d === "poisson" ? "In bursts" : d === "normal" ? "Around avg" : "Random");
+type IconType = React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+type Point = { icon: IconType; label: string; value: string; warn?: boolean };
+
+/** How a block is set up, as short pointers: plain label → bold value. */
+function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): Point[] {
+  const many = nounPlural(noun);
+  const timing = (d?: string) => (d === "deterministic" ? "fixed" : "varies");
   switch (nodeType) {
-    case "source":
-      if (Array.isArray(params.schedule) && params.schedule.length > 0) return [`${params.schedule.length} timed waves`];
-      return [`${params.arrivalRate ?? 1} / sec`, pattern(params.distribution)];
+    case "source": {
+      if (Array.isArray(p.schedule) && p.schedule.length > 0) {
+        return [{ icon: CalendarClock, label: "Arrivals", value: plural(p.schedule.length, "timed wave") }];
+      }
+      const rate = Number(p.arrivalRate ?? 1);
+      return [
+        { icon: Users, label: "Arrivals", value: `${rate}/sec · ${perMinute(rate)}/min` },
+        { icon: Shuffle, label: "Timing", value: p.distribution === "deterministic" ? "Evenly spaced" : p.distribution === "poisson" ? "In bursts" : p.distribution === "normal" ? "Near average" : "Random" },
+        ...(p.priorityLevel && p.priorityLevel !== "standard"
+          ? [{ icon: Star, label: "Priority", value: p.priorityLevel === "urgent" ? "Urgent" : "Fast-track" }]
+          : []),
+      ];
+    }
     case "queue": {
-      const unlimited = params.capacity === undefined || params.capacity === -1 || params.capacity === "";
-      const order = params.discipline === "PRIORITY" ? "VIP first" : params.discipline === "LIFO" ? "Newest first" : "First come";
-      return [unlimited ? "No limit" : `Max ${params.capacity}`, order];
+      const unlimited = p.capacity === undefined || p.capacity === -1 || p.capacity === "";
+      const patient = p.patienceDistribution && p.patienceDistribution !== "none";
+      return [
+        { icon: ListOrdered, label: "Line limit", value: unlimited ? "No limit" : `${p.capacity} ${many}` },
+        { icon: ArrowDownWideNarrow, label: "Order", value: p.discipline === "PRIORITY" ? "VIP first" : p.discipline === "LIFO" ? "Newest first" : "First come, first served" },
+        { icon: Hourglass, label: "Gives up after", value: patient ? `~${p.patienceTimeout ?? 5} sec` : "Never" },
+      ];
     }
     case "resource":
     case "priority_resource": {
-      const cap = Number(params.capacity) || 1;
-      return [cap === 1 ? "1 counter" : `${cap} counters`, `~${params.serviceTimeMean ?? 1}s each`];
+      const cap = Number(p.capacity) || 1;
+      const mean = Number(p.serviceTimeMean ?? 1) || 1;
+      return [
+        { icon: UserRound, label: "Counters", value: String(cap) },
+        { icon: Timer, label: `Time per ${noun}`, value: `~${mean} sec (${timing(p.serviceDistribution)})` },
+        { icon: Gauge, label: "Max output", value: `${perMinute(cap / mean)} ${many}/min` },
+        ...(p.isPreemptive ? [{ icon: Zap, label: "VIPs jump ahead", value: "Yes" }] : []),
+        ...(p.meanTimeBetweenFailures
+          ? [{ icon: Wrench, label: "Breakdowns", value: `Every ~${p.meanTimeBetweenFailures}s · fix ~${p.repairTimeMean ?? 1}s` }]
+          : []),
+      ];
     }
-    case "service":
-      return [`~${params.durationMean ?? 1}s each`, params.distribution === "deterministic" ? "Steady" : "Varies"];
-    case "decision": {
-      const n = params.routes?.length ?? 0;
-      return [n > 0 ? `${n} paths` : "Set paths"];
+    case "service": {
+      const mean = Number(p.durationMean ?? 1) || 1;
+      return [
+        { icon: Timer, label: `Time per ${noun}`, value: `~${mean} sec (${timing(p.distribution)})` },
+        { icon: Users, label: "At once", value: "No limit" },
+      ];
     }
     case "sink":
-      return ["Counts results"];
+      return [{ icon: Flag, label: "Records", value: p.collectKPIs !== false ? "Time, wait, output" : "Off" }];
     case "store":
-    case "container": {
-      const cap = params.capacity;
-      return [cap === undefined || cap === -1 ? "No limit" : `Holds ${cap}`];
-    }
+      return [{ icon: Package, label: "Storage limit", value: p.capacity === undefined || p.capacity === -1 ? "No limit" : `${p.capacity} ${many}` }];
+    case "container":
+      return [{ icon: Package, label: "Tank size", value: `${p.capacity ?? 100} units` }];
+    case "decision":
+      return [];
     default:
-      return [formatNodeFriendlySubtext(nodeType, params)];
+      return Object.entries(p)
+        .filter(([k]) => !k.startsWith("_"))
+        .slice(0, 3)
+        .map(([k, v]) => ({ icon: Layers, label: k, value: String(v) }));
   }
 }
 
-/** How a block is doing while the simulation runs, in words a non-technical user understands. */
-function getNodeHealth(nodeType: string, s: NodeStats | undefined): { label: string; color: string } | null {
-  if (!s) return null;
-  switch (nodeType) {
-    case "resource":
-    case "priority_resource": {
-      const u = s.utilization ?? 0;
-      if (u > 0.85) return { label: "Overloaded", color: "var(--color-error)" };
-      if (u > 0.6) return { label: "Busy", color: "var(--color-warning)" };
-      return { label: "Smooth", color: "var(--color-success)" };
-    }
-    case "queue":
-    case "store": {
-      const d = s.currentDepth ?? 0;
-      if (d > 10) return { label: "Long line", color: "var(--color-error)" };
-      if (d > 3) return { label: "Building up", color: "var(--color-warning)" };
-      return { label: "Flowing", color: "var(--color-success)" };
-    }
-    case "source":
-      return { label: "Arriving", color: "var(--color-info)" };
-    case "sink":
-      return { label: "Finishing", color: "var(--color-success)" };
-    default:
-      return { label: "Active", color: "var(--color-success)" };
+function liveHealth(nodeType: string, s: NodeStats): { label: string; color: string } {
+  if (nodeType === "resource" || nodeType === "priority_resource") {
+    const u = s.utilization ?? 0;
+    if (u > 0.85) return { label: "Overloaded", color: "var(--color-error)" };
+    if (u > 0.6) return { label: "Busy", color: "var(--color-warning)" };
+    return { label: "Smooth", color: "var(--color-success)" };
   }
+  if (nodeType === "queue" || nodeType === "store") {
+    const d = s.currentDepth ?? 0;
+    if (d > 10) return { label: "Long line", color: "var(--color-error)" };
+    if (d > 3) return { label: "Growing", color: "var(--color-warning)" };
+    return { label: "Flowing", color: "var(--color-success)" };
+  }
+  return { label: "Active", color: "var(--color-success)" };
 }
 
-/** Little row of seats (counters) or people (waiting) — shows capacity and load visually. */
-function Dots({ total, filled, color, max = 8 }: { total: number; filled: number; color: string; max?: number }) {
-  const shown = Math.min(total, max);
+const cardMotion = {
+  hidden: { opacity: 0, y: 6, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 600, damping: 34, staggerChildren: 0.022 } },
+  exit: { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.08 } },
+};
+const itemMotion = { hidden: { opacity: 0, x: -3 }, show: { opacity: 1, x: 0, transition: { duration: 0.15 } } };
+
+function PointRow({ icon: Icon, label, value, color, warn }: Point & { color: string }) {
   return (
-    <span className="inline-flex items-center gap-[3px]">
-      {Array.from({ length: shown }, (_, i) => (
-        <span
-          key={i}
-          className="w-[7px] h-[7px] rounded-full transition-colors duration-300"
-          style={{ background: i < filled ? color : "transparent", boxShadow: `inset 0 0 0 1.5px ${color}` }}
-        />
-      ))}
-      {total > max && <span className="text-[9.5px] font-bold text-gray-400 ml-0.5">+{total - max}</span>}
-    </span>
+    <motion.li variants={itemMotion} className="flex items-center gap-2 py-[3px] text-[11px]">
+      <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: warn ? "#fef3c7" : `color-mix(in srgb, ${color} 12%, white)`, color: warn ? "#d97706" : color }}>
+        <Icon size={11} strokeWidth={2.4} />
+      </span>
+      <span className="text-gray-500 shrink-0">{label}</span>
+      <span className={`ml-auto pl-2 text-right font-semibold truncate ${warn ? "text-amber-600" : "text-gray-900"}`}>{value}</span>
+    </motion.li>
   );
 }
 
+function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, isBottleneck, waitingNearby, entityName }: {
+  id: string;
+  data: any;
+  nodeType: string;
+  color: string;
+  Icon: IconType | null;
+  liveStats?: NodeStats;
+  isRunning: boolean;
+  isBottleneck: boolean;
+  waitingNearby: number;
+  entityName: string;
+}) {
+  const { getEdges, getNode } = useReactFlow();
+  const params = data.params || {};
+  const noun = entityName.toLowerCase();
+  const nameOf = (nid: string) => (getNode(nid)?.data?.label as string) || "Unnamed";
+  const edges = getEdges();
+  const from = edges.filter((e) => e.target === id).map((e) => nameOf(e.source));
+  const to = edges.filter((e) => e.source === id).map((e) => e.target);
+  const routes: { targetId: string; probability: number }[] = nodeType === "decision" ? params.routes || [] : [];
+  const isSource = nodeType === "source";
+  const isSink = nodeType === "sink";
+  const disconnected = (!isSource && from.length === 0) || (!isSink && to.length === 0);
+  const live = isRunning && liveStats ? liveStats : null;
+  const health = live ? liveHealth(nodeType, live) : null;
+  const isCounter = nodeType === "resource" || nodeType === "priority_resource";
+  const isLine = nodeType === "queue" || nodeType === "store";
+  const status = health ?? (disconnected ? { label: "Not connected", color: "#d97706" } : { label: "Ready", color: "var(--color-success)" });
+  const typeName = (NODE_LABELS as Record<string, string>)[nodeType] || nodeType.replace(/_/g, " ");
+  const names = (list: string[]) => (list.length <= 1 ? list[0] : `${list[0]} +${list.length - 1}`);
+
+  const flow: Point[] = [
+    ...(!isSource ? [from.length ? { icon: ArrowDownToLine, label: "Comes from", value: names(from)! } : { icon: ArrowDownToLine, label: "Comes from", value: "Not connected", warn: true }] : []),
+    ...(!isSink && nodeType !== "decision"
+      ? [to.length ? { icon: ArrowUpFromLine, label: "Goes to", value: names(to.map(nameOf))! } : { icon: ArrowUpFromLine, label: "Goes to", value: "Not connected", warn: true }]
+      : []),
+  ];
+
+  const liveRows: Point[] = live
+    ? [
+        { icon: ArrowDownToLine, label: "Came in", value: String(live.entitiesIn ?? 0) },
+        { icon: Flag, label: "Finished", value: String(live.entitiesOut ?? 0) },
+        { icon: isCounter ? UserRound : Users, label: isCounter ? "Being served" : isLine ? "Waiting now" : "Inside now", value: String(live.currentDepth ?? 0) },
+        ...((live.avgWaitTime ?? 0) > 0 ? [{ icon: Hourglass, label: "Average wait", value: `${live.avgWaitTime.toFixed(1)} sec` }] : []),
+        ...(isCounter && waitingNearby > 0 ? [{ icon: Users, label: "Waiting for it", value: String(waitingNearby) }] : []),
+        ...((live.renegeCount ?? 0) > 0 ? [{ icon: Hourglass, label: "Gave up", value: String(live.renegeCount), warn: true }] : []),
+        ...((live.breakdownCount ?? 0) > 0 ? [{ icon: Wrench, label: "Breakdowns", value: String(live.breakdownCount) }] : []),
+      ]
+    : [];
+
+  return (
+    <motion.div
+      variants={cardMotion}
+      initial="hidden"
+      animate="show"
+      exit="exit"
+      style={{ transformOrigin: "50% 100%" }}
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-[9999] pointer-events-none w-[240px] text-left"
+    >
+      <div className="relative rounded-[14px] bg-white border border-gray-200/90 shadow-[0_16px_36px_-14px_rgba(16,24,40,0.30),0_2px_6px_-2px_rgba(16,24,40,0.06)]">
+        <span aria-hidden className="absolute left-3 right-3 top-0 h-[2px] rounded-b-full" style={{ background: color }} />
+
+        {/* Header */}
+        <motion.div variants={itemMotion} className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
+          <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ background: color }}>
+            {Icon && <Icon size={14} strokeWidth={2.3} />}
+          </span>
+          <div className="min-w-0 flex-1 leading-none">
+            <div className="text-[12.5px] font-semibold text-gray-900 truncate">{data.label}</div>
+            <div className="mt-1 text-[10px] font-medium truncate" style={{ color }}>{typeName}</div>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-[3px] text-[9.5px] font-semibold" style={{ color: status.color, background: `color-mix(in srgb, ${status.color} 12%, white)` }}>
+            <span className={`w-1.5 h-1.5 rounded-full ${health ? "animate-pulse" : ""}`} style={{ background: status.color }} />
+            {status.label}
+          </span>
+        </motion.div>
+
+        <ul className="px-2.5 pb-2 border-t border-gray-100 pt-1.5">
+          {flow.map((pt) => <PointRow key={pt.label} {...pt} color={color} />)}
+
+          {/* Decision: one pointer per path, with its share */}
+          {nodeType === "decision" && (to.length === 0
+            ? <PointRow icon={GitFork} label="Paths" value="Not connected" warn color={color} />
+            : to.map((tid) => {
+                const pr = routes.find((r) => r.targetId === tid)?.probability;
+                const pct = pr === undefined ? null : Math.round(Number(pr) * 100);
+                return (
+                  <motion.li key={tid} variants={itemMotion} className="flex items-center gap-2 py-[3px] text-[11px]">
+                    <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${color} 12%, white)`, color }}>
+                      <GitFork size={11} strokeWidth={2.4} />
+                    </span>
+                    <span className="min-w-0 truncate text-gray-500">{nameOf(tid)}</span>
+                    <span className="ml-auto w-12 h-1 rounded-full bg-gray-100 overflow-hidden shrink-0">
+                      <span className="block h-full rounded-full" style={{ width: `${pct ?? 0}%`, background: color }} />
+                    </span>
+                    <span className={`w-9 text-right font-semibold tabular-nums ${pct === null ? "text-amber-600" : "text-gray-900"}`}>{pct === null ? "—" : `${pct}%`}</span>
+                  </motion.li>
+                );
+              }))}
+
+          {getNodePoints(nodeType, params, noun).map((pt) => <PointRow key={pt.label} {...pt} color={color} />)}
+        </ul>
+
+        {/* Live pointers */}
+        {live && (
+          <div className="mx-2 mb-2 rounded-[10px] px-1.5 pt-1 pb-1.5" style={{ background: `color-mix(in srgb, ${health!.color} 7%, white)`, border: `1px solid color-mix(in srgb, ${health!.color} 20%, white)` }}>
+            <div className="px-1 pt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: health!.color }}>Live</div>
+            <ul>{liveRows.map((pt) => <PointRow key={pt.label} {...pt} color={health!.color} />)}</ul>
+            {isCounter && (
+              <motion.div variants={itemMotion} className="mt-1 px-1 flex items-center gap-2 text-[10px]">
+                <span className="flex-1 h-1 rounded-full bg-white overflow-hidden">
+                  <motion.span
+                    className="block h-full rounded-full origin-left"
+                    style={{ background: health!.color }}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: Math.min(1, live.utilization ?? 0) }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                  />
+                </span>
+                <span className="font-semibold tabular-nums text-gray-700">{Math.round((live.utilization ?? 0) * 100)}% busy</span>
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {isBottleneck && (
+          <motion.div variants={itemMotion} className="mx-2 mb-2 flex items-center gap-1.5 rounded-[10px] bg-red-50 border border-red-100 px-2 py-1.5 text-[10.5px] text-red-700">
+            <AlertCircle size={12} strokeWidth={2.5} className="shrink-0" />
+            <span><b className="font-semibold">Slowest step</b> · add a counter or speed it up</span>
+          </motion.div>
+        )}
+
+        {/* Pointer notch */}
+        <span aria-hidden className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-gray-200/90" />
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── SimNode ────────────────────────────────────────────────────────────────
 function SimNode({ data, selected, id }: { data: any; selected: boolean; id: string }) {
   const [showDeleteBtn, setShowDeleteBtn] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -613,27 +640,34 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   const { setNodes, setEdges } = useReactFlow();
   const { stats, bottleneckId, simState, connectedHandles, simType, upstreamQueueDepth, remoteUsers } = useContext(LiveStatsContext);
-  const nodeType: string = data.nodeType;
-  const params = data.params || {};
+  const nodeType = data.nodeType;
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
-  const live = isRunning && !!liveStats;
 
   // Remote presence on this node
   const selectingUsers = remoteUsers.filter((u) => u.selectedNodeId === id || u.editingNodeId === id);
   const primaryRemoteUser = selectingUsers[0];
   const isRemoteEditing = selectingUsers.some((u) => u.editingNodeId === id);
 
+  const remoteShadow = isRemoteEditing
+    ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}`
+    : primaryRemoteUser
+    ? `0 0 0 2px ${primaryRemoteUser.color}`
+    : undefined;
+
   useEffect(() => {
-    if (!selected) setShowDeleteBtn(false);
+    if (!selected) {
+      setShowDeleteBtn(false);
+    }
   }, [selected]);
 
-  useEffect(() => () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); }, []);
-
   const handleMouseEnter = () => {
-    hoverTimerRef.current = setTimeout(() => setIsHovered(true), 250);
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHovered(true);
+    }, 120);
   };
+
   const handleMouseLeave = () => {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     setIsHovered(false);
@@ -641,35 +675,45 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
 
   const simConfig = (SIM_TYPE_REGISTRY as any)[simType] || SIM_TYPE_REGISTRY.human_queue;
   const paletteDef = simConfig.paletteNodes?.find((n: any) => n.type === nodeType);
-  const Icon = (paletteDef?.icon || Layers) as React.ComponentType<{ size?: number; strokeWidth?: number }>;
-  const description: string = paletteDef?.desc || "";
+  const icon = paletteDef?.icon || "";
 
   const baseColor = NODE_BASE_COLORS[nodeType] || "var(--color-info)";
-  const role = NODE_ROLE[nodeType] || nodeType.replace(/_/g, " ");
-  const health = live ? getNodeHealth(nodeType, liveStats) : null;
+  const { color: statusColor, isDimmed } = isRunning
+    ? resolveNodeGlowColor(nodeType, liveStats)
+    : { color: baseColor, isDimmed: true };
 
+  // Check which handles are connected
   const hasTargetConnection = connectedHandles.has(`${id}__target`);
   const hasSourceConnection = connectedHandles.has(`${id}__source`);
+
+  // Determine which handles to show based on node type
   const isSink = nodeType === "sink";
   const isSource = nodeType === "source";
-  const needsConnection = !isRunning && ((!isSource && !hasTargetConnection) || (!isSink && !hasSourceConnection));
 
-  const isCounter = nodeType === "resource" || nodeType === "priority_resource";
-  const capacity = Number(params.capacity) || 1;
-  const depth = liveStats?.currentDepth ?? 0;
-  const busy = Math.min(depth, capacity);
-  const waitingNearby = (upstreamQueueDepth[id] ?? 0) + Math.max(0, depth - capacity);
-  const utilPct = Math.round((liveStats?.utilization ?? 0) * 100);
-  const queueCap = Number(params.capacity) > 0 ? Number(params.capacity) : 20;
+  // Stats badge content
+  let statsBadge: string | null = null;
+  if (isRunning && liveStats) {
+    if (nodeType === "resource" || nodeType === "priority_resource") {
+      const cap = Number(data.params?.capacity) || 1;
+      const depth = liveStats.currentDepth ?? 0;
+      const serving = Math.min(depth, cap);
+      const queued = (upstreamQueueDepth[id] ?? 0) + Math.max(0, depth - cap);
+      statsBadge = `${Math.round((liveStats.utilization ?? 0) * 100)}% util | Serving: ${serving}/${cap} | Queue: ${queued}`;
+    } else if (nodeType === "service") {
+      // A service node is a pure delay with UNBOUNDED concurrency (the engine spawns
+      // one timeout per entity, with no resource contention) and no capacity param.
+      // Everything in it is in service, nothing is queued, and there is no server to
+      // be busy — so neither a capacity ratio nor a utilisation figure is meaningful.
+      statsBadge = `${liveStats.currentDepth ?? 0} in progress | Proc: ${liveStats.entitiesOut ?? 0}`;
+    } else if (nodeType === "queue" || nodeType === "store") {
+      statsBadge = `${liveStats.currentDepth ?? 0} waiting | Proc: ${liveStats.entitiesOut ?? 0}`;
+    } else if (nodeType === "source") {
+      statsBadge = `↑${liveStats.entitiesIn ?? 0} arrived`;
+    } else if (nodeType === "sink") {
+      statsBadge = `✓${liveStats.entitiesOut ?? 0} completed`;
+    }
+  }
 
-  const specs = getNodeDetailedSpecs(nodeType, params);
-  const summary = getNodeSummary(nodeType, params).join(" · ");
-
-  const shadows = [
-    primaryRemoteUser ? (isRemoteEditing ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}` : `0 0 0 2px ${primaryRemoteUser.color}`) : null,
-    selected ? `0 0 0 3px ${tint(baseColor, 80)}` : null,
-    isHovered || selected ? "0 12px 28px -12px rgba(16,24,40,0.30)" : "0 1px 2px rgba(16,24,40,0.06), 0 6px 16px -10px rgba(16,24,40,0.18)",
-  ].filter(Boolean).join(", ");
 
   return (
     <div
@@ -679,106 +723,49 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         e.stopPropagation();
         setShowDeleteBtn((prev) => !prev);
       }}
-      className={`sim-node ${selected ? "is-selected" : ""} relative w-[200px] rounded-[14px] bg-white select-none cursor-pointer transition-[box-shadow,border-color,transform] duration-200 ${isHovered && !selected ? "-translate-y-0.5" : ""}`}
+      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center transition-all select-none cursor-pointer ${
+        isHovered ? "z-[9999]" : "z-10"
+      } ${
+        selected ? "scale-105 shadow-lg border-gray-300 ring-2 ring-indigo-500/20" : "hover:shadow-md"
+      }`}
       style={{
-        border: `1px solid ${selected ? baseColor : isBottleneck ? "var(--color-error)" : health ? tint(health.color, 55) : "rgba(17,24,39,0.09)"}`,
-        boxShadow: shadows,
+        borderLeftColor: baseColor,
+        boxShadow: remoteShadow,
         zIndex: isHovered ? 9999 : selected ? 50 : 1,
       }}
     >
-      {/* ── Remote user presence ── */}
+      {/* ── Remote User Presence Pill / Editing Badge ── */}
       {primaryRemoteUser && (
         <div
-          className="absolute -top-3 left-3 px-2 py-0.5 rounded-full text-white text-[9.5px] font-bold shadow-sm flex items-center gap-1 pointer-events-none z-30"
+          className="absolute -top-3 left-2 px-2 py-0.5 rounded-full text-white text-[9.5px] font-bold shadow-sm flex items-center gap-1 pointer-events-none z-30 transition-all"
           style={{ backgroundColor: primaryRemoteUser.color }}
         >
           {isRemoteEditing && <span className="text-[9px]">✏️</span>}
           <span className="truncate max-w-[70px]">{primaryRemoteUser.name}</span>
-          {selectingUsers.length > 1 && <span className="opacity-80 text-[8.5px]">+{selectingUsers.length - 1}</span>}
+          {selectingUsers.length > 1 && (
+            <span className="opacity-80 text-[8.5px]">+{selectingUsers.length - 1}</span>
+          )}
         </div>
       )}
-
-      {/* ── Bottleneck tag (post-run) ── */}
-      {isBottleneck && !showDeleteBtn && (
-        <div className="absolute -top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-[var(--color-error)] border border-[color-mix(in_srgb,var(--color-error),white_35%)] px-2 py-0.5 text-[9.5px] font-bold text-white shadow-[0_4px_12px_-4px_rgba(217,70,63,0.6)] pointer-events-none">
-          <AlertCircle size={10} strokeWidth={3} /> Slowest step
-        </div>
-      )}
-
       {/* ── Hover details card ── */}
       <AnimatePresence>
         {isHovered && !showDeleteBtn && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.97 }}
-            transition={{ duration: 0.14, ease: "easeOut" }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-[9999] pointer-events-none w-64 rounded-2xl bg-white border border-gray-200/90 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.28)] text-left overflow-hidden"
-          >
-            <div className="px-3.5 pt-3 pb-2.5" style={{ background: `linear-gradient(180deg, ${tint(baseColor, 90)}, #fff)` }}>
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: tint(baseColor, 82), color: baseColor }}>
-                  <Icon size={13} strokeWidth={2.25} />
-                </span>
-                <span className="text-[12.5px] font-bold text-gray-900 truncate">{data.label}</span>
-                <span className="ml-auto shrink-0 text-[9px] font-extrabold uppercase tracking-wider" style={{ color: baseColor }}>{role}</span>
-              </div>
-              {description && <p className="mt-1.5 text-[11px] leading-snug text-gray-600">{description}.</p>}
-            </div>
-
-            <div className="px-3.5 py-2.5 space-y-1.5 border-t border-gray-100">
-              {specs.map((spec, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 text-[11px] leading-tight">
-                  <span className="text-gray-500">{spec.label}</span>
-                  <span className="text-gray-900 font-semibold truncate max-w-[140px]">{spec.value}</span>
-                </div>
-              ))}
-            </div>
-
-            {live && (
-              <div className="px-3.5 py-2.5 border-t border-gray-100 bg-gray-50/70">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                  <span>Right now</span>
-                  {health && <span style={{ color: health.color }}>{health.label}</span>}
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 text-center">
-                  {[
-                    ["Came in", liveStats.entitiesIn ?? 0],
-                    ["Went out", liveStats.entitiesOut ?? 0],
-                    [isCounter ? "Being served" : "Inside", depth],
-                  ].map(([k, v]) => (
-                    <div key={k as string} className="rounded-lg bg-white border border-gray-100 py-1">
-                      <div className="text-[13px] font-bold text-gray-900 tabular-nums">{v}</div>
-                      <div className="text-[9.5px] text-gray-500">{k}</div>
-                    </div>
-                  ))}
-                </div>
-                {isCounter && waitingNearby > 0 && (
-                  <p className="mt-1.5 text-[10.5px] text-gray-600"><b className="text-gray-900">{waitingNearby}</b> waiting for this counter</p>
-                )}
-                {(liveStats.avgWaitTime ?? 0) > 0 && (
-                  <p className="mt-1.5 text-[10.5px] text-gray-600">Average wait: <b className="text-gray-900">{liveStats.avgWaitTime.toFixed(1)}s</b></p>
-                )}
-              </div>
-            )}
-
-            {isBottleneck && (
-              <p className="px-3.5 py-2 border-t border-red-100 bg-red-50 text-[10.5px] leading-snug text-red-700">
-                <b>Things pile up here.</b> Try adding another counter or making this step faster.
-              </p>
-            )}
-            {needsConnection && !isBottleneck && (
-              <p className="px-3.5 py-2 border-t border-amber-100 bg-amber-50 text-[10.5px] leading-snug text-amber-800">
-                Drag from the dot on the {!isSource && !hasTargetConnection ? "left" : "right"} edge to connect this block.
-              </p>
-            )}
-
-            <div className="px-3.5 py-1.5 border-t border-gray-100 text-[10px] text-gray-400">Click to edit · Double-click to delete</div>
-          </motion.div>
+          <NodeHoverCard
+            id={id}
+            data={data}
+            nodeType={nodeType}
+            color={baseColor}
+            Icon={icon || null}
+            liveStats={liveStats}
+            isRunning={isRunning}
+            isBottleneck={isBottleneck}
+            entityName={simConfig.entityName || "Item"}
+            waitingNearby={(upstreamQueueDepth[id] ?? 0) + Math.max(0, (liveStats?.currentDepth ?? 0) - (Number(data.params?.capacity) || 1))}
+          />
         )}
       </AnimatePresence>
 
-      {/* ── Delete button (double-click) ── */}
+      {/* ── Circular Red X Delete Button on Double-Click ── */}
       {showDeleteBtn && (
         <button
           type="button"
@@ -787,91 +774,60 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
             setNodes((nds) => nds.filter((n) => n.id !== id));
             setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
           }}
-          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
+          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-115 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
           title="Delete block"
         >
           <X size={12} strokeWidth={3} />
         </button>
       )}
 
-      {/* ── Connection ports ── */}
+      {/* ── Target Handle (left) ── */}
       {!isSource && (
         <Handle
           type="target"
           position={Position.Left}
           id="target"
-          className={`sim-port ${hasTargetConnection ? "" : "is-open"}`}
-          style={{ ["--port" as string]: baseColor, background: hasTargetConnection ? baseColor : "#fff" }}
+          style={handleStyle(baseColor, hasTargetConnection)}
         />
       )}
+
+      {/* ── Source Handle (right) ── */}
       {!isSink && (
         <Handle
           type="source"
           position={Position.Right}
           id="source"
-          className={`sim-port ${hasSourceConnection ? "" : "is-open"}`}
-          style={{ ["--port" as string]: baseColor, background: hasSourceConnection ? baseColor : "#fff" }}
+          style={handleStyle(baseColor, hasSourceConnection)}
         />
       )}
 
-      <div className="relative flex items-center gap-3 pl-2.5 pr-3 py-2.5 pointer-events-none">
-        {/* Solid colour tile = block type at a glance */}
-        <div
-          className="relative w-10 h-10 rounded-[11px] flex items-center justify-center shrink-0 text-white"
-          style={{
-            background: `linear-gradient(145deg, ${tint(baseColor, 18)}, ${baseColor})`,
-            boxShadow: `0 6px 12px -6px ${baseColor}, inset 0 1px 0 rgba(255,255,255,0.28)`,
-          }}
-        >
-          <Icon size={18} strokeWidth={2.2} />
-          {(health || needsConnection) && (
-            <span
-              className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${health ? "animate-pulse" : ""}`}
-              style={{ background: health ? health.color : "#f59e0b" }}
-            />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h5 className="text-[13px] font-semibold text-[#161622] leading-tight truncate">{data.label}</h5>
-          <p className="mt-1 flex items-center gap-1.5 text-[11px] leading-none text-gray-500 truncate">
-            {live ? (
-              <>
-                {isCounter && <Dots total={capacity} filled={busy} color={health?.color || baseColor} max={5} />}
-                {health && <span className="font-semibold" style={{ color: health.color }}>{health.label}</span>}
-                <span className="truncate">
-                  {isCounter
-                    ? `· ${busy}/${capacity} serving`
-                    : nodeType === "queue" || nodeType === "store"
-                    ? `· ${depth} waiting`
-                    : nodeType === "source"
-                    ? `· ${liveStats.entitiesIn ?? 0} in`
-                    : nodeType === "sink"
-                    ? `· ${liveStats.entitiesOut ?? 0} done`
-                    : `· ${depth} inside`}
-                </span>
-              </>
-            ) : needsConnection ? (
-              <span className="text-amber-600 font-medium">Not connected yet</span>
-            ) : (
-              <span className="truncate">{summary}</span>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Live load meter — sits inside the bottom edge so the block never grows */}
-      {live && (isCounter || nodeType === "queue" || nodeType === "store") && (
-        <div className="absolute left-3 right-3 bottom-[5px] h-[3px] rounded-full bg-gray-100 overflow-hidden pointer-events-none">
-          <div
-            className="h-full w-full rounded-full origin-left transition-transform duration-500 ease-out"
-            style={{
-              background: health?.color || baseColor,
-              transform: `scaleX(${Math.min(1, isCounter ? utilPct / 100 : depth / queueCap)})`,
-            }}
-          />
+      {/* Bottleneck badge (Post-run) */}
+      {isBottleneck && !showDeleteBtn && (
+        <div className="absolute -top-2 -right-2 bg-error text-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm animate-pulse z-20">
+          <AlertCircle size={12} strokeWidth={3} />
         </div>
       )}
+
+      <div style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
+        {(() => {
+          const IconComponent = icon as any;
+          return IconComponent ? <IconComponent size={18} strokeWidth={2} /> : null;
+        })()}
+      </div>
+      <div className="pointer-events-none min-w-0 flex-1">
+        <h5 className="text-[11.5px] font-bold text-gray-900 leading-tight truncate">{data.label}</h5>
+        
+        {/* Static params or live stats */}
+        {statsBadge ? (
+          <p className="text-[9.5px] font-semibold mt-0.5 truncate" style={{ color: !isDimmed ? statusColor : "var(--color-text-secondary)" }}>
+            {statsBadge}
+          </p>
+        ) : (
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 leading-tight truncate">
+            {formatNodeFriendlySubtext(nodeType, data.params)}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -1254,7 +1210,7 @@ function NodeCanvasInner({
     return edges.map((e) => ({
       ...e,
       type: "simEdge", // one edge style everywhere; older AI-built graphs saved "smoothstep"
-      animated: false, // SimEdge draws its own flowing dots while running
+      animated: simState === "running",
     }));
   }, [edges, simState]);
 
@@ -1276,16 +1232,6 @@ function NodeCanvasInner({
         className="w-full h-full workspace-canvas relative"
       >
         <style dangerouslySetInnerHTML={{__html: `
-          .sim-node .react-flow__handle.sim-port {
-            width: 12px; height: 12px; border-radius: 9999px;
-            border: 2px solid var(--port); box-shadow: 0 0 0 3px #fff;
-            opacity: 0; transition: opacity .15s ease, transform .15s ease;
-          }
-          .sim-node:hover .sim-port, .sim-node.is-selected .sim-port, .sim-port.is-open,
-          .react-flow__handle.sim-port.connectingfrom, .react-flow__handle.sim-port.connectingto { opacity: 1; }
-          .sim-node .sim-port:hover, .react-flow__handle.sim-port.connectingto { transform: translate(var(--tw-tx, 0), -50%) scale(1.35); }
-          .sim-node .react-flow__handle-left.sim-port { --tw-tx: -50%; left: 0; }
-          .sim-node .react-flow__handle-right.sim-port { --tw-tx: 50%; right: 0; }
           @keyframes dashdraw {
             from { stroke-dashoffset: 10; }
             to { stroke-dashoffset: 0; }

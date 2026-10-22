@@ -1,0 +1,12 @@
+{
+  "name": "justcmul8-commercial",
+  "private": true,
+  "description": "60s commercial with soundtrack. Open scene.html to preview; `npm run audio` then `npm run render` for 4K60.",
+  "scripts": {
+    "icons": "node icons.mjs",
+    "audio": "node audio.js soundtrack.wav",
+    "stills": "node stills.js 2 7 12 16 21 25 29 32 36 39 44 47 50 53 56 58",
+    "render": "node audio.js soundtrack.wav && node render.js out/JustCmul8-Commercial-4K.mp4 60 2 6 0 60"
+  },
+  "dependencies": { "ffmpeg-static": "^5.2.0", "playwright": "1.57.0" }
+}
