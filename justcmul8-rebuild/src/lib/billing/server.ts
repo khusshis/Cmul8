@@ -45,8 +45,24 @@ export async function razorpay<T = RzpSubscription>(path: string, body?: Record<
     cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error?.description || `Razorpay error ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(data?.error?.description || `Razorpay error ${res.status}`), { status: res.status });
   return data as T;
+}
+
+/**
+ * Cancels at Razorpay. A subscription Razorpay rejects with 400/404 (unknown id, e.g. a mock id after
+ * a dev restart or on a real deploy, or one already cancelled/expired) is treated as cancelled, so a
+ * dead subscription can never block a user from cancelling or deleting their account.
+ */
+export async function cancelSubscription(id: string, atCycleEnd: boolean): Promise<RzpSubscription> {
+  try {
+    return await razorpay(`/subscriptions/${id}/cancel`, { cancel_at_cycle_end: atCycleEnd ? 1 : 0 });
+  } catch (err) {
+    const status = (err as { status?: number }).status;
+    if (status !== 400 && status !== 404) throw err;
+    console.warn("[billing] subscription already gone, treating as cancelled", id, (err as Error).message);
+    return { id, plan_id: "", status: "cancelled", start_at: null, current_end: null };
+  }
 }
 
 // ─── Mock: the same three subscription calls, kept in memory (survives dev hot reloads) ─
@@ -69,7 +85,7 @@ function mockRazorpay(path: string, body?: Record<string, unknown>): RzpSubscrip
   }
   const [, , id, action] = path.split("/"); // /subscriptions/:id[/cancel]
   const sub = mockSubs.get(id);
-  if (!sub) throw new Error("Mock Razorpay: unknown subscription (dev server restarted?)");
+  if (!sub) throw Object.assign(new Error("Mock Razorpay: unknown subscription (dev server restarted?)"), { status: 400 });
   if (action === "cancel") {
     if (!body?.cancel_at_cycle_end) sub.cancelled = true;
     return { ...sub, status: sub.cancelled ? "cancelled" : sub.status };

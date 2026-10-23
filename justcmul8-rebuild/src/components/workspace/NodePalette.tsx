@@ -45,14 +45,13 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
   const q = search.toLowerCase().trim();
 
   return (
-    <div className="w-[280px] border-r border-gray-100 bg-white h-full flex flex-col overflow-hidden shadow-[2px_0_12px_rgba(0,0,0,0.03)]">
+    // Tinted panel so the white block cards read as the draggable items and the header as a plain label.
+    <div className="w-full border-r border-[#E6E1FB] bg-[#F3F0FF] h-full flex flex-col overflow-hidden shadow-[2px_0_12px_rgba(0,0,0,0.03)]">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Plus size={13} strokeWidth={2.5} />
-          </div>
-          <h2 className="text-[14px] font-bold text-[#111827] tracking-tight">Block Palette</h2>
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#5742FF]/80">Block Palette</h2>
+          <p className="mt-0.5 text-[11px] font-medium text-[#64748b]">Drag a block onto the canvas</p>
         </div>
         <Tooltip label="Hide blocks" shortcut="[" align="end">
           <button onClick={onMinimize} aria-label="Hide blocks" className="p-1 hover:bg-gray-50 hover:text-gray-700 rounded-lg text-gray-400 transition-colors">
@@ -62,14 +61,14 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
       </div>
 
       {/* Search */}
-      <div className="px-3 py-2.5 border-b border-gray-100">
+      <div className="px-3 pb-2.5 border-b border-[#ECE9FB]">
         <div className="relative">
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search blocks..."
-            className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-gray-100 text-[12px] bg-[#fcfcfd] outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-50 transition-all text-[#111827] placeholder:text-gray-400 font-medium"
+            className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E7E3FF] text-[12px] bg-white outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-50 transition-all text-[#111827] placeholder:text-gray-400 font-medium"
           />
         </div>
       </div>
@@ -114,7 +113,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
                         draggable
                         onDragStart={(e) => onDragStart(e, n.type)}
                         onClick={() => onAddNode(n.type)}
-                        className={`p-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-[#fcfcfd] transition-colors group ${!isLast ? "border-b border-gray-100" : ""}`}
+                        className={`p-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-[#FAF9FF] transition-colors group ${!isLast ? "border-b border-gray-100" : ""}`}
                       >
                         {/* Icon Box */}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${theme.iconBg} ${theme.iconColor} group-hover:scale-105 transition-transform duration-200`}>
@@ -142,7 +141,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-gray-100 bg-white">
+      <div className="p-3 border-t border-[#ECE9FB]">
         <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors font-bold text-[12.5px] border border-indigo-100/60">
           <Plus size={14} strokeWidth={2.5} />
           Add Custom Block

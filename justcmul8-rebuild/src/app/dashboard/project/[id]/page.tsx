@@ -5,7 +5,7 @@ import Tooltip from "@/components/ui/Tooltip";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen, GitCompareArrows } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -63,10 +63,51 @@ const PANEL_EASE = "cubic-bezier(.32,.72,0,1)";
  * snaps once per toggle; the panel is absolutely positioned so it can slide
  * out over the canvas while the canvas resizes a single time.
  */
-function SidePanel({ side, open, width, animate, children }: { side: "left" | "right"; open: boolean; width: number; animate: boolean; children: React.ReactNode }) {
+// Side panels resize by dragging their inner edge (or arrow keys); double-click resets.
+const PANEL_SIZES = { left: { def: 280, min: 220, max: 440 }, right: { def: 330, min: 280, max: 560 } } as const;
+const clampPanel = (side: "left" | "right", w: number) => Math.round(Math.min(PANEL_SIZES[side].max, Math.max(PANEL_SIZES[side].min, w)));
+
+function SidePanel({ side, open, width, animate, onResize, children }: { side: "left" | "right"; open: boolean; width: number; animate: boolean; onResize: (w: number) => void; children: React.ReactNode }) {
   const off = side === "left" ? "-100%" : "100%";
+  const dir = side === "left" ? 1 : -1; // dragging toward the canvas grows the panel
+  const startDrag = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const x0 = e.clientX, w0 = width;
+    const move = (ev: PointerEvent) => onResize(clampPanel(side, w0 + (ev.clientX - x0) * dir));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
   return (
     <div className="relative h-full shrink-0 z-20" style={{ width: open ? width : 0 }}>
+      {open && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={`Resize ${side === "left" ? "block palette" : "side panel"}`}
+          aria-valuenow={width}
+          aria-valuemin={PANEL_SIZES[side].min}
+          aria-valuemax={PANEL_SIZES[side].max}
+          tabIndex={0}
+          onPointerDown={startDrag}
+          onDoubleClick={() => onResize(PANEL_SIZES[side].def)}
+          onKeyDown={(e) => {
+            const step = e.key === "ArrowRight" ? 16 : e.key === "ArrowLeft" ? -16 : 0;
+            if (step) { e.preventDefault(); onResize(clampPanel(side, width + step * dir)); }
+          }}
+          title="Drag (or use arrow keys) to resize • Double-click to reset"
+          className={`group absolute top-0 z-30 flex h-full w-3 cursor-col-resize items-center justify-center transition-colors hover:bg-[#5742FF]/10 focus-visible:bg-[#5742FF]/10 focus-visible:outline-none ${side === "left" ? "-right-1.5" : "-left-1.5"}`}
+        >
+          <div className="h-16 w-1 rounded-full bg-indigo-200/0 transition-all group-hover:h-24 group-hover:bg-[#5742FF] group-focus-visible:h-24 group-focus-visible:bg-[#5742FF]" />
+        </div>
+      )}
       <div
         inert={!open}
         aria-hidden={!open}
@@ -146,6 +187,8 @@ export default function WorkspacePage() {
   const [activeRightPanel, setActiveRightPanel] = useState<"ai" | "properties">("properties");
   const [paletteOpen, setPaletteOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [paletteWidth, setPaletteWidth] = useState<number>(PANEL_SIZES.left.def);
+  const [rightWidth, setRightWidth] = useState<number>(PANEL_SIZES.right.def);
   const [panelsReady, setPanelsReady] = useState(false);
 
   // Restore saved panel state before first paint, then enable animations so the restore doesn't animate.
@@ -154,6 +197,9 @@ export default function WorkspacePage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from localStorage; can't run during SSR render
       if (localStorage.getItem("ws.paletteOpen") === "0") setPaletteOpen(false);
       if (localStorage.getItem("ws.rightOpen") === "0") setRightOpen(false);
+      const lw = Number(localStorage.getItem("ws.paletteWidth")), rw = Number(localStorage.getItem("ws.rightWidth"));
+      if (lw) setPaletteWidth(clampPanel("left", lw));
+      if (rw) setRightWidth(clampPanel("right", rw));
     } catch {}
     const raf = requestAnimationFrame(() => setPanelsReady(true));
     return () => cancelAnimationFrame(raf);
@@ -163,8 +209,10 @@ export default function WorkspacePage() {
     try {
       localStorage.setItem("ws.paletteOpen", paletteOpen ? "1" : "0");
       localStorage.setItem("ws.rightOpen", rightOpen ? "1" : "0");
+      localStorage.setItem("ws.paletteWidth", String(paletteWidth));
+      localStorage.setItem("ws.rightWidth", String(rightWidth));
     } catch {}
-  }, [paletteOpen, rightOpen, panelsReady]);
+  }, [paletteOpen, rightOpen, paletteWidth, rightWidth, panelsReady]);
 
   // [ toggles the block palette, ] toggles the right panel.
   useEffect(() => {
@@ -1235,7 +1283,7 @@ export default function WorkspacePage() {
         )}
         
         {canEdit && (
-          <SidePanel side="left" open={paletteOpen} width={280} animate={panelsReady}>
+          <SidePanel side="left" open={paletteOpen} width={paletteWidth} onResize={setPaletteWidth} animate={panelsReady}>
             <NodePalette
               simType={project?.sim_type || "human_queue"}
               onAddNode={(type) => canvasRef.current?.addNode(type)}
@@ -1269,26 +1317,41 @@ export default function WorkspacePage() {
             readOnly={!canEdit}
           />
 
-          {/* Box-selected nodes can be sent straight into an A/B comparison. */}
+          {/* Box-selected nodes can be sent into an A/B comparison from a small corner button beside the zoom controls. */}
           {(() => {
             const selectedCount = nodes.filter((n) => n.selected).length;
             if (selectedCount === 0 || simState !== "idle") return null;
-            const send = (slot: "A" | "B") => {
+            const send = (slot: "A" | "B") => (e: React.MouseEvent) => {
+              (e.currentTarget.closest("details") as HTMLDetailsElement).open = false;
               setCompareSend({ slot, at: Date.now() });
               setMonteCarloOpen(true);
             };
             return (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 pl-4 rounded-full bg-white/95 backdrop-blur border border-indigo-100 shadow-[0_8px_30px_rgba(87,66,255,0.15)]">
-                <span className="text-[12px] font-bold text-gray-600 mr-1">
-                  {selectedCount} node{selectedCount > 1 ? "s" : ""} selected
-                </span>
-                <button onClick={() => send("A")} className="px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-[12px] font-extrabold border border-blue-200 transition-colors">
-                  Compare as A
-                </button>
-                <button onClick={() => send("B")} className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[12px] font-extrabold border border-emerald-200 transition-colors">
-                  Compare as B
-                </button>
-              </div>
+              <details className="group absolute bottom-[15px] left-[68px] z-20">
+                <summary
+                  title={`Compare ${selectedCount} selected block${selectedCount > 1 ? "s" : ""}`}
+                  aria-label="Compare selected blocks"
+                  className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-2xl border border-[#ecebf7] bg-white text-[#5742FF] shadow-[0_10px_28px_-12px_rgba(16,24,40,0.22)] transition-colors hover:bg-[#f5f3ff] group-open:bg-[#f5f3ff] [&::-webkit-details-marker]:hidden"
+                >
+                  <GitCompareArrows size={16} strokeWidth={2.2} />
+                  <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#5742FF] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                    {selectedCount}
+                  </span>
+                </summary>
+                <div className="absolute bottom-12 left-0 w-52 whitespace-nowrap rounded-2xl border border-[#ecebf7] bg-white p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.28)]">
+                  <p className="px-2.5 pb-1 pt-1.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                    Compare {selectedCount} block{selectedCount > 1 ? "s" : ""}
+                  </p>
+                  <button onClick={send("A")} className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100 text-[10px] font-extrabold text-blue-700">A</span>
+                    Load as scenario A
+                  </button>
+                  <button onClick={send("B")} className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[12.5px] font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-[10px] font-extrabold text-emerald-700">B</span>
+                    Load as scenario B
+                  </button>
+                </div>
+              </details>
             );
           })()}
 
@@ -1322,8 +1385,8 @@ export default function WorkspacePage() {
           )}
         </div>
 
-        <SidePanel side="right" open={rightOpen} width={330} animate={panelsReady}>
-        <div className="w-[330px] border-l border-gray-100 bg-[#fcfcfd] h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
+        <SidePanel side="right" open={rightOpen} width={rightWidth} onResize={setRightWidth} animate={panelsReady}>
+        <div className="w-full border-l border-gray-100 bg-[#fcfcfd] h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
           {/* Top Unified Header with Circular Pill Shaped Animated Tab Switcher */}
           <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between gap-2 shrink-0">
             <div className="flex bg-[#F1F2F6] p-1 rounded-full w-full border border-gray-200/60 relative">

@@ -396,9 +396,10 @@ export default function SimResultsPanel({
                       <p className="relative mt-1 line-clamp-2 text-[12px] leading-snug text-white/85">{topRec?.action || "The current setup keeps up with the arrival rate."}</p>
                       <button
                         onClick={onExpand}
-                        className="relative mt-auto inline-flex w-max items-center gap-1 pt-2.5 text-[12px] font-bold text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded"
+                        className="relative mt-auto flex w-full items-start gap-1 rounded pt-2.5 text-left text-[12px] font-bold text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                       >
-                        {topRec?.impact ? `Impact: ${topRec.impact}` : "See all suggestions"} <ArrowRight size={13} aria-hidden />
+                        <span className="line-clamp-2 min-w-0">{topRec?.impact ? `Impact: ${topRec.impact}` : "See all suggestions"}</span>
+                        <ArrowRight size={13} className="mt-0.5 shrink-0" aria-hidden />
                       </button>
                     </motion.div>
                   </div>

@@ -124,7 +124,7 @@ export default function ScenarioPane({
           onChange={(e) => onChange((s) => ({ ...s, name: e.target.value.slice(0, 40) }))}
           onBlur={(e) => !e.target.value.trim() && onChange((s) => ({ ...s, name: `Scenario ${letter}` }))}
           aria-label={`Name of scenario ${letter}`}
-          className={`${inputCls} h-8 min-w-0 max-w-[180px] flex-1 border-transparent px-1.5 font-black hover:border-gray-200`}
+          className={`${inputCls} h-8 min-w-0 flex-1 border-transparent px-1.5 font-black hover:border-gray-200`}
         />
         <details className="relative">
           <summary className={`${iconBtn} list-none [&::-webkit-details-marker]:hidden`} aria-label={`Colour of scenario ${letter}`} title="Colour">
@@ -175,7 +175,7 @@ export default function ScenarioPane({
 
       <div {...tabPanelProps(`pane-${scenario.id}`, view)} className={`m-3 mt-2.5 rounded-xl sm:m-4 sm:mt-2.5 ${focusRing}`}>
         {view === "canvas" && (
-          <div className="relative h-[340px] overflow-hidden rounded-xl border border-gray-100 bg-[#F9F8FD] sm:h-[400px]">
+          <div className="relative h-[300px] overflow-hidden rounded-xl border border-gray-100 bg-[#F9F8FD] sm:h-[320px]">
             <NodeCanvas
               ref={canvasRef}
               nodes={scenario.nodes}

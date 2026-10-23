@@ -290,12 +290,19 @@ export default function CompareTab(p: Props) {
           />
         ))}
         {canAdd && (
-          <div className={`${cardCls} flex min-h-[220px] flex-col items-center justify-center gap-3 border-dashed p-6 text-center`}>
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F3F1FF] text-[#5742FF]"><Plus size={22} aria-hidden /></span>
-            <p className="text-[13.5px] font-black text-gray-900">{scenarios.length === 0 ? "Add your first scenario" : `Add scenario ${SLOT_LETTERS[scenarios.length]}`}</p>
-            <p className="max-w-xs text-[12px] text-gray-500">
-              Up to {MAX_SCENARIOS}. Load the canvas (or the blocks you&apos;ve box-selected), duplicate the baseline and tweak its numbers, or pick one from your library.
-            </p>
+          // Big empty-slot card until there's a pair to compare; after that a slim full-width row so the grid has no hole.
+          <div className={scenarios.length < 2
+            ? `${cardCls} flex min-h-[220px] flex-col items-center justify-center gap-3 border-dashed p-6 text-center`
+            : `${cardCls} flex flex-wrap items-center gap-3 border-dashed px-4 py-3 xl:col-span-2`}>
+            <span className={`flex shrink-0 items-center justify-center rounded-2xl bg-[#F3F1FF] text-[#5742FF] ${scenarios.length < 2 ? "h-12 w-12" : "h-9 w-9"}`}><Plus size={scenarios.length < 2 ? 22 : 17} aria-hidden /></span>
+            <div className={scenarios.length < 2 ? "" : "min-w-0 flex-1"}>
+              <p className="text-[13.5px] font-black text-gray-900">{scenarios.length === 0 ? "Add your first scenario" : `Add scenario ${SLOT_LETTERS[scenarios.length]}`}</p>
+              <p className={`text-[12px] text-gray-500 ${scenarios.length < 2 ? "mx-auto mt-1 max-w-xs" : ""}`}>
+                {scenarios.length < 2
+                  ? <>Up to {MAX_SCENARIOS}. Load the canvas (or the blocks you&apos;ve box-selected), duplicate the baseline and tweak its numbers, or pick one from your library.</>
+                  : `Optional · up to ${MAX_SCENARIOS} scenarios side by side.`}
+              </p>
+            </div>
             <div className="flex flex-wrap justify-center gap-2">
               <button type="button" onClick={addFromCanvas} className={btnGhost}>
                 <Layers size={14} /> {selectionCount > 0 ? `Load ${selectionCount} selected` : "Load full canvas"}
@@ -410,10 +417,13 @@ export default function CompareTab(p: Props) {
 
       {comp && scoring && (
         <div className="space-y-3">
-          <div className="flex flex-wrap justify-end gap-1.5" role="group" aria-label="Export comparison">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-[15px] font-black text-gray-900">Comparison results</h3>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Export comparison">
             <button type="button" onClick={() => downloadFile(`${fileSlug(p.projectName)}-comparison.csv`, toCSV(rowsForCSV()), "text/csv")} className={btnGhost}><FileSpreadsheet size={14} /> CSV</button>
             <button type="button" onClick={async () => ((await copyText(summaryText())) ? toast.success("Summary copied.", "Copied") : toast.error("Your browser blocked clipboard access.", "Couldn't copy"))} className={btnGhost}><Copy size={14} /> Summary</button>
             <button type="button" onClick={() => downloadFile(`${fileSlug(p.projectName)}-comparison.md`, markdownReport(), "text/markdown")} className={btnGhost}><FileText size={14} /> Report (.md)</button>
+          </div>
           </div>
           <CompareResults comp={comp} meta={meta} ranked={scoring.ranked} winner={scoring.winner} visible={visible} letters={letters} entity={p.entity} runLength={runLength} />
         </div>

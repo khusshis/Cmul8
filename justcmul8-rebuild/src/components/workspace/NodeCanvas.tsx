@@ -4,7 +4,7 @@ import React, { useState, useCallback, createContext, useContext, useRef, useEff
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ReactFlow, ReactFlowProvider,
-  Background, Controls, MiniMap, addEdge, useReactFlow, useViewport,
+  Background, Controls, MiniMap, addEdge, useReactFlow, useViewport, useConnection, useStore,
   Handle, Position, BaseEdge, getBezierPath, getStraightPath, getSmoothStepPath, EdgeLabelRenderer,
   type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges, SelectionMode
 } from "@xyflow/react";
@@ -301,11 +301,12 @@ let clipboard: { nodes: Node[]; edges: Edge[]; pasteCount: number } | null = nul
 let activeCanvas: object | null = null;
 
 // ─── Handle style helper ──────────────────────────────────────────────────────
-function handleStyle(color: string, isConnected: boolean): React.CSSProperties {
+// Dots stay hidden until they're useful: on hover/select (drag from here) or while a link is being drawn (drop here).
+function handleStyle(color: string, isConnected: boolean, visible: boolean): React.CSSProperties {
   return {
-    opacity: 0, // Hidden visually but functional for connecting
-    width: 10,
-    height: 10,
+    opacity: visible ? 1 : 0,
+    width: 12,
+    height: 12,
     background: isConnected ? color : "var(--color-surface)",
     border: `2px solid ${color}`,
     borderRadius: "50%",
@@ -644,6 +645,9 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
   const liveStats = stats[id];
   const isBottleneck = bottleneckId === id;
   const isRunning = simState === "running";
+  const connectable = useStore((s) => s.nodesConnectable);
+  const linking = useConnection((c) => c.inProgress);
+  const showHandles = connectable && (isHovered || selected || linking);
 
   // Remote presence on this node
   const selectingUsers = remoteUsers.filter((u) => u.selectedNodeId === id || u.editingNodeId === id);
@@ -787,7 +791,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
           type="target"
           position={Position.Left}
           id="target"
-          style={handleStyle(baseColor, hasTargetConnection)}
+          style={handleStyle(baseColor, hasTargetConnection, showHandles)}
         />
       )}
 
@@ -797,7 +801,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
           type="source"
           position={Position.Right}
           id="source"
-          style={handleStyle(baseColor, hasSourceConnection)}
+          style={handleStyle(baseColor, hasSourceConnection, showHandles)}
         />
       )}
 
@@ -982,7 +986,7 @@ function NodeCanvasInner({
 }: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-  const { fitView, setNodes, setEdges, deleteElements } = useReactFlow();
+  const { fitView, setNodes, setEdges, deleteElements, setCenter, getZoom } = useReactFlow();
   const prevNodeCountRef = useRef(0);
   const cursorThrottleRef = useRef(false);
   const canvasKey = useRef({});
@@ -1060,15 +1064,12 @@ function NodeCanvasInner({
     if (!onBroadcastCursor || !reactFlowInstance || !reactFlowWrapper.current) return;
     if (cursorThrottleRef.current) return;
     cursorThrottleRef.current = true;
-    const bounds = reactFlowWrapper.current.getBoundingClientRect();
     const clientX = e.clientX;
     const clientY = e.clientY;
     requestAnimationFrame(() => {
       if (reactFlowInstance) {
-        const flowPos = reactFlowInstance.screenToFlowPosition({
-          x: clientX - bounds.left,
-          y: clientY - bounds.top,
-        });
+        // screenToFlowPosition takes viewport (client) coords and subtracts the canvas offset itself.
+        const flowPos = reactFlowInstance.screenToFlowPosition({ x: clientX, y: clientY });
         onBroadcastCursor(flowPos);
       }
       cursorThrottleRef.current = false;
@@ -1086,8 +1087,8 @@ function NodeCanvasInner({
       if (!reactFlowInstance) return;
       const bounds = reactFlowWrapper.current?.getBoundingClientRect();
       const centerScreen = {
-        x: (bounds?.width ?? 800) / 2,
-        y: (bounds?.height ?? 600) / 2,
+        x: (bounds?.left ?? 0) + (bounds?.width ?? 800) / 2,
+        y: (bounds?.top ?? 0) + (bounds?.height ?? 600) / 2,
       };
       const position = reactFlowInstance.screenToFlowPosition(centerScreen);
       const maxId = nodes.reduce((max, n) => {
@@ -1154,11 +1155,7 @@ function NodeCanvasInner({
     e.preventDefault();
     const nodeType = e.dataTransfer.getData("application/reactflow");
     if (!nodeType || !reactFlowInstance) return;
-    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
-    const position = reactFlowInstance.screenToFlowPosition({
-      x: e.clientX - (bounds?.left || 0),
-      y: e.clientY - (bounds?.top || 0),
-    });
+    const position = reactFlowInstance.screenToFlowPosition({ x: e.clientX, y: e.clientY });
     
     // Fallback to max ID number to prevent collisions
     const maxId = nodes.reduce((max, n) => {
@@ -1279,6 +1276,10 @@ function NodeCanvasInner({
               nodeBorderRadius={6}
               maskColor="rgba(245, 243, 255, 0.72)"
               className="jc-minimap"
+              // Drag the viewport box or click anywhere on the map to jump there.
+              pannable
+              zoomable
+              onClick={(_, pos) => setCenter(pos.x, pos.y, { zoom: getZoom(), duration: 400 })}
             />
           )}
           <RemoteCursorsOverlay remoteUsers={remoteUsers} wrapperRef={reactFlowWrapper} />

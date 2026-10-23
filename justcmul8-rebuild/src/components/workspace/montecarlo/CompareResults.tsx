@@ -183,7 +183,7 @@ function ForestRow({ metric, meta, comp, letters, delay }: { metric: MetricKey; 
   const pad = (hi - lo) * 0.06 || Math.max(1, Math.abs(hi) * 0.05);
   lo -= pad;
   hi += pad;
-  const ticks = niceTicks(lo, hi, 3).filter((v) => v >= lo && v <= hi);
+  const ticks = niceTicks(lo, hi, 3).filter((v, i, all) => v >= lo && v <= hi && all.findIndex((w) => meta.format(w) === meta.format(v)) === i);
   const Icon = meta.icon;
   const direction = comp.vsBaseline[Object.keys(comp.vsBaseline)[0]]?.find((m) => m.key === metric)?.direction;
   const betterNote = direction === "up" ? "Higher is better" : direction === "down" ? "Lower is better" : "Neither direction is automatically better";
@@ -193,12 +193,12 @@ function ForestRow({ metric, meta, comp, letters, delay }: { metric: MetricKey; 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: "easeOut" }}
-      className="relative grid gap-4 px-4 py-4 transition-colors last:rounded-b-[20px] focus-within:z-10 hover:z-10 hover:bg-[#FAF9FF] sm:px-5 md:grid-cols-[170px_1fr_250px] md:items-center"
+      className="relative grid gap-4 px-4 py-4 transition-colors last:rounded-b-[20px] focus-within:z-10 hover:z-10 hover:bg-[#FAF9FF] sm:px-5 md:grid-cols-[200px_1fr_250px] md:items-center"
     >
       <div>
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5742FF]/10 text-[#5742FF]"><Icon size={14} /></span>
-          <span className="text-[13px] font-black text-gray-900">{meta.label}</span>
+          <span className="text-[13px] font-black leading-tight text-gray-900">{meta.label}</span>
           <HelpTip text={meta.help} label={`About ${meta.label}`} align="start" />
         </div>
         <p className="mt-1 text-[11px] font-medium text-gray-500">{betterNote}</p>
@@ -214,7 +214,7 @@ function ForestRow({ metric, meta, comp, letters, delay }: { metric: MetricKey; 
         ))}
         <div className="relative ml-[28px] mr-[96px] h-3.5" aria-hidden>
           {ticks.map((v) => (
-            <span key={v} className="absolute -translate-x-1/2 text-[10px] text-gray-500 tabular-nums" style={{ left: `${((v - lo) / (hi - lo)) * 100}%` }}>{meta.format(v)}</span>
+            <span key={v} className="absolute -translate-x-1/2 whitespace-nowrap text-[10px] text-gray-500 tabular-nums" style={{ left: `${((v - lo) / (hi - lo)) * 100}%` }}>{meta.format(v)}</span>
           ))}
         </div>
       </div>

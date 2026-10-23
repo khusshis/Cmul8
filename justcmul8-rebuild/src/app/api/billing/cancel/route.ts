@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { adminClient, getBilling, isSubscriptionId, razorpay, syncSubscription } from "@/lib/billing/server";
+import { adminClient, cancelSubscription, getBilling, isSubscriptionId, syncSubscription } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
 
 // Trial: cancel now (no charge, back to Free). Paid: keep Pro until the period ends.
@@ -19,9 +19,9 @@ export async function POST() {
 
   const trialing = billing.status === "trialing";
   try {
-    const sub = await razorpay(`/subscriptions/${subId}/cancel`, { cancel_at_cycle_end: trialing ? 0 : 1 });
+    const sub = await cancelSubscription(subId, !trialing);
     const admin = adminClient();
-    if (trialing) await syncSubscription(admin, user.id, sub);
+    if (trialing || sub.status === "cancelled") await syncSubscription(admin, user.id, sub);
     else await admin.from("subscriptions").update({ cancel_at_period_end: true }).eq("user_id", user.id);
     return NextResponse.json(await getBilling(supabase));
   } catch (err) {

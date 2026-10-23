@@ -178,4 +178,10 @@ describe("POST /api/billing/cancel", () => {
     const { POST } = await import("@/app/api/billing/cancel/route");
     expect((await POST()).status).toBe(400);
   });
+  it("succeeds and downgrades when Razorpay no longer knows the subscription", async () => {
+    getBilling.mockResolvedValue({ plan: "pro", status: "active", razorpay_subscription_id: "sub_mock_gone" });
+    const { POST } = await import("@/app/api/billing/cancel/route");
+    expect((await POST()).status).toBe(200);
+    expect(syncSubscription).toHaveBeenCalledWith(expect.anything(), "u1", expect.objectContaining({ status: "cancelled" }));
+  });
 });

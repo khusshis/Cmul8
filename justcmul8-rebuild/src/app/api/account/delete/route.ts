@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { adminClient, isSubscriptionId, razorpay } from "@/lib/billing/server";
+import { adminClient, cancelSubscription, isSubscriptionId } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
 
 // Deleting an account is irreversible, so a stolen or forgotten-open session is
@@ -38,7 +38,7 @@ export async function POST() {
   const { data: sub } = await admin.from("subscriptions").select("plan, razorpay_subscription_id").eq("user_id", user.id).maybeSingle();
   if (sub && isSubscriptionId(sub.razorpay_subscription_id) && sub.plan !== "free") {
     try {
-      await razorpay(`/subscriptions/${sub.razorpay_subscription_id}/cancel`, { cancel_at_cycle_end: 0 });
+      await cancelSubscription(sub.razorpay_subscription_id, false);
     } catch (err) {
       console.error("[account/delete] subscription cancel failed", user.id, err);
       return NextResponse.json({ error: "Couldn't cancel your subscription; account not deleted. Please try again." }, { status: 502 });

@@ -123,10 +123,8 @@ export function resolveKpiMetrics(
         avg = sum / series.length;
         if (m.key === "utilization" || m.unit === "%") {
           displayValue = `${Math.round(avg)}%`;
-        } else if (m.unit === "ms" || m.unit === "s" || m.unit === "min") {
-          displayValue = `${avg.toFixed(1)} ${m.unit}`;
         } else {
-          displayValue = `${avg.toFixed(1)} ${m.unit}`;
+          displayValue = `${avg.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${m.unit}`;
         }
       }
     } else if (allNodeStats.length > 0) {

@@ -231,3 +231,14 @@ html::-webkit-scrollbar {
   overflow: hidden;
   box-shadow: 0 10px 28px -12px rgba(16, 24, 40, 0.22), 0 1px 2px rgba(16, 24, 40, 0.04);
 }
+.jc-minimap svg {
+  cursor: pointer;
+}
+/* Connection dots: a halo on hover and on the dot a link is about to snap to. */
+.workspace-canvas .react-flow__handle {
+  cursor: crosshair;
+}
+.workspace-canvas .react-flow__handle:hover,
+.workspace-canvas .react-flow__handle.connectingto {
+  box-shadow: 0 0 0 5px rgba(87, 66, 255, 0.18);
+}

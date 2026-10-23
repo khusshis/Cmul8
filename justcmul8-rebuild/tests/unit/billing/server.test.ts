@@ -10,7 +10,7 @@ vi.stubEnv("NODE_ENV", "development");
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "svc";
 
-const { hmacMatches, razorpay, planIdFor, syncSubscription, MOCK_RAZORPAY } = await import("@/lib/billing/server");
+const { hmacMatches, razorpay, cancelSubscription, planIdFor, syncSubscription, MOCK_RAZORPAY } = await import("@/lib/billing/server");
 
 describe("hmacMatches (webhook / checkout signature)", () => {
   const secret = "whsec";
@@ -41,6 +41,10 @@ describe("mock Razorpay REST", () => {
     const s = await razorpay("/subscriptions", { plan_id: planIdFor("yearly"), notes: {} });
     const c = await razorpay(`/subscriptions/${s.id}/cancel`, { cancel_at_cycle_end: 0 });
     expect(c.status).toBe("cancelled");
+  });
+  it("cancelSubscription treats a subscription Razorpay no longer knows as cancelled", async () => {
+    const c = await cancelSubscription("sub_mock_gone", false);
+    expect(c).toMatchObject({ id: "sub_mock_gone", status: "cancelled" });
   });
 });
 
