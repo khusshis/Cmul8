@@ -223,7 +223,7 @@ export default function StressTab(p: Props) {
             how sure we are about the average itself. It narrows as you add runs.
           </p>
         </div>
-        <p className="mt-3 rounded-xl bg-white/80 px-3 py-2 text-[12px] text-gray-500 ring-1 ring-indigo-100">
+        <p className="mt-3 rounded-xl bg-surface/80 px-3 py-2 text-[12px] text-gray-500 ring-1 ring-indigo-100">
           <b className="text-gray-700">Example:</b> run 1 serves 92 customers, run 2 serves 105, run 3 serves 98… After 20 runs the average is 99, 9 in 10 runs landed
           between 90 and 108, and we&apos;re 95% sure the true long-run average is between 97 and 101. Use <b>Customize</b> to add stress (busier days, slower staff),
           targets, and a breaking-point search.
@@ -235,7 +235,7 @@ export default function StressTab(p: Props) {
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <span className="text-[12.5px] font-extrabold text-gray-700">Runs</span>
           {settings.mode === "precise" ? (
-            <span className="rounded-xl bg-[#EFEDFF] px-3 py-1.5 text-[12px] font-black text-[#4331E0]">Until ±{settings.precisionPct}% precise · max {settings.maxRuns}</span>
+            <span className="rounded-xl bg-sf-efedff px-3 py-1.5 text-[12px] font-black text-fg-4331e0">Until ±{settings.precisionPct}% precise · max {settings.maxRuns}</span>
           ) : (
             <CountPicker label="Number of stress-test runs" value={settings.runs} options={[10, 20, 50, 100]} onChange={(runs) => update({ runs })} disabled={p.busy} custom={{ min: 5, max: MAX_RUNS }} />
           )}
@@ -244,7 +244,7 @@ export default function StressTab(p: Props) {
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <button type="button" onClick={() => setCustomizeOpen((o) => !o)} aria-expanded={customizeOpen} aria-controls="stress-customize" className={`${btnGhost} flex-1 justify-center sm:flex-none`}>
             <SlidersHorizontal size={14} /> Customize
-            {customCount > 0 && <span className="rounded-full bg-[#5742FF] px-1.5 text-[10.5px] font-black text-white tabular-nums">{customCount}</span>}
+            {customCount > 0 && <span className="rounded-full bg-sf-5742ff px-1.5 text-[10.5px] font-black text-white tabular-nums">{customCount}</span>}
           </button>
           <button type="button" onClick={handleRun} disabled={p.busy} className={`${btnPrimary} flex-1 sm:flex-none`}>
             <Play size={15} fill="currentColor" /> {mc ? "Run again" : settings.mode === "precise" ? "Run until precise" : `Run ${settings.runs} simulations`}
@@ -252,7 +252,7 @@ export default function StressTab(p: Props) {
         </div>
         {chips.length > 0 && (
           <ul className="flex w-full flex-wrap gap-1.5" aria-label="Active stress conditions">
-            {chips.map((c) => <li key={c} className="rounded-full bg-[#EFEDFF] px-2.5 py-0.5 text-[11px] font-bold text-[#4331E0] ring-1 ring-indigo-100">{c}</li>)}
+            {chips.map((c) => <li key={c} className="rounded-full bg-sf-efedff px-2.5 py-0.5 text-[11px] font-bold text-fg-4331e0 ring-1 ring-indigo-100">{c}</li>)}
           </ul>
         )}
         {p.otherBusyNote}

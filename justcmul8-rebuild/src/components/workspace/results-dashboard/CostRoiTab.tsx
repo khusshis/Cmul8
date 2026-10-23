@@ -11,9 +11,9 @@ import ChartTooltip from "@/components/ui/ChartTooltip";
 import { AXIS, GRID, axisLabel, fmtMoney, niceMaxFloat } from "@/components/ui/chartTheme";
 
 const COST_KINDS = [
-  { key: "Resource Cost", label: "Staff & machine time", color: "#5742FF" },
-  { key: "Holding Cost", label: "Holding inventory", color: "#E69F00" },
-  { key: "Waiting Penalty", label: "Waiting penalty", color: "#D55E00" },
+  { key: "Resource Cost", label: "Staff & machine time", color: "var(--color-sf-5742ff)" },
+  { key: "Holding Cost", label: "Holding inventory", color: "var(--color-sf-e69f00)" },
+  { key: "Waiting Penalty", label: "Waiting penalty", color: "var(--color-sf-d55e00)" },
 ] as const;
 
 const shortName = (s: string) => (s.length > 12 ? `${s.slice(0, 11)}…` : s);
@@ -25,7 +25,7 @@ export default function CostRoiTab({ result, simType }: { result: SimResult; sim
 
   if (!cost || cost.totalSystemCost === 0) {
     return (
-      <div className="rounded-[24px] border border-[#ECEBF7] bg-white shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
+      <div className="rounded-[24px] border border-ln-ecebf7 bg-surface shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
         <EmptyState
           icon={DollarSign}
           title="No costs set up yet"
@@ -36,7 +36,7 @@ export default function CostRoiTab({ result, simType }: { result: SimResult; sim
             </>
           }
           action={
-            <span className="inline-flex items-center gap-2 rounded-xl border border-[#E7E3FF] bg-[#F6F4FF] px-4 py-2 text-[12.5px] font-bold text-[#4331E0]">
+            <span className="inline-flex items-center gap-2 rounded-xl border border-ln-e7e3ff bg-sf-f6f4ff px-4 py-2 text-[12.5px] font-bold text-fg-4331e0">
               <ArrowUpRight size={14} aria-hidden /> Tip: click any block on the canvas to set its costs
             </span>
           }
@@ -142,40 +142,40 @@ export default function CostRoiTab({ result, simType }: { result: SimResult; sim
         </ResponsiveContainer>
       </ChartCard>
 
-      <section aria-labelledby="cost-table-title" className="overflow-hidden rounded-[22px] border border-[#ECEBF7] bg-white shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F1F0FA] p-4 sm:p-5">
-          <h3 id="cost-table-title" className="text-[14px] font-extrabold text-[#161622]">Station cost summary</h3>
+      <section aria-labelledby="cost-table-title" className="overflow-hidden rounded-[22px] border border-ln-ecebf7 bg-surface shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ln-f1f0fa p-4 sm:p-5">
+          <h3 id="cost-table-title" className="text-[14px] font-extrabold text-fg-161622">Station cost summary</h3>
           <span className="text-[12px] font-medium text-slate-600">Calculated from the simulated run</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-left text-[13px]">
             <thead>
-              <tr className="border-b border-[#F1F0FA] bg-[#FAF9FF] text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
+              <tr className="border-b border-ln-f1f0fa bg-sf-faf9ff text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
                 <th scope="col" className="px-4 py-3">Station</th>
                 <th scope="col" className="px-4 py-3 text-right">Staff & machines</th>
                 <th scope="col" className="px-4 py-3 text-right">Holding</th>
                 <th scope="col" className="px-4 py-3 text-right">Waiting penalty</th>
-                <th scope="col" className="px-4 py-3 text-right text-[#161622]">Total</th>
+                <th scope="col" className="px-4 py-3 text-right text-fg-161622">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F4F3FB]">
+            <tbody className="divide-y divide-ln-f4f3fb">
               {cost.breakdown.map((b) => (
-                <tr key={b.nodeId} className="transition-colors hover:bg-[#FAF9FF]">
-                  <th scope="row" className="px-4 py-3 font-bold text-[#161622]">{b.nodeLabel}</th>
+                <tr key={b.nodeId} className="transition-colors hover:bg-sf-faf9ff">
+                  <th scope="row" className="px-4 py-3 font-bold text-fg-161622">{b.nodeLabel}</th>
                   <td className="px-4 py-3 text-right font-medium tabular-nums text-slate-700">{b.resourceCost > 0 ? fmtMoney(b.resourceCost) : "—"}</td>
                   <td className="px-4 py-3 text-right font-medium tabular-nums text-amber-800">{b.holdingCost > 0 ? fmtMoney(b.holdingCost) : "—"}</td>
                   <td className="px-4 py-3 text-right font-medium tabular-nums text-orange-800">{b.waitingPenalty > 0 ? fmtMoney(b.waitingPenalty) : "—"}</td>
-                  <td className="px-4 py-3 text-right font-extrabold tabular-nums text-[#161622]">{fmtMoney(b.totalCost)}</td>
+                  <td className="px-4 py-3 text-right font-extrabold tabular-nums text-fg-161622">{fmtMoney(b.totalCost)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-[#ECEBF7] bg-[#FAF9FF] font-black text-[#161622]">
+              <tr className="border-t-2 border-ln-ecebf7 bg-sf-faf9ff font-black text-fg-161622">
                 <th scope="row" className="px-4 py-3 text-left">Total</th>
                 <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(totals.resource)}</td>
                 <td className="px-4 py-3 text-right tabular-nums text-amber-800">{fmtMoney(totals.holding)}</td>
                 <td className="px-4 py-3 text-right tabular-nums text-orange-800">{fmtMoney(totals.penalty)}</td>
-                <td className="px-4 py-3 text-right text-[14px] tabular-nums text-[#4331E0]">{fmtMoney(cost.totalSystemCost)}</td>
+                <td className="px-4 py-3 text-right text-[14px] tabular-nums text-fg-4331e0">{fmtMoney(cost.totalSystemCost)}</td>
               </tr>
             </tfoot>
           </table>

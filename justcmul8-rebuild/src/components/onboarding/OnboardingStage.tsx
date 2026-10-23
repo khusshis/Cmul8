@@ -4,7 +4,8 @@ import React, { useEffect } from "react";
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Briefcase, Building2, Check, ClipboardList, Coins, FlaskConical, GraduationCap, LineChart, Rocket, Wrench, Maximize2, MessageSquare, Minus, Plus, Sparkles, User, Users, Wand2, Zap } from "lucide-react";
 import { CubeMark, MARK_SRC, spring, EASE_OUT } from "@/components/brand/CubeMark";
-import { Diorama, TYPES as SCENES } from "@/components/landing/SimTypesSection";
+import { Diorama, TYPES as SCENES, tintFor } from "@/components/landing/SimTypesSection";
+import { useIsDark } from "@/components/ui/ThemeToggle";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { CREDIT_COSTS, PLAN_CREDITS, TRIAL_DAYS, type Interval } from "@/lib/billing/plans";
 
@@ -51,9 +52,9 @@ export function PillChoice<T extends string>({ id, options, value, onChange, ren
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
               transition={spring(20, 0.7)}
-              className={`relative rounded-full border px-4 py-2.5 text-[13.5px] font-semibold transition-colors ${on ? "border-transparent text-white" : "border-[#ecebf7] bg-white/80 text-[#334155] hover:border-[#d9d3fb]"}`}
+              className={`relative rounded-full border px-4 py-2.5 text-[13.5px] font-semibold transition-colors ${on ? "border-transparent text-white" : "border-ln-ecebf7 bg-surface/80 text-fg-334155 hover:border-ln-d9d3fb"}`}
             >
-              {on && <motion.span layoutId="pill" className="absolute inset-0 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
+              {on && <motion.span layoutId="pill" className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
               <span className="relative flex items-center gap-1.5">{render ? render(o, on) : o}</span>
             </motion.button>
           );
@@ -70,9 +71,9 @@ export function LineInput({ id, big, ...props }: React.InputHTMLAttributes<HTMLI
       <input
         id={id}
         {...props}
-        className={`w-full border-0 border-b-2 border-[#e7e5f6] bg-transparent pb-2 pt-1 font-space font-bold text-[#161622] outline-none placeholder:text-[#cfcde0] ${big ? "text-[24px] sm:text-[28px] tracking-[-0.02em]" : "text-[17px]"}`}
+        className={`w-full border-0 border-b-2 border-ln-e7e5f6 bg-transparent pb-2 pt-1 font-space font-bold text-fg-161622 outline-none placeholder:text-fg-cfcde0 dark:placeholder:text-white/25 ${big ? "text-[24px] sm:text-[28px] tracking-[-0.02em]" : "text-[17px]"}`}
       />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] transition-transform duration-500 ease-out group-focus-within:scale-x-100" />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff transition-transform duration-500 ease-out group-focus-within:scale-x-100" />
     </div>
   );
 }
@@ -126,7 +127,7 @@ export function FlowField({ pointer }: { pointer: Pointer }) {
         <g key={i}>
           <motion.path d={f.d} fill="none" stroke={f.c} strokeOpacity={0.12} strokeWidth={1.5} initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 2.2, ease: EASE_OUT, delay: 0.3 + i * 0.15 }} />
           {Array.from({ length: f.n }, (_, k) => (
-            <circle key={k} r={k % 2 ? 3 : 4.5} fill="#fff" stroke={f.c} strokeWidth={2} opacity={0.6}>
+            <circle key={k} r={k % 2 ? 3 : 4.5} fill="var(--color-sf-ffffff)" stroke={f.c} strokeWidth={2} opacity={0.6}>
               <animateMotion dur={`${f.dur}s`} begin={`${(-k * f.dur) / f.n}s`} repeatCount="indefinite" path={f.d} />
             </circle>
           ))}
@@ -140,10 +141,10 @@ export function FlowField({ pointer }: { pointer: Pointer }) {
 export function Ticker() {
   const examples = SCENES.flatMap((s) => s.examples.map((e) => ({ e, t: s })));
   return (
-    <div aria-hidden className="relative z-10 hidden h-10 shrink-0 items-center overflow-hidden border-t border-[#ecebf7]/80 bg-white/40 md:flex [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
+    <div aria-hidden className="relative z-10 hidden h-10 shrink-0 items-center overflow-hidden border-t border-ln-ecebf7/80 bg-white/40 dark:bg-surface/40 md:flex [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
       <div className="lp-marquee flex shrink-0 gap-8 pr-8" style={{ animationDuration: "60s" }}>
         {[...examples, ...examples].map(({ e, t }, i) => (
-          <span key={i} className="flex items-center gap-2 whitespace-nowrap text-[11.5px] font-semibold text-[#94a3b8]">
+          <span key={i} className="flex items-center gap-2 whitespace-nowrap text-[11.5px] font-semibold text-fg-94a3b8">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.color }} /> {e}
           </span>
         ))}
@@ -157,6 +158,7 @@ export function Ticker() {
 /** The steps drawn as a simulation flow: stations on a route, an entity travelling to where you are. */
 export function RouteProgress({ steps, step }: { steps: string[]; step: number }) {
   const W = 600;
+  const dark = useIsDark();
   const xs = steps.map((_, i) => 14 + (i * (W - 28)) / Math.max(1, steps.length - 1));
   const done = steps.length === 1 ? 1 : step / (steps.length - 1);
   return (
@@ -168,14 +170,14 @@ export function RouteProgress({ steps, step }: { steps: string[]; step: number }
             <stop offset="100%" stopColor="#5742FF" />
           </linearGradient>
         </defs>
-        <line x1={xs[0]} y1={14} x2={xs[xs.length - 1]} y2={14} stroke="#e2dff3" strokeWidth={3} strokeLinecap="round" strokeDasharray="2 7" />
+        <line x1={xs[0]} y1={14} x2={xs[xs.length - 1]} y2={14} stroke="var(--color-ln-e2dff3)" strokeWidth={3} strokeLinecap="round" strokeDasharray="2 7" />
         <motion.line
           x1={xs[0]} y1={14} x2={xs[xs.length - 1]} y2={14}
           stroke="url(#ob-route)" strokeWidth={3} strokeLinecap="round"
           initial={{ pathLength: 0 }} animate={{ pathLength: done }} transition={{ duration: 0.9, ease: EASE_IO }}
         />
         {step > 0 && (
-          <circle key={step} r={4} fill="#fff" stroke="#5742FF" strokeWidth={2.5}>
+          <circle key={step} r={4} fill="var(--color-sf-ffffff)" stroke="#5742FF" strokeWidth={2.5}>
             <animateMotion dur="1.8s" repeatCount="indefinite" path={`M${xs[0]} 14 H${xs[step]}`} keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines=".45 0 .55 1" />
           </circle>
         )}
@@ -190,8 +192,8 @@ export function RouteProgress({ steps, step }: { steps: string[]; step: number }
             <motion.circle
               cx={x} cy={14}
               initial={false}
-              animate={{ r: i === step ? 9 : 7, fill: i <= step ? "#5742FF" : "#ffffff" }}
-              stroke={i <= step ? "#5742FF" : "#d9d3fb"} strokeWidth={2.5}
+              animate={{ r: i === step ? 9 : 7, fill: i <= step ? "#5742FF" : dark ? "#1d1d25" : "#ffffff" }}
+              stroke={i <= step ? "#5742FF" : "var(--color-ln-d9d3fb)"} strokeWidth={2.5}
               transition={spring(16, 0.6)}
             />
           </g>
@@ -201,7 +203,7 @@ export function RouteProgress({ steps, step }: { steps: string[]; step: number }
         {steps.map((s, i) => (
           <span
             key={s}
-            className={`absolute whitespace-nowrap text-[11px] font-bold tracking-wide transition-colors duration-300 ${i <= step ? "text-[#5742FF]" : "text-[#94a3b8]"}`}
+            className={`absolute whitespace-nowrap text-[11px] font-bold tracking-wide transition-colors duration-300 ${i <= step ? "text-fg-5742ff" : "text-fg-94a3b8"}`}
             style={{ left: `${(xs[i] / W) * 100}%`, transform: i === 0 ? "none" : i === steps.length - 1 ? "translateX(-100%)" : "translateX(-50%)" }}
           >
             {s}
@@ -228,19 +230,19 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
   return (
     <div className="relative h-full w-full" style={{ perspective: 1600 }}>
       <motion.div
-        className="relative flex h-full w-full flex-col overflow-hidden rounded-[30px] border border-[#ecebf7] bg-white shadow-[0_50px_100px_-40px_rgba(87,66,255,.4),0_12px_30px_-16px_rgba(22,22,34,.12)]"
+        className="relative flex h-full w-full flex-col overflow-hidden rounded-[30px] border border-ln-ecebf7 bg-surface shadow-[0_50px_100px_-40px_rgba(87,66,255,.4),0_12px_30px_-16px_rgba(22,22,34,.12)]"
         style={{ rotateX: rx, rotateY: ry }}
         initial={{ opacity: 0, y: 40, rotate: -2, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
         transition={{ ...spring(9, 0.75, 0.25), opacity: { duration: 0.4, delay: 0.25 } }}
       >
         {/* Title bar */}
-        <div className="relative z-10 flex items-center justify-between border-b border-[#f1f0fa] px-5 py-3">
+        <div className="relative z-10 flex items-center justify-between border-b border-ln-f1f0fa px-5 py-3">
           <div className="flex min-w-0 items-center gap-1.5">
             {["#ff5f57", "#febc2e", "#28c840"].map((c) => <span key={c} className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c }} />)}
-            <span className="ml-3 shrink-0 text-[12px] font-semibold text-[#94a3b8]">workspace /</span>
+            <span className="ml-3 shrink-0 text-[12px] font-semibold text-fg-94a3b8">workspace /</span>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.span key={label} className="ml-1 truncate font-space text-[13px] font-bold text-[#161622]" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+              <motion.span key={label} className="ml-1 truncate font-space text-[13px] font-bold text-fg-161622" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
                 {label}
               </motion.span>
             </AnimatePresence>
@@ -255,7 +257,7 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
         </div>
 
         {/* Canvas */}
-        <div className="relative min-h-0 flex-1 bg-[#fcfcff]">
+        <div className="relative min-h-0 flex-1 bg-sf-fcfcff">
           <div aria-hidden className="absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(99,102,241,.18) 1.2px, transparent 1.7px)", backgroundSize: "22px 22px" }} />
 
           <AnimatePresence mode="wait" initial={false}>
@@ -272,7 +274,7 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
           </AnimatePresence>
 
           {/* Block palette (follows the chosen domain) */}
-          <div className="absolute left-3 top-1/2 hidden -translate-y-1/2 flex-col gap-1 rounded-2xl border border-[#ecebf7] bg-white p-1.5 shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] sm:flex">
+          <div className="absolute left-3 top-1/2 hidden -translate-y-1/2 flex-col gap-1 rounded-2xl border border-ln-ecebf7 bg-surface p-1.5 shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] sm:flex">
             <AnimatePresence mode="popLayout" initial={false}>
               {palette.map((p, i) => (
                 <motion.span
@@ -289,12 +291,12 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
           </div>
 
           {/* Zoom controls */}
-          <div className="absolute bottom-3 left-3 hidden flex-col overflow-hidden rounded-2xl border border-[#ecebf7] bg-white shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] sm:flex">
-            {[Plus, Minus, Maximize2].map((I, i) => <span key={i} className="flex h-7 w-7 items-center justify-center text-[#64748b]"><I size={13} /></span>)}
+          <div className="absolute bottom-3 left-3 hidden flex-col overflow-hidden rounded-2xl border border-ln-ecebf7 bg-surface shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] sm:flex">
+            {[Plus, Minus, Maximize2].map((I, i) => <span key={i} className="flex h-7 w-7 items-center justify-center text-fg-64748b"><I size={13} /></span>)}
           </div>
 
           {/* Minimap */}
-          <div className="absolute bottom-3 right-3 hidden h-[64px] w-[104px] overflow-hidden rounded-xl border border-[#ecebf7] bg-white shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] md:block">
+          <div className="absolute bottom-3 right-3 hidden h-[64px] w-[104px] overflow-hidden rounded-xl border border-ln-ecebf7 bg-surface shadow-[0_10px_28px_-12px_rgba(16,24,40,.22)] md:block">
             <AnimatePresence mode="wait" initial={false}>
               <motion.svg key={label} viewBox="0 0 104 64" className="h-full w-full" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.15 }} transition={{ duration: 0.3, ease: EASE_OUT }}>
                 <Minimap label={label} color={scene.color} />
@@ -305,12 +307,12 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
         </div>
 
         {/* Status bar: fills as the user answers */}
-        <div className="relative z-10 flex items-center gap-3 border-t border-[#f1f0fa] px-5 py-2.5">
-          <span className="whitespace-nowrap text-[11px] font-bold text-[#94a3b8]">{status}</span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f1f0fa]">
-            <motion.div className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF]" initial={false} animate={{ width: `${Math.round(progress * 100)}%` }} transition={spring(12, 0.9)} />
+        <div className="relative z-10 flex items-center gap-3 border-t border-ln-f1f0fa px-5 py-2.5">
+          <span className="whitespace-nowrap text-[11px] font-bold text-fg-94a3b8">{status}</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-sf-f1f0fa">
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff" initial={false} animate={{ width: `${Math.round(progress * 100)}%` }} transition={spring(12, 0.9)} />
           </div>
-          <span className="w-9 text-right font-mono text-[11px] font-bold tabular-nums text-[#5742FF]">{Math.round(progress * 100)}%</span>
+          <span className="w-9 text-right font-mono text-[11px] font-bold tabular-nums text-fg-5742ff">{Math.round(progress * 100)}%</span>
         </div>
       </motion.div>
     </div>
@@ -337,7 +339,7 @@ function Minimap({ label, color }: { label: string; color: string }) {
   );
   if (label === "your-plan" || label === "plan-and-credits") return (
     <>
-      <circle cx={52} cy={32} r={18} {...line} strokeWidth={4} stroke="#ecebf7" />
+      <circle cx={52} cy={32} r={18} {...line} strokeWidth={4} stroke="var(--color-ln-ecebf7)" />
       <circle cx={52} cy={32} r={18} fill="none" stroke="#5742FF" strokeWidth={4} strokeDasharray="80 113" transform="rotate(-90 52 32)" strokeLinecap="round" />
       {[[16, 14], [88, 14], [16, 50], [88, 50]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r={3} fill={color} opacity={0.5} />)}
     </>
@@ -368,15 +370,15 @@ function FieldRow({ icon: Icon, label, value, delay }: { icon: React.ElementType
   const filled = !!value;
   return (
     <motion.div className="flex items-center gap-2.5" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay }}>
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${filled ? "bg-[#f5f3ff] text-[#5742FF]" : "bg-[#f6f6fb] text-[#c4c2d6]"}`}>
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${filled ? "bg-sf-f5f3ff text-fg-5742ff" : "bg-sf-f6f6fb text-fg-c4c2d6 dark:text-white/30"}`}>
         <Icon size={13} strokeWidth={2.3} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#a1a1b5]">{label}</p>
+        <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-fg-a1a1b5">{label}</p>
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
             key={value || "empty"}
-            className={`truncate text-[12.5px] font-semibold ${filled ? "text-[#161622]" : "text-[#cfcde0]"}`}
+            className={`truncate text-[12.5px] font-semibold ${filled ? "text-fg-161622" : "text-fg-cfcde0 dark:text-white/30"}`}
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
           >
             {value || "Not set yet"}
@@ -398,11 +400,11 @@ function FieldRow({ icon: Icon, label, value, delay }: { icon: React.ElementType
 function ProfileCard({ name, role, company, teamSize }: { name: string; role: string; company: string; teamSize: string }) {
   return (
     <motion.div
-      className="relative rounded-[20px] border border-[#e6e2fb] bg-white p-3.5 shadow-[0_30px_60px_-24px_rgba(87,66,255,.5)]"
+      className="relative rounded-[20px] border border-ln-e6e2fb bg-surface p-3.5 shadow-[0_30px_60px_-24px_rgba(87,66,255,.5)]"
       initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={spring(12, 0.7, 0.05)}
     >
       <div className="flex items-center gap-2.5">
-        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#5742FF] font-space text-[14px] font-bold text-white">
+        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[14px] font-bold text-white">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span key={initialsOf(name)} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={spring(16, 0.7)}>
               {initialsOf(name)}
@@ -410,21 +412,21 @@ function ProfileCard({ name, role, company, teamSize }: { name: string; role: st
           </AnimatePresence>
         </span>
         <div className="min-w-0">
-          <p className={`truncate font-space text-[14.5px] font-bold leading-tight ${name.trim() ? "text-[#161622]" : "text-[#c4c2d6]"}`}>
-            {name.trim() || "Your name"}<span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#5742FF]" />
+          <p className={`truncate font-space text-[14.5px] font-bold leading-tight ${name.trim() ? "text-fg-161622" : "text-fg-c4c2d6 dark:text-white/30"}`}>
+            {name.trim() || "Your name"}<span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-sf-5742ff" />
           </p>
-          <p className="text-[10.5px] font-semibold text-[#94a3b8]">Builder · just joined</p>
+          <p className="text-[10.5px] font-semibold text-fg-94a3b8">Builder · just joined</p>
         </div>
       </div>
-      <div className="my-3 h-px bg-[#f1f0fa]" />
+      <div className="my-3 h-px bg-sf-f1f0fa" />
       <div className="space-y-2.5">
         <FieldRow icon={Briefcase} label="Role" value={role} delay={0.25} />
         <FieldRow icon={Building2} label="Company" value={company.trim()} delay={0.3} />
         <FieldRow icon={Users} label="Team" value={teamSize} delay={0.35} />
       </div>
       {/* Ports, exactly like a canvas block */}
-      <span className="absolute -left-[7px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#8b5cf6] shadow" />
-      <span className="absolute -right-[7px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#5742FF] shadow" />
+      <span className="absolute -left-[7px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[3px] border-surface bg-sf-8b5cf6 shadow" />
+      <span className="absolute -right-[7px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[3px] border-surface bg-sf-5742ff shadow" />
     </motion.div>
   );
 }
@@ -465,7 +467,7 @@ export function ProfileScene({ name, role, company, teamSize }: { name: string; 
           {inPaths.map((d, i) => (
             <g key={`${teamSize}-${i}`}>
               <motion.path d={d} fill="none" stroke="#c4bdfb" strokeWidth={2} strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 + i * 0.07 }} />
-              <circle r={3.5} fill={n === 0 ? "#8b5cf6" : AVATAR_COLORS[i % AVATAR_COLORS.length]} stroke="#fff" strokeWidth={1.5}>
+              <circle r={3.5} fill={n === 0 ? "#8b5cf6" : AVATAR_COLORS[i % AVATAR_COLORS.length]} stroke="var(--color-sf-ffffff)" strokeWidth={1.5}>
                 <animateMotion dur={`${1.8 + (i % 3) * 0.35}s`} begin={`${i * 0.25}s`} repeatCount="indefinite" path={d} />
               </circle>
             </g>
@@ -489,16 +491,16 @@ export function ProfileScene({ name, role, company, teamSize }: { name: string; 
             transition={{ ...spring(15, 0.6, 0.05 + i * 0.06), opacity: { duration: 0.2, delay: 0.05 + i * 0.06 } }}
           >
             {n === 0 ? (
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-[#c4bdfb] bg-white text-[#8b5cf6]"><User size={18} /></span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-ln-c4bdfb bg-surface text-fg-8b5cf6"><User size={18} /></span>
             ) : (
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-white text-white shadow-[0_8px_18px_-8px_rgba(60,50,160,.5)]" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-surface text-white shadow-[0_8px_18px_-8px_rgba(60,50,160,.5)]" style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
                 <User size={16} strokeWidth={2.5} />
               </span>
             )}
           </motion.div>
         ))}
-        <span className="absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.14em] text-[#a1a1b5]" style={pct(84, 200 + Math.max(1, n) * 31 + 22)}>
-          {n === 0 ? (teamSize ? "Solo" : "Team") : <>Team{TEAM_EXTRA[teamSize] && <span className="ml-1 rounded-full bg-[#f5f3ff] px-1.5 py-0.5 text-[#5742FF]">{TEAM_EXTRA[teamSize]}</span>}</>}
+        <span className="absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.14em] text-fg-a1a1b5" style={pct(84, 200 + Math.max(1, n) * 31 + 22)}>
+          {n === 0 ? (teamSize ? "Solo" : "Team") : <>Team{TEAM_EXTRA[teamSize] && <span className="ml-1 rounded-full bg-sf-f5f3ff px-1.5 py-0.5 text-fg-5742ff">{TEAM_EXTRA[teamSize]}</span>}</>}
         </span>
 
         {/* The user's own block */}
@@ -513,41 +515,41 @@ export function ProfileScene({ name, role, company, teamSize }: { name: string; 
           initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} transition={spring(14, 0.6, 0.45)}
         >
           <div className="lp-float-slow flex flex-col items-center">
-            <span className="relative flex h-16 w-16 items-center justify-center rounded-[20px] border border-[#e6e2fb] bg-white shadow-[0_20px_40px_-18px_rgba(87,66,255,.55)]">
-              <span className="lp-pulse absolute inset-0 rounded-[20px] border-2 border-[#5742FF]/30" />
+            <span className="relative flex h-16 w-16 items-center justify-center rounded-[20px] border border-ln-e6e2fb bg-surface shadow-[0_20px_40px_-18px_rgba(87,66,255,.55)]">
+              <span className="lp-pulse absolute inset-0 rounded-[20px] border-2 border-ln-5742ff/30" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MARK_SRC} alt="" className="h-9 w-auto" />
             </span>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#a1a1b5]">Workspace</span>
+            <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-fg-a1a1b5">Workspace</span>
           </div>
         </motion.div>
       </div>
 
       {/* Live run log */}
       <motion.div
-        className="hidden w-full max-w-[340px] rounded-2xl border border-[#ecebf7] bg-white/95 p-3 shadow-[0_14px_34px_-18px_rgba(60,50,160,.35)] sm:block"
+        className="hidden w-full max-w-[340px] rounded-2xl border border-ln-ecebf7 bg-surface/95 p-3 shadow-[0_14px_34px_-18px_rgba(60,50,160,.35)] sm:block"
         initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.85, 0.5)}
       >
-        <p className="mb-2 flex items-center justify-between text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#a1a1b5]">
-          Event log <span className="font-mono normal-case tracking-normal text-[#c4c2d6]">{events.length} events</span>
+        <p className="mb-2 flex items-center justify-between text-[9.5px] font-bold uppercase tracking-[0.14em] text-fg-a1a1b5">
+          Event log <span className="font-mono normal-case tracking-normal text-fg-c4c2d6 dark:text-white/35">{events.length} events</span>
         </p>
         <div className="space-y-1.5">
           <AnimatePresence initial={false}>
             {events.length === 0 && (
-              <motion.p key="idle" className="text-[11.5px] font-medium text-[#c4c2d6]" exit={{ opacity: 0 }}>Waiting for your first answer…</motion.p>
+              <motion.p key="idle" className="text-[11.5px] font-medium text-fg-c4c2d6 dark:text-white/35" exit={{ opacity: 0 }}>Waiting for your first answer…</motion.p>
             )}
             {events.map((e, i) => (
               <motion.div
                 key={e.k}
                 layout
-                className="flex items-center gap-2 text-[11.5px] text-[#475569] [&_b]:font-bold [&_b]:text-[#161622]"
+                className="flex items-center gap-2 text-[11.5px] text-fg-475569 [&_b]:font-bold [&_b]:text-fg-161622"
                 initial={{ opacity: 0, y: -10, scale: 0.96 }}
                 animate={{ opacity: i === 0 ? 1 : 0.6, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={spring(16, 0.8)}
               >
-                <span className="font-mono text-[10px] text-[#a1a1b5]">{e.t}</span>
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i === 0 ? "bg-[#5742FF]" : "bg-[#d9d3fb]"}`} />
+                <span className="font-mono text-[10px] text-fg-a1a1b5">{e.t}</span>
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i === 0 ? "bg-sf-5742ff" : "bg-sf-d9d3fb"}`} />
                 <span className="truncate">{e.text}</span>
               </motion.div>
             ))}
@@ -563,6 +565,7 @@ export function ProfileScene({ name, role, company, teamSize }: { name: string; 
 /** The domain they just picked, as the landing page's living isometric world. */
 export function WorldScene({ focus, selected }: { focus: string | null; selected: string[] }) {
   const t = sceneFor(focus ?? "human_queue");
+  const dark = useIsDark();
   return (
     <>
       <AnimatePresence mode="wait" initial={false}>
@@ -582,7 +585,7 @@ export function WorldScene({ focus, selected }: { focus: string | null; selected
 
       {!focus && (
         <motion.div className="absolute inset-0 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="rounded-full border border-[#ecebf7] bg-white px-4 py-2 text-[13px] font-bold text-[#5742FF] shadow-lg">
+          <div className="rounded-full border border-ln-ecebf7 bg-surface px-4 py-2 text-[13px] font-bold text-fg-5742ff shadow-lg">
             <Sparkles size={14} className="mr-1.5 inline" /> Pick a domain to bring it to life
           </div>
         </motion.div>
@@ -590,7 +593,7 @@ export function WorldScene({ focus, selected }: { focus: string | null; selected
 
       {/* Picked domains stack up as a dock */}
       <div className="absolute inset-x-0 bottom-3 flex justify-center">
-        <motion.div layout className="flex items-center gap-1.5 rounded-2xl border border-[#ecebf7] bg-white p-1.5 shadow-[0_12px_30px_-14px_rgba(60,50,160,.35)]">
+        <motion.div layout className="flex items-center gap-1.5 rounded-2xl border border-ln-ecebf7 bg-surface p-1.5 shadow-[0_12px_30px_-14px_rgba(60,50,160,.35)]">
           <AnimatePresence initial={false}>
             {selected.map((id, i) => {
               const s = sceneFor(id);
@@ -603,7 +606,7 @@ export function WorldScene({ focus, selected }: { focus: string | null; selected
                   exit={{ opacity: 0, scale: 0.4 }}
                   transition={spring(16, 0.6)}
                   className="relative flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-bold"
-                  style={{ background: id === focus ? s.color : s.tint, color: id === focus ? "#fff" : s.color }}
+                  style={{ background: id === focus ? s.color : tintFor(s, dark), color: id === focus ? "#fff" : s.color }}
                 >
                   <s.icon size={15} strokeWidth={2.3} />
                   {i === 0 && <span className="hidden sm:inline">Default</span>}
@@ -611,7 +614,7 @@ export function WorldScene({ focus, selected }: { focus: string | null; selected
               );
             })}
           </AnimatePresence>
-          {selected.length === 0 && <span className="px-3 py-2 text-[11px] font-bold text-[#b4b2c8]">Your domains appear here</span>}
+          {selected.length === 0 && <span className="px-3 py-2 text-[11px] font-bold text-fg-b4b2c8 dark:text-white/35">Your domains appear here</span>}
         </motion.div>
       </div>
     </>
@@ -637,6 +640,8 @@ const ORBIT = [
 ];
 
 /** Monthly credits as a charging gauge, with what each action costs orbiting it. */
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interval: Interval }) {
   const credits = PLAN_CREDITS[plan];
   const text = useCountTo(credits);
@@ -644,6 +649,7 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
   const R = 96, C = 2 * Math.PI * R;
   const fill = credits / PLAN_CREDITS.pro;
   const TICKS = 60;
+  const dark = useIsDark();
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-4 pb-16 pt-4">
       <div className="relative aspect-square w-[min(340px,100%)] max-h-full">
@@ -671,16 +677,17 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
             return (
               <motion.line
                 key={i}
-                x1={150 + Math.cos(a) * 128} y1={150 + Math.sin(a) * 128}
-                x2={150 + Math.cos(a) * (long ? 118 : 122)} y2={150 + Math.sin(a) * (long ? 118 : 122)}
+                // Rounded: server and browser trig differ in the last digit, which broke hydration.
+                x1={r2(150 + Math.cos(a) * 128)} y1={r2(150 + Math.sin(a) * 128)}
+                x2={r2(150 + Math.cos(a) * (long ? 118 : 122))} y2={r2(150 + Math.sin(a) * (long ? 118 : 122))}
                 strokeWidth={long ? 2.5 : 1.5} strokeLinecap="round"
                 initial={false}
-                animate={{ stroke: on ? "#5742FF" : "#e4e1f3" }}
+                animate={{ stroke: on ? "#5742FF" : dark ? "#34314a" : "#e4e1f3" }}
                 transition={{ duration: 0.25, delay: on ? (i / TICKS) * 0.9 : 0 }}
               />
             );
           })}
-          <circle cx={150} cy={150} r={R} fill="#fff" stroke="#f1f0fa" strokeWidth={14} />
+          <circle cx={150} cy={150} r={R} fill="var(--color-sf-ffffff)" stroke="var(--color-ln-f1f0fa)" strokeWidth={14} />
           <motion.circle
             cx={150} cy={150} r={R} fill="none" stroke="url(#ob-gauge)" strokeWidth={14} strokeLinecap="round"
             strokeDasharray={C} transform="rotate(-90 150 150)"
@@ -691,9 +698,9 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="flex items-center gap-1 text-[10px] font-bold tracking-[0.14em] text-[#94a3b8]"><Coins size={11} /> CREDITS</span>
-          <motion.span className="mt-1 font-space text-[56px] font-bold leading-none tracking-[-0.04em] tabular-nums text-[#161622]">{text}</motion.span>
-          <span className="mt-1 text-[11px] font-semibold text-[#94a3b8]">every month</span>
+          <span className="flex items-center gap-1 text-[10px] font-bold tracking-[0.14em] text-fg-94a3b8"><Coins size={11} /> CREDITS</span>
+          <motion.span className="mt-1 font-space text-[56px] font-bold leading-none tracking-[-0.04em] tabular-nums text-fg-161622">{text}</motion.span>
+          <span className="mt-1 text-[11px] font-semibold text-fg-94a3b8">every month</span>
         </div>
 
         {/* What things cost, slowly orbiting outside the dial (chips counter-spin to stay upright) */}
@@ -705,11 +712,11 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
                 <div className="lp-spin" style={{ animationDuration: "60s", animationDirection: "reverse" }}>
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={spring(14, 0.6, 0.3 + i * 0.08)}
-                    className="flex items-center gap-1.5 rounded-full border border-[#ecebf7] bg-white py-1 pl-1 pr-2.5 shadow-[0_10px_24px_-12px_rgba(60,50,160,.4)]"
+                    className="flex items-center gap-1.5 rounded-full border border-ln-ecebf7 bg-surface py-1 pl-1 pr-2.5 shadow-[0_10px_24px_-12px_rgba(60,50,160,.4)]"
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f5f3ff] text-[#5742FF]"><o.icon size={12} strokeWidth={2.5} /></span>
-                    <span className="whitespace-nowrap text-[10.5px] font-bold text-[#334155]">{o.label}</span>
-                    <span className="text-[10.5px] font-bold text-[#5742FF]">{o.cost}</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sf-f5f3ff text-fg-5742ff"><o.icon size={12} strokeWidth={2.5} /></span>
+                    <span className="whitespace-nowrap text-[10.5px] font-bold text-fg-334155">{o.label}</span>
+                    <span className="text-[10.5px] font-bold text-fg-5742ff">{o.cost}</span>
                   </motion.div>
                 </div>
               </div>
@@ -722,15 +729,15 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
             key={`${plan}-${interval}`}
-            className={`rounded-full px-3 py-1 text-[11px] font-bold ${pro ? "bg-[#5742FF] text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" : "bg-[#f5f3ff] text-[#5742FF]"}`}
+            className={`rounded-full px-3 py-1 text-[11px] font-bold ${pro ? "bg-sf-5742ff text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" : "bg-sf-f5f3ff text-fg-5742ff"}`}
             initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }} transition={spring(16, 0.7)}
           >
             {pro ? `Pro · ${TRIAL_DAYS}-day free trial · billed ${interval}` : "Free plan · free forever"}
           </motion.span>
         </AnimatePresence>
-        <p className="text-center text-[12.5px] font-medium text-[#64748b]">
-          Enough for <b className="text-[#161622]">{Math.floor(credits / CREDIT_COSTS.create_simulation)} new simulations</b> or{" "}
-          <b className="text-[#161622]">{Math.floor(credits / CREDIT_COSTS.ai_optimize)} AI optimizations</b> a month. Running them is always free.
+        <p className="text-center text-[12.5px] font-medium text-fg-64748b">
+          Enough for <b className="text-fg-161622">{Math.floor(credits / CREDIT_COSTS.create_simulation)} new simulations</b> or{" "}
+          <b className="text-fg-161622">{Math.floor(credits / CREDIT_COSTS.ai_optimize)} AI optimizations</b> a month. Running them is always free.
         </p>
       </div>
     </div>
@@ -744,7 +751,7 @@ export function LaunchOverlay({ name, lines }: { name: string; lines: string[] }
   const first = name.trim().split(/\s+/)[0] || "there";
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#7a67ff] via-[#5742FF] to-[#3b2bd1]"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-br from-sf-7a67ff via-sf-5742ff to-sf-3b2bd1"
       initial={{ clipPath: "circle(0% at 50% 60%)" }}
       animate={{ clipPath: "circle(150% at 50% 60%)" }}
       transition={{ duration: 0.9, ease: EASE_IO }}
@@ -757,14 +764,14 @@ export function LaunchOverlay({ name, lines }: { name: string; lines: string[] }
         <motion.span
           key={i}
           aria-hidden
-          className="absolute h-[2px] rounded-full bg-gradient-to-r from-transparent via-white/70 to-transparent"
+          className="absolute h-[2px] rounded-full bg-gradient-to-r from-transparent via-surface/70 dark:via-white/50 to-transparent"
           style={{ top: `${6 + i * 6.5}%`, width: `${18 + (i % 4) * 8}%`, left: "-30%" }}
           animate={{ x: ["0vw", "160vw"] }}
           transition={{ duration: 1.4 + (i % 5) * 0.25, delay: 0.4 + (i % 7) * 0.12, repeat: Infinity, ease: "easeIn" }}
         />
       ))}
       <div className="relative flex flex-col items-center px-6 text-center text-white">
-        <motion.div className="rounded-[26px] bg-white p-4 shadow-[0_30px_60px_-20px_rgba(0,0,0,.45)]" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={spring(12, 0.6, 0.45)}>
+        <motion.div className="rounded-[26px] bg-surface p-4 shadow-[0_30px_60px_-20px_rgba(0,0,0,.45)]" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={spring(12, 0.6, 0.45)}>
           <CubeMark mode="breathe" delay={0.5} className="w-14" />
         </motion.div>
         <h1 className="mt-7 font-space text-[2.4rem] font-bold leading-[1.05] tracking-[-0.035em] sm:text-[3.4rem]">
@@ -779,7 +786,7 @@ export function LaunchOverlay({ name, lines }: { name: string; lines: string[] }
         <ul className="mt-7 space-y-2.5 text-left">
           {lines.map((l, i) => (
             <motion.li key={l} className="flex items-center gap-2.5 text-[14.5px] font-semibold text-white/90" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 1.05 + i * 0.32 }}>
-              <motion.span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#5742FF]" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring(18, 0.5, 1.2 + i * 0.32)}>
+              <motion.span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface text-fg-5742ff" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring(18, 0.5, 1.2 + i * 0.32)}>
                 <Check size={12} strokeWidth={3.5} />
               </motion.span>
               {l}

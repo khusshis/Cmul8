@@ -54,7 +54,7 @@ function StressTestResults({ mc, meta, entity, runLength, conditions, targets, p
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         aria-label="Risk summary"
-        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#5742FF] via-[#6A4CFF] to-[#8B5CF6] p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
+        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-sf-5742ff via-sf-6a4cff to-sf-8b5cf6 p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
       >
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
         <div className="relative grid gap-5 md:grid-cols-[1.4fr_1fr]">
@@ -144,7 +144,7 @@ function StressTestResults({ mc, meta, entity, runLength, conditions, targets, p
             legend={[
               { label: "Runs in range", color: BRAND },
               { label: "Average", color: BRAND, dashed: false },
-              { label: `${band} (middle ${middle}% of runs)`, color: "#9CA3AF", dashed: true },
+              { label: `${band} (middle ${middle}% of runs)`, color: "var(--color-ln-9ca3af)", dashed: true },
               ...(selTarget ? [{ label: `Target ${selTarget.op === "max" ? "≤" : "≥"} ${m.format(selTarget.value)}`, color: FAIL_COLOR, dashed: true }] : []),
             ]}
           >
@@ -179,8 +179,8 @@ function Chip({ icon: Icon, children }: { icon: React.ElementType; children: Rea
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-[18px] border border-indigo-100 bg-[#F4F2FF] px-4 py-3 text-[12.5px] font-medium text-indigo-950/80">
-      <Sparkles size={15} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+    <div className="flex items-start gap-3 rounded-[18px] border border-indigo-100 bg-sf-f4f2ff px-4 py-3 text-[12.5px] font-medium text-indigo-950/80">
+      <Sparkles size={15} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
       <p>{children}</p>
     </div>
   );
@@ -203,18 +203,18 @@ function MetricTile({ stat, meta, active, onSelect, delay, target, share, pinned
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: "easeOut" }}
-      className={`group relative rounded-[20px] border bg-white p-4 transition-all focus-within:z-20 hover:z-20 motion-reduce:transition-none ${
+      className={`group relative rounded-[20px] border bg-surface p-4 transition-all focus-within:z-20 hover:z-20 motion-reduce:transition-none ${
         active
-          ? "border-[#5742FF]/50 shadow-[0_10px_28px_-10px_rgba(87,66,255,0.45)]"
-          : "border-[#ECEBF7] shadow-[0_4px_20px_-8px_rgba(87,66,255,0.10)] hover:-translate-y-0.5 hover:border-indigo-200 motion-reduce:hover:translate-y-0"
+          ? "border-ln-5742ff/50 shadow-[0_10px_28px_-10px_rgba(87,66,255,0.45)]"
+          : "border-ln-ecebf7 shadow-[0_4px_20px_-8px_rgba(87,66,255,0.10)] hover:-translate-y-0.5 hover:border-indigo-200 motion-reduce:hover:translate-y-0"
       }`}
     >
-      <div aria-hidden className={`pointer-events-none absolute inset-0 rounded-[20px] bg-gradient-to-br from-[#5742FF]/[0.06] to-transparent transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
+      <div aria-hidden className={`pointer-events-none absolute inset-0 rounded-[20px] bg-gradient-to-br from-sf-5742ff/[0.06] to-transparent transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
       {/* Whole card selects the chart metric; the (i) sits above it. */}
       <button type="button" onClick={onSelect} aria-pressed={active} aria-label={`Show distribution of ${meta.label}`} className={`absolute inset-0 z-0 rounded-[20px] ${focusRing}`} />
       <div className="pointer-events-none relative">
         <div className="flex items-center gap-2">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${active ? "bg-[#5742FF] text-white" : "bg-[#5742FF]/10 text-[#5742FF]"}`}>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${active ? "bg-sf-5742ff text-white" : "bg-sf-5742ff/10 text-fg-5742ff"}`}>
             <Icon size={14} />
           </span>
           <span className="min-w-0 flex-1 truncate text-[11px] font-black uppercase tracking-wider text-gray-500">{meta.label}</span>
@@ -223,7 +223,7 @@ function MetricTile({ stat, meta, active, onSelect, delay, target, share, pinned
           </span>
         </div>
         <p className="mt-3 text-[26px] font-black leading-none tracking-tight text-gray-900 tabular-nums">{meta.format(stat.mean)}</p>
-        <p className="mt-1.5 text-[11.5px] font-bold text-[#4331E0] tabular-nums">
+        <p className="mt-1.5 text-[11.5px] font-bold text-fg-4331e0 tabular-nums">
           {levelText(stat.level)} band {meta.format(stat.ciLower)} – {meta.format(stat.ciUpper)}
           {stat.ciClamped && <span title={`Band cut at the limit: this metric ${meta.boundNote}.`}>*</span>}
         </p>
@@ -234,12 +234,12 @@ function MetricTile({ stat, meta, active, onSelect, delay, target, share, pinned
           {riskBandLabel(stat.riskQ)} of runs: {meta.format(stat.bandLo)} – {meta.format(stat.bandHi)}
         </p>
         {target && share !== undefined && (
-          <p className="mt-1 text-[11px] font-bold tabular-nums" style={{ color: share >= 0.9 ? PASS_COLOR : share >= 0.5 ? "#B45309" : FAIL_COLOR }}>
+          <p className="mt-1 text-[11px] font-bold tabular-nums" style={{ color: share >= 0.9 ? PASS_COLOR : share >= 0.5 ? "var(--color-fg-b45309)" : FAIL_COLOR }}>
             {target.op === "max" ? "≤" : "≥"} {meta.format(target.value)} in {pctText(share)} of runs
           </p>
         )}
         {vs && (
-          <p className={`mt-1 text-[11px] font-bold tabular-nums ${vs.significant ? "text-[#4331E0]" : "text-gray-500"}`}>
+          <p className={`mt-1 text-[11px] font-bold tabular-nums ${vs.significant ? "text-fg-4331e0" : "text-gray-500"}`}>
             vs pinned: {deltaText(vs.diff, vs.pct, meta)} · {vs.significant ? "real change" : "within noise"}
           </p>
         )}
@@ -299,21 +299,21 @@ function Histogram({ stat, meta, target }: { stat: RunStatistic; meta: MetricMet
         <svg width={width} height={H} role="img" aria-label={summary} className="overflow-visible">
           <defs>
             <linearGradient id="mc-hist" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8B7DFF" />
+              <stop offset="0%" stopColor="var(--color-sf-8b7dff)" />
               <stop offset="100%" stopColor={BRAND} />
             </linearGradient>
             <pattern id="mc-fail" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <rect width="6" height="6" fill={FAIL_COLOR} fillOpacity={0.75} />
-              <line x1="0" y1="0" x2="0" y2="6" stroke="#fff" strokeOpacity={0.5} strokeWidth="2" />
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--color-sf-ffffff)" strokeOpacity={0.5} strokeWidth="2" />
             </pattern>
           </defs>
           {yTicks.map((v) => (
             <g key={v}>
-              <line x1={PAD.l} x2={width - PAD.r} y1={y(v)} y2={y(v)} stroke="#ECEBF7" strokeDasharray="3 6" />
-              <text x={PAD.l - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-slate-500 text-[10.5px] font-semibold tabular-nums">{v}</text>
+              <line x1={PAD.l} x2={width - PAD.r} y1={y(v)} y2={y(v)} stroke="var(--color-ln-ecebf7)" strokeDasharray="3 6" />
+              <text x={PAD.l - 8} y={y(v)} dy="0.32em" textAnchor="end" fill="var(--color-fg-64748b)" className="text-[10.5px] font-semibold tabular-nums">{v}</text>
             </g>
           ))}
-          <text x={PAD.l - 8} y={PAD.t - 12} textAnchor="end" className="fill-slate-500 text-[10px] font-bold">runs</text>
+          <text x={PAD.l - 8} y={PAD.t - 12} textAnchor="end" fill="var(--color-fg-64748b)" className="text-[10px] font-bold">runs</text>
           {target && (
             <rect
               x={target.op === "max" ? x(target.value) : PAD.l}
@@ -339,8 +339,8 @@ function Histogram({ stat, meta, target }: { stat: RunStatistic; meta: MetricMet
           })}
           {[stat.bandLo, stat.bandHi].map((v, i) => (
             <g key={i}>
-              <line x1={x(v)} x2={x(v)} y1={PAD.t} y2={PAD.t + ih} stroke="#9CA3AF" strokeDasharray="3 3" />
-              <text x={x(v)} y={PAD.t - 4} textAnchor="middle" className="fill-slate-500 text-[9.5px] font-bold">
+              <line x1={x(v)} x2={x(v)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--color-ln-9ca3af)" strokeDasharray="3 3" />
+              <text x={x(v)} y={PAD.t - 4} textAnchor="middle" fill="var(--color-fg-64748b)" className="text-[9.5px] font-bold">
                 {i === 0 ? `P${Math.round(stat.riskQ * 100)}` : `P${Math.round((1 - stat.riskQ) * 100)}`}
               </text>
             </g>
@@ -349,17 +349,17 @@ function Histogram({ stat, meta, target }: { stat: RunStatistic; meta: MetricMet
           <line x1={meanX} x2={meanX} y1={PAD.t - 6} y2={PAD.t + ih} stroke={BRAND} strokeWidth={2} />
           <g transform={`translate(${Math.min(Math.max(meanX, PAD.l + labelW / 2), width - PAD.r - labelW / 2)},${PAD.t - 16})`}>
             <rect x={-labelW / 2} y={-9} width={labelW} height={18} rx={9} fill={BRAND} />
-            <text textAnchor="middle" dy="0.34em" className="fill-white text-[10.5px] font-black tabular-nums">avg {meta.format(stat.mean)}</text>
+            <text textAnchor="middle" dy="0.34em" fill="#fff" className="text-[10.5px] font-black tabular-nums">avg {meta.format(stat.mean)}</text>
           </g>
-          <line x1={PAD.l} x2={width - PAD.r} y1={PAD.t + ih} y2={PAD.t + ih} stroke="#D1D5DB" />
+          <line x1={PAD.l} x2={width - PAD.r} y1={PAD.t + ih} y2={PAD.t + ih} stroke="var(--color-ln-d1d5db)" />
           {xTicks.map((v) => (
-            <text key={v} x={x(v)} y={H - 10} textAnchor="middle" className="fill-slate-500 text-[10.5px] font-semibold tabular-nums">{meta.format(v)}</text>
+            <text key={v} x={x(v)} y={H - 10} textAnchor="middle" fill="var(--color-fg-64748b)" className="text-[10.5px] font-semibold tabular-nums">{meta.format(v)}</text>
           ))}
         </svg>
       )}
       {hover !== null && width > 0 && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-xl border border-white/10 bg-[#161622]/95 px-3 py-2 text-[11.5px] text-white shadow-lg backdrop-blur"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-xl border border-white/10 bg-sf-161622/95 px-3 py-2 text-[11.5px] text-white shadow-lg backdrop-blur"
           style={{ left: Math.min(Math.max(x((bins[hover].x0 + bins[hover].x1) / 2), 90), width - 90), top: Math.max(0, y(bins[hover].count) - 62) }}
         >
           <p className="font-black tabular-nums">{bins[hover].count} of {stat.n} runs</p>
@@ -404,15 +404,15 @@ function Convergence({ mc, metric, stat, meta, passes }: { mc: MonteCarloResult;
             </linearGradient>
           </defs>
           <CartesianGrid {...GRID} />
-          <XAxis {...AXIS} dataKey="run" type="number" domain={[1, Math.max(2, mc.runCount)]} allowDecimals={false} label={{ value: "run #", position: "insideBottomRight", offset: -2, fontSize: 10, fill: "#64748B" }} />
+          <XAxis {...AXIS} dataKey="run" type="number" domain={[1, Math.max(2, mc.runCount)]} allowDecimals={false} label={{ value: "run #", position: "insideBottomRight", offset: -2, fontSize: 10, fill: "var(--color-fg-64748b)" }} />
           <YAxis {...AXIS} domain={["auto", "auto"]} width={58} tickFormatter={(v: number) => meta.format(v)} />
           <Tooltip
-            cursor={{ stroke: "#C7C2FF", strokeDasharray: "3 3" }}
+            cursor={{ stroke: "var(--color-ln-c7c2ff)", strokeDasharray: "3 3" }}
             content={({ active, payload }) => {
               const p = active && payload?.[0]?.payload;
               if (!p) return null;
               return (
-                <div className="pointer-events-none rounded-xl border border-white/10 bg-[#161622]/95 px-3 py-2.5 text-[12px] text-white shadow-[0_14px_36px_-10px_rgba(16,24,40,.55)] backdrop-blur">
+                <div className="pointer-events-none rounded-xl border border-white/10 bg-sf-161622/95 px-3 py-2.5 text-[12px] text-white shadow-[0_14px_36px_-10px_rgba(16,24,40,.55)] backdrop-blur">
                   <p className="mb-1 border-b border-white/10 pb-1 text-[11px] font-bold text-white/70">Run {p.run}{p.pass !== null && (p.pass ? " · met targets" : " · missed a target")}</p>
                   <p className="tabular-nums">This run: <b>{meta.format(p.value)}</b></p>
                   <p className="tabular-nums">Average so far: <b>{meta.format(p.mean)}</b></p>
@@ -428,11 +428,11 @@ function Convergence({ mc, metric, stat, meta, passes }: { mc: MonteCarloResult;
             isAnimationActive={false}
             shape={(props: { cx?: number; cy?: number; payload?: { pass: boolean | null } }) => {
               const pass = props.payload?.pass;
-              const fill = pass === null || pass === undefined ? "#B3ADDA" : pass ? PASS_COLOR : FAIL_COLOR;
+              const fill = pass === null || pass === undefined ? "var(--color-sf-b3adda)" : pass ? PASS_COLOR : FAIL_COLOR;
               return pass === false ? (
-                <rect x={(props.cx ?? 0) - 3} y={(props.cy ?? 0) - 3} width={6} height={6} fill={fill} stroke="#fff" strokeWidth={1} />
+                <rect x={(props.cx ?? 0) - 3} y={(props.cy ?? 0) - 3} width={6} height={6} fill={fill} stroke="var(--color-sf-ffffff)" strokeWidth={1} />
               ) : (
-                <circle cx={props.cx} cy={props.cy} r={3.2} fill={fill} stroke="#fff" strokeWidth={1} />
+                <circle cx={props.cx} cy={props.cy} r={3.2} fill={fill} stroke="var(--color-sf-ffffff)" strokeWidth={1} />
               );
             }}
           />

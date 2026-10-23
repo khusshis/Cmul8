@@ -9,11 +9,11 @@ import { spring, EASE_OUT } from "@/components/brand/CubeMark";
 const VW = 460;
 const VH = 190;
 const NODES = [
-  { x: 48, y: 95, label: "Customers", icon: Users, color: "#2f6fed" },
-  { x: 168, y: 95, label: "Order line", icon: ListOrdered, color: "#8b5cf6" },
-  { x: 288, y: 95, label: "Baristas", icon: Coffee, color: "#0ea5a5" },
-  { x: 412, y: 42, label: "Tables", icon: Armchair, color: "#12a150" },
-  { x: 412, y: 148, label: "Exit", icon: LogOut, color: "#6b6b7b" },
+  { x: 48, y: 95, label: "Customers", icon: Users, color: "var(--color-fg-2f6fed)" },
+  { x: 168, y: 95, label: "Order line", icon: ListOrdered, color: "var(--color-fg-8b5cf6)" },
+  { x: 288, y: 95, label: "Baristas", icon: Coffee, color: "var(--color-fg-0ea5a5)" },
+  { x: 412, y: 42, label: "Tables", icon: Armchair, color: "var(--color-fg-12a150)" },
+  { x: 412, y: 148, label: "Exit", icon: LogOut, color: "var(--color-fg-6b6b7b)" },
 ];
 const EDGES = [
   "M70,95 L146,95",
@@ -64,7 +64,7 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
 
   return (
     <motion.div
-      className="relative w-full max-w-[500px] bg-white rounded-[28px] border border-[#ecebf7] shadow-[0_40px_80px_-30px_rgba(87,66,255,.28),0_10px_24px_-12px_rgba(22,22,34,.10)] p-5"
+      className="relative w-full max-w-[500px] bg-surface rounded-[28px] border border-ln-ecebf7 shadow-[0_40px_80px_-30px_rgba(87,66,255,.28),0_10px_24px_-12px_rgba(22,22,34,.10)] p-5"
       initial={{ opacity: 0, y: 40, rotate: -2, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
       transition={{ ...spring(9, 0.75, delay + 0.25), opacity: { duration: 0.4, delay: delay + 0.25 } }}
@@ -72,8 +72,8 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="font-space font-bold text-[15px] text-[#161622] truncate">Coffee Shop · Rush Hour</span>
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold tracking-wider text-[#7c3aed] bg-[#f5f3ff] rounded-md px-2 py-1 shrink-0">
+          <span className="font-space font-bold text-[15px] text-fg-161622 truncate">Coffee Shop · Rush Hour</span>
+          <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold tracking-wider text-fg-7c3aed bg-sf-f5f3ff rounded-md px-2 py-1 shrink-0">
             <Sparkles size={11} /> AI GENERATED
           </span>
         </div>
@@ -88,20 +88,20 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
 
       {/* Canvas */}
       <div
-        className="relative w-full rounded-2xl bg-[#fbfbff] border border-[#f0eefb] overflow-hidden"
+        className="relative w-full rounded-2xl bg-sf-fbfbff border border-ln-f0eefb overflow-hidden"
         style={{
           aspectRatio: `${VW} / ${VH}`,
           backgroundImage: "radial-gradient(rgba(99,102,241,.2) 1.2px, transparent 1.7px)",
           backgroundSize: "20px 20px",
         }}
       >
-        <svg viewBox={`0 0 ${VW} ${VH}`} className="absolute inset-0 w-full h-full">
+        <svg viewBox={`0 0 ${VW} ${VH}`} className="absolute inset-0 w-full h-full [--edge:#c4bdfb] dark:[--edge:#5f5796]">
           {EDGES.map((d, i) => (
             <motion.path
               key={d}
               d={d}
               fill="none"
-              stroke="#c4bdfb"
+              stroke="var(--edge)"
               strokeWidth={2.5}
               strokeLinecap="round"
               initial={{ pathLength: 0 }}
@@ -112,7 +112,7 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
           {/* Entities: native SMIL motion is cheap and never blocks React */}
           <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: delay + 1.3 }}>
             {Array.from({ length: 6 }, (_, i) => (
-              <circle key={i} r={5} fill={i % 3 === 2 ? "#12a150" : "#8b5cf6"} stroke="#fff" strokeWidth={2}>
+              <circle key={i} r={5} fill={i % 3 === 2 ? "#12a150" : "#8b5cf6"} stroke="var(--color-sf-fbfbff)" strokeWidth={2}>
                 <animateMotion dur="3.6s" begin={`${i * 0.6}s`} repeatCount="indefinite" path={ROUTES[i % 2]} keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines=".45 0 .55 1" />
               </circle>
             ))}
@@ -128,15 +128,15 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ ...spring(15, 0.55, delay + 0.45 + i * 0.08), opacity: { duration: 0.2, delay: delay + 0.45 + i * 0.08 } }}
           >
-            <div className="relative w-10 h-10 rounded-[13px] bg-white border border-[#ebe8fb] shadow-[0_8px_18px_-8px_rgba(60,50,160,.35)] flex items-center justify-center">
+            <div className="relative w-10 h-10 rounded-[13px] bg-surface border border-ln-ebe8fb shadow-[0_8px_18px_-8px_rgba(60,50,160,.35)] flex items-center justify-center">
               <n.icon size={17} strokeWidth={2.3} style={{ color: n.color }} />
               {i === 1 && (
-                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-[#8b5cf6] text-white text-[10px] font-bold flex items-center justify-center shadow">
+                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-sf-8b5cf6 text-white text-[10px] font-bold flex items-center justify-center shadow">
                   <Rolling value={String(queue)} />
                 </span>
               )}
             </div>
-            <span className="mt-1 text-[10px] font-bold text-[#475569] whitespace-nowrap">{n.label}</span>
+            <span className="mt-1 text-[10px] font-bold text-fg-475569 whitespace-nowrap">{n.label}</span>
           </motion.div>
         ))}
       </div>
@@ -150,15 +150,15 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
         ].map((k, i) => (
           <motion.div
             key={k.label}
-            className="rounded-2xl border border-[#f1f0fa] bg-white px-3 py-2.5"
+            className="rounded-2xl border border-ln-f1f0fa bg-surface px-3 py-2.5"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE_OUT, delay: delay + 1.1 + i * 0.08 }}
           >
-            <div className="text-[9.5px] font-bold tracking-[0.12em] text-[#94a3b8]">{k.label}</div>
-            <div className="font-space text-[20px] font-bold text-[#161622] tabular-nums leading-tight mt-0.5">
+            <div className="text-[9.5px] font-bold tracking-[0.12em] text-fg-94a3b8">{k.label}</div>
+            <div className="font-space text-[20px] font-bold text-fg-161622 tabular-nums leading-tight mt-0.5">
               <Rolling value={k.value} />
-              <span className="text-[12px] text-[#94a3b8] font-semibold ml-0.5">{k.unit}</span>
+              <span className="text-[12px] text-fg-94a3b8 font-semibold ml-0.5">{k.unit}</span>
             </div>
           </motion.div>
         ))}

@@ -68,6 +68,10 @@ const CSS = `
   animation-timing-function: cubic-bezier(.76,0,.24,1), linear, linear;
 }
 @keyframes jc8-iris { to { --jc8-iris: 75vmax; } }
+.jc8-splash { --jc8-orb-a: #ddd3ff; --jc8-orb-b: #e7d9ff; }
+/* Dark: violet glow instead of pale lilac orbs, and the dark-ink wordmark flipped to light ink */
+.dark .jc8-splash { --jc8-orb-a: rgba(98,76,255,.30); --jc8-orb-b: rgba(139,92,246,.20); }
+.dark .jc8-word { filter: invert(1) hue-rotate(180deg); }
 @keyframes jc8-off { to { pointer-events: none; } }
 @keyframes jc8-gone { to { opacity: 0; visibility: hidden; } }
 
@@ -143,7 +147,7 @@ export default function SplashScreen() {
   if (done) return null;
 
   return (
-    <div ref={ref} aria-hidden className="jc8-splash fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden bg-[#fafaff] select-none">
+    <div ref={ref} aria-hidden className="jc8-splash fixed inset-0 z-[99999] flex items-center justify-center overflow-hidden bg-sf-fafaff select-none">
       <style>{CSS}</style>
       <link rel="preload" as="image" href={MARK_SRC} />
       <link rel="preload" as="image" href={TEXT_SRC} />
@@ -158,8 +162,8 @@ export default function SplashScreen() {
           WebkitMaskImage: "radial-gradient(ellipse 55% 55% at 50% 50%, #000 15%, transparent 80%)",
         }}
       />
-      <div className="jc8-orb-a absolute w-[70vmax] h-[70vmax] rounded-full" style={{ background: "radial-gradient(circle, #ddd3ff 0%, transparent 62%)", left: "-30vmax", top: "-35vmax" }} />
-      <div className="jc8-orb-b absolute w-[60vmax] h-[60vmax] rounded-full opacity-70" style={{ background: "radial-gradient(circle, #e7d9ff 0%, transparent 62%)", right: "-28vmax", bottom: "-32vmax" }} />
+      <div className="jc8-orb-a absolute w-[70vmax] h-[70vmax] rounded-full" style={{ background: "radial-gradient(circle, var(--jc8-orb-a) 0%, transparent 62%)", left: "-30vmax", top: "-35vmax" }} />
+      <div className="jc8-orb-b absolute w-[60vmax] h-[60vmax] rounded-full opacity-70" style={{ background: "radial-gradient(circle, var(--jc8-orb-b) 0%, transparent 62%)", right: "-28vmax", bottom: "-32vmax" }} />
 
       {/* Lockup: [mark][wordmark]. The wordmark column grows from 0 width, so the mark glides left and the pair stays centred. */}
       <div className="jc8-lockup relative flex items-center">
@@ -199,7 +203,7 @@ export default function SplashScreen() {
                 cx={cx}
                 cy={cy}
                 r={17}
-                fill="#fff"
+                fill="var(--color-sf-ffffff)"
                 stroke="#5742FF"
                 strokeWidth={8}
               />

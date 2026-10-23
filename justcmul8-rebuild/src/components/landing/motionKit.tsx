@@ -95,7 +95,7 @@ export function SplitWords({
           {breakBeforeAccent && accent && i === breakAt && <br />}
           <span aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em] px-[0.02em]">
             <motion.span
-              className={`inline-block ${a ? "bg-clip-text text-transparent bg-gradient-to-r from-[#8b5cf6] via-[#5742FF] to-[#6366f1]" : ""}`}
+              className={`inline-block ${a ? "bg-clip-text text-transparent bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-6366f1" : ""}`}
               variants={{
                 hidden: { y: "110%", rotate: 6 },
                 show: { y: "0%", rotate: 0, transition: spring(13, 0.7, delay + i * 0.06) },
@@ -115,11 +115,11 @@ export function SplitWords({
 export function SectionHeader({ title, accent, sub, className = "" }: { title: string; accent: string; sub: string; className?: string }) {
   return (
     <div className={`flex flex-col items-center text-center mb-12 md:mb-16 ${className}`}>
-      <h2 className="font-space font-bold text-[2.25rem] leading-[1.06] sm:text-[3rem] md:text-[3.75rem] text-[#161622] tracking-[-0.035em]">
+      <h2 className="font-space font-bold text-[2.25rem] leading-[1.06] sm:text-[3rem] md:text-[3.75rem] text-fg-161622 tracking-[-0.035em]">
         <SplitWords text={title} accent={accent} delay={0.05} />
       </h2>
       <Reveal delay={0.25} y={12}>
-        <p className="mt-5 max-w-2xl text-[15px] sm:text-[1.05rem] md:text-[1.1rem] text-[#64748b] font-medium leading-relaxed px-2">{sub}</p>
+        <p className="mt-5 max-w-2xl text-[15px] sm:text-[1.05rem] md:text-[1.1rem] text-fg-64748b font-medium leading-relaxed px-2">{sub}</p>
       </Reveal>
     </div>
   );
@@ -128,9 +128,9 @@ export function SectionHeader({ title, accent, sub, className = "" }: { title: s
 /** A small mouse with a rolling wheel + label, hinting that scrolling does something here. */
 export function ScrollCue({ label = "Scroll to explore", className = "" }: { label?: string; className?: string }) {
   return (
-    <div className={`flex items-center gap-2.5 text-[12px] font-semibold text-[#64748b] ${className}`}>
-      <span className="relative h-[26px] w-[17px] shrink-0 rounded-full border-2 border-[#c9c6de]">
-        <span className="lp-wheel absolute left-1/2 top-[5px] -ml-[1.5px] h-[6px] w-[3px] rounded-full bg-[#5742FF]" />
+    <div className={`flex items-center gap-2.5 text-[12px] font-semibold text-fg-64748b ${className}`}>
+      <span className="relative h-[26px] w-[17px] shrink-0 rounded-full border-2 border-ln-c9c6de">
+        <span className="lp-wheel absolute left-1/2 top-[5px] -ml-[1.5px] h-[6px] w-[3px] rounded-full bg-sf-5742ff" />
       </span>
       {label}
     </div>
@@ -182,18 +182,22 @@ export function TiltCard({ children, className = "", max = 6 }: { children: Reac
   );
 }
 
+/** Lilac wash colours + dot colour for the landing backdrops; dark mode swaps the pale lilac for a low violet glow. */
+export const WASH =
+  "[--wash-a:rgba(214,204,255,.45)] [--wash-b:rgba(224,214,255,.5)] [--dot:rgba(99,102,241,.12)] dark:[--wash-a:rgba(98,76,255,.13)] dark:[--wash-b:rgba(139,92,246,.10)] dark:[--dot:rgba(165,160,255,.10)]";
+
 /** Soft lilac wash + masked dot grid, the landing backdrop. Plain gradients, no blur filters (those cost a repaint per frame). */
 export function Backdrop({ tone = "a" }: { tone?: "a" | "b" }) {
   const wash =
     tone === "a"
-      ? "radial-gradient(ellipse 45% 40% at 5% 5%, rgba(214,204,255,.45), transparent 70%), radial-gradient(ellipse 40% 40% at 100% 95%, rgba(224,214,255,.5), transparent 70%)"
-      : "radial-gradient(ellipse 40% 40% at 100% 30%, rgba(214,204,255,.45), transparent 70%), radial-gradient(ellipse 45% 40% at 0% 100%, rgba(224,214,255,.5), transparent 70%)";
+      ? "radial-gradient(ellipse 45% 40% at 5% 5%, var(--wash-a), transparent 70%), radial-gradient(ellipse 40% 40% at 100% 95%, var(--wash-b), transparent 70%)"
+      : "radial-gradient(ellipse 40% 40% at 100% 30%, var(--wash-a), transparent 70%), radial-gradient(ellipse 45% 40% at 0% 100%, var(--wash-b), transparent 70%)";
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ background: wash }}>
+    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden ${WASH}`} style={{ background: wash }}>
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(rgba(99,102,241,.12) 1.2px, transparent 1.7px)",
+          backgroundImage: "radial-gradient(var(--dot) 1.2px, transparent 1.7px)",
           backgroundSize: "30px 30px",
           maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, #000 15%, transparent 80%)",
           WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, #000 15%, transparent 80%)",

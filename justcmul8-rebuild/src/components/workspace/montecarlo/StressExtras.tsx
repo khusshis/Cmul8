@@ -19,7 +19,7 @@ export const TargetsView = memo(function TargetsView({ mc, targets, meta, level 
   const shares = useMemo(() => targetShares(mc.results, active, level), [mc, active, level]);
   if (!active.length) {
     return (
-      <div className="rounded-[20px] border border-dashed border-indigo-200 bg-white/70">
+      <div className="rounded-[20px] border border-dashed border-indigo-200 bg-surface/70">
         <EmptyState icon={TargetIcon} title="No targets set" hint="Open Customize → Targets to say what 'good enough' means (for example median wait ≤ 2 min). We'll show how often each run meets it." />
       </div>
     );
@@ -32,10 +32,10 @@ export const TargetsView = memo(function TargetsView({ mc, targets, meta, level 
       help="Each run either meets a target or it doesn't. The big number is the share of runs that met it. The bar shows the range the true long-run rate most likely falls in (a Wilson interval), which is wider when you have fewer runs."
       height={null}
     >
-      <ul className="divide-y divide-[#F1F0FA]">
+      <ul className="divide-y divide-ln-f1f0fa">
         {shares.map((s) => {
           const label = s.target ? `${meta[s.target.metric].label} ${s.target.op === "max" ? "≤" : "≥"} ${meta[s.target.metric].format(s.target.value)}` : "All targets at once";
-          const tone = s.share >= 0.9 ? PASS_COLOR : s.share >= 0.5 ? "#B45309" : FAIL_COLOR;
+          const tone = s.share >= 0.9 ? PASS_COLOR : s.share >= 0.5 ? "var(--color-fg-b45309)" : FAIL_COLOR;
           const Icon = s.share >= 0.5 ? CheckCircle2 : XCircle;
           return (
             <li key={label} className="grid items-center gap-3 py-3 sm:grid-cols-[1fr_90px_minmax(160px,1.2fr)]">
@@ -50,7 +50,7 @@ export const TargetsView = memo(function TargetsView({ mc, targets, meta, level 
               <div>
                 <div className="relative h-2.5 rounded-full bg-gray-100" aria-hidden>
                   <div className="absolute inset-y-0 rounded-full opacity-30" style={{ left: `${s.lo * 100}%`, width: `${(s.hi - s.lo) * 100}%`, background: tone }} />
-                  <div className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow" style={{ left: `${s.share * 100}%`, background: tone }} />
+                  <div className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface shadow" style={{ left: `${s.share * 100}%`, background: tone }} />
                 </div>
                 <p className="mt-1 text-[10.5px] font-semibold text-gray-500 tabular-nums">True rate likely {pctText(s.lo)} – {pctText(s.hi)}</p>
               </div>
@@ -87,7 +87,7 @@ export const BlocksView = memo(function BlocksView({ mc, riskQ, utilBand }: { mc
                 <span className="shrink-0 font-black tabular-nums text-gray-900">{pctText(f.share)} <span className="text-[11px] font-bold text-gray-500">({f.count} runs)</span></span>
               </div>
               <div className="h-2.5 rounded-full bg-gray-100" aria-hidden>
-                <div className="h-full rounded-full" style={{ width: `${f.share * 100}%`, background: i === 0 ? BRAND : "#A79CFF" }} />
+                <div className="h-full rounded-full" style={{ width: `${f.share * 100}%`, background: i === 0 ? BRAND : "var(--color-sf-a79cff)" }} />
               </div>
             </li>
           ))}
@@ -108,10 +108,10 @@ export const BlocksView = memo(function BlocksView({ mc, riskQ, utilBand }: { mc
             <li key={b.id} className="grid grid-cols-[minmax(90px,140px)_1fr_auto] items-center gap-3">
               <span className="truncate text-[12.5px] font-bold text-gray-800" title={b.label}>{b.label}</span>
               <div className="relative h-3" aria-label={`${b.label}: average ${b.mean.toFixed(0)}%, range ${b.lo.toFixed(0)} to ${b.hi.toFixed(0)}%`} role="img">
-                <div className="absolute inset-y-0 rounded-sm bg-emerald-100" style={{ left: `${utilBand[0]}%`, width: `${utilBand[1] - utilBand[0]}%` }} />
-                <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gray-200/80" />
-                <div className="absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full" style={{ left: `${b.lo}%`, width: `max(3px, ${b.hi - b.lo}%)`, background: b.hi > utilBand[1] ? "#E11D48" : BRAND, opacity: 0.55 }} />
-                <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow" style={{ left: `${Math.min(100, b.mean)}%`, background: b.mean > utilBand[1] ? "#E11D48" : BRAND }} />
+                <div className="absolute inset-y-0 rounded-sm bg-emerald-100 dark:bg-emerald-500/20" style={{ left: `${utilBand[0]}%`, width: `${utilBand[1] - utilBand[0]}%` }} />
+                <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gray-200/80 dark:bg-white/15" />
+                <div className="absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full" style={{ left: `${b.lo}%`, width: `max(3px, ${b.hi - b.lo}%)`, background: b.hi > utilBand[1] ? "var(--color-sf-e11d48)" : BRAND, opacity: 0.55 }} />
+                <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface shadow" style={{ left: `${Math.min(100, b.mean)}%`, background: b.mean > utilBand[1] ? "var(--color-sf-e11d48)" : BRAND }} />
               </div>
               <span className="w-12 text-right text-[12px] font-black tabular-nums text-gray-900">{b.mean.toFixed(0)}%</span>
             </li>
@@ -159,7 +159,7 @@ export const BreakingPointView = memo(function BreakingPointView({ sweep, meta, 
         help="Each point re-runs your model with every Start Point's arrival rate multiplied by the number on the bottom axis. A flat line means the system copes; a sharp upturn is where queues start to snowball. The marked line is the highest load that still holds up."
         legend={[
           { label: "Average", color: BRAND },
-          ...(analysis.holdsUpTo !== null ? [{ label: "Holds up to", color: "#B45309", dashed: true }] : []),
+          ...(analysis.holdsUpTo !== null ? [{ label: "Holds up to", color: "var(--color-fg-b45309)", dashed: true }] : []),
           ...(target ? [{ label: "Your target", color: FAIL_COLOR, dashed: true }] : []),
         ]}
         height={280}
@@ -173,14 +173,14 @@ export const BreakingPointView = memo(function BreakingPointView({ sweep, meta, 
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID} />
-            <XAxis {...AXIS} dataKey="x" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(v: number) => `${v}×`} label={{ value: "Demand (× today)", position: "insideBottom", offset: -8, fontSize: 10.5, fill: "#64748B", fontWeight: 700 }} />
+            <XAxis {...AXIS} dataKey="x" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(v: number) => `${v}×`} label={{ value: "Demand (× today)", position: "insideBottom", offset: -8, fontSize: 10.5, fill: "var(--color-fg-64748b)", fontWeight: 700 }} />
             <YAxis {...AXIS} width={62} tickFormatter={(v: number) => m.format(v)} label={axisLabel(m.label)} />
             <Tooltip
               content={({ active, payload }) => {
                 const p = active && payload?.[0]?.payload;
                 if (!p) return null;
                 return (
-                  <div className="pointer-events-none rounded-xl border border-white/10 bg-[#161622]/95 px-3 py-2.5 text-[12px] text-white shadow-lg backdrop-blur">
+                  <div className="pointer-events-none rounded-xl border border-white/10 bg-sf-161622/95 px-3 py-2.5 text-[12px] text-white shadow-lg backdrop-blur">
                     <p className="mb-1 border-b border-white/10 pb-1 text-[11px] font-bold text-white/70">{p.x}× today&apos;s demand</p>
                     <p className="tabular-nums">Average: <b>{m.format(p.mean)}</b></p>
                     <p className="text-white/60 tabular-nums">Band: {m.format(p.band[0])} – {m.format(p.band[1])}</p>
@@ -191,16 +191,16 @@ export const BreakingPointView = memo(function BreakingPointView({ sweep, meta, 
             />
             <Area dataKey="band" stroke="none" fill="url(#mc-sweep)" isAnimationActive={false} />
             {target && <ReferenceLine y={target.value} stroke={FAIL_COLOR} strokeDasharray="5 3" />}
-            {analysis.holdsUpTo !== null && <ReferenceLine x={analysis.holdsUpTo} stroke="#B45309" strokeDasharray="5 3" label={{ value: "holds up to", position: "top", fontSize: 10.5, fill: "#B45309", fontWeight: 700 }} />}
+            {analysis.holdsUpTo !== null && <ReferenceLine x={analysis.holdsUpTo} stroke="var(--color-fg-b45309)" strokeDasharray="5 3" label={{ value: "holds up to", position: "top", fontSize: 10.5, fill: "var(--color-fg-b45309)", fontWeight: 700 }} />}
             <Line dataKey="mean" stroke={BRAND} strokeWidth={2.2} dot={false} isAnimationActive={false} />
             <Scatter dataKey="mean" fill={BRAND} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
-      <div className={`overflow-x-auto ${"rounded-[20px] border border-[#ECEBF7] bg-white"}`}>
+      <div className={`overflow-x-auto ${"rounded-[20px] border border-ln-ecebf7 bg-surface"}`}>
         <table className="w-full min-w-[420px] text-left text-[12px]">
           <caption className="sr-only">Breaking-point sweep, step by step</caption>
-          <thead className="border-b border-[#F1F0FA] text-[10.5px] font-black uppercase tracking-wider text-gray-500">
+          <thead className="border-b border-ln-f1f0fa text-[10.5px] font-black uppercase tracking-wider text-gray-500">
             <tr>
               <th className="px-4 py-2.5">Demand</th>
               <th className="px-4 py-2.5">{m.label}</th>
@@ -208,7 +208,7 @@ export const BreakingPointView = memo(function BreakingPointView({ sweep, meta, 
               {sweep.hasTargets && <th className="px-4 py-2.5">Runs meeting targets</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F6F5FC] tabular-nums">
+          <tbody className="divide-y divide-ln-f6f5fc tabular-nums">
             {sweep.points.map((p, i) => (
               <tr key={p.multiplier} className={i === analysis.breakIndex || (analysis.reason === "knee" && i === analysis.kneeIndex) ? "bg-amber-50/70" : ""}>
                 <td className="px-4 py-2 font-black text-gray-900">{p.multiplier}×</td>
@@ -235,16 +235,16 @@ export function HistoryView({ entries, meta, onRename, onDelete, onPin }: {
 }) {
   if (!entries.length) {
     return (
-      <div className="rounded-[20px] border border-dashed border-indigo-200 bg-white/70">
+      <div className="rounded-[20px] border border-dashed border-indigo-200 bg-surface/70">
         <EmptyState icon={History} title="No saved batches yet" hint="Every stress test you run is kept here (the last 10, on this device). Pin one as your reference to see 'vs pinned' changes on new runs." />
       </div>
     );
   }
   return (
     <ChartCard icon={History} title="Run history" description="Your last 10 batches on this device. Pin one to compare new runs against it." help="Only summary numbers are stored (averages, spreads and ranges), never every individual run, and only in this browser. Pinning a batch adds a 'vs pinned' line to each metric card, with a significance check." height={null}>
-      <ul className="divide-y divide-[#F1F0FA]">
+      <ul className="divide-y divide-ln-f1f0fa">
         {entries.map((e) => (
-          <li key={e.id} className={`flex flex-wrap items-center gap-3 py-3 ${e.pinned ? "rounded-xl bg-[#F4F2FF] px-3" : ""}`}>
+          <li key={e.id} className={`flex flex-wrap items-center gap-3 py-3 ${e.pinned ? "rounded-xl bg-sf-f4f2ff px-3" : ""}`}>
             <div className="min-w-0 flex-1">
               <input
                 defaultValue={e.name}
@@ -269,10 +269,10 @@ export function HistoryView({ entries, meta, onRename, onDelete, onPin }: {
               )}
             </dl>
             <div className="flex gap-1.5">
-              <button type="button" onClick={() => onPin(e.pinned ? null : e.id)} aria-pressed={!!e.pinned} aria-label={e.pinned ? `Unpin ${e.name}` : `Pin ${e.name} as reference`} title={e.pinned ? "Unpin" : "Pin as reference"} className={`flex h-8 w-8 items-center justify-center rounded-lg border ${e.pinned ? "border-[#5742FF] bg-[#5742FF] text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-[#F4F2FF]"} ${focusRing}`}>
+              <button type="button" onClick={() => onPin(e.pinned ? null : e.id)} aria-pressed={!!e.pinned} aria-label={e.pinned ? `Unpin ${e.name}` : `Pin ${e.name} as reference`} title={e.pinned ? "Unpin" : "Pin as reference"} className={`flex h-8 w-8 items-center justify-center rounded-lg border ${e.pinned ? "border-ln-5742ff bg-sf-5742ff text-white" : "border-gray-200 bg-surface text-gray-600 hover:bg-sf-f4f2ff"} ${focusRing}`}>
                 {e.pinned ? <PinOff size={14} /> : <Pin size={14} />}
               </button>
-              <button type="button" onClick={() => onDelete(e.id)} aria-label={`Delete ${e.name}`} title="Delete" className={`flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${focusRing}`}>
+              <button type="button" onClick={() => onDelete(e.id)} aria-label={`Delete ${e.name}`} title="Delete" className={`flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-surface text-gray-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${focusRing}`}>
                 <Trash2 size={14} />
               </button>
             </div>

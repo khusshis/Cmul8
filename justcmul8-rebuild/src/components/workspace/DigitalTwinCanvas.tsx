@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import * as PIXI from "pixi.js";
 import type { SimTick } from "@/lib/simulation/types";
+import { useIsDark } from "@/components/ui/ThemeToggle";
 
 export interface TwinNode {
   id: string;
@@ -101,6 +102,8 @@ export default function DigitalTwinCanvas({
   const onFrameRef = useRef(onFrame);
   const dirtyRef = useRef(true);
   const resetRef = useRef(replayKey);
+  const isDark = useIsDark();
+  const darkRef = useRef(isDark);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -112,6 +115,7 @@ export default function DigitalTwinCanvas({
   useEffect(() => { viewportRef.current = viewport; }, [viewport]);
   useEffect(() => { onFrameRef.current = onFrame; }, [onFrame]);
   useEffect(() => { resetRef.current = replayKey; }, [replayKey]);
+  useEffect(() => { darkRef.current = isDark; dirtyRef.current = true; }, [isDark]);
 
   // ── Create the Pixi scene once; all per-frame work happens in the ticker ───
   useEffect(() => {
@@ -171,10 +175,15 @@ export default function DigitalTwinCanvas({
         }
         v.g.position.set(n.x, n.y);
         v.title.text = n.label;
+        v.title.style.fill = darkRef.current ? 0xe9e7ff : 0x1e1b4b;
+        v.sub.style.fill = darkRef.current ? 0xa1a1b5 : 0x6b7280;
         v.title.position.set(n.x, n.y + NODE_RADIUS + 6);
         v.sub.position.set(n.x, n.y + NODE_RADIUS + 21);
       }
     }
+
+    // Brand violet, lifted on dark so lines and idle rings stay visible.
+    const accent = () => (darkRef.current ? 0x8d80ff : 0x5742ff);
 
     function drawEdges() {
       edgeLayer.clear();
@@ -192,7 +201,7 @@ export default function DigitalTwinCanvas({
         const sy = a.y + uy * NODE_RADIUS;
         const ex = b.x - ux * (NODE_RADIUS + 4);
         const ey = b.y - uy * (NODE_RADIUS + 4);
-        edgeLayer.moveTo(sx, sy).lineTo(ex, ey).stroke({ width: 2, color: 0x5742ff, alpha: 0.35 });
+        edgeLayer.moveTo(sx, sy).lineTo(ex, ey).stroke({ width: 2, color: accent(), alpha: 0.35 });
         // arrowhead
         const ah = 9;
         edgeLayer
@@ -201,7 +210,7 @@ export default function DigitalTwinCanvas({
             ex - ux * ah + uy * (ah / 2), ey - uy * ah - ux * (ah / 2),
             ex - ux * ah - uy * (ah / 2), ey - uy * ah + ux * (ah / 2),
           ])
-          .fill({ color: 0x5742ff, alpha: 0.55 });
+          .fill({ color: accent(), alpha: 0.55 });
       }
     }
 
@@ -212,7 +221,7 @@ export default function DigitalTwinCanvas({
         const s = tick?.nodeStats[n.id];
         v.g.clear();
         if (!s) {
-          v.g.circle(0, 0, NODE_RADIUS).fill({ color: 0x5742ff, alpha: 0.1 }).stroke({ width: 2, color: 0x5742ff, alpha: 0.5 });
+          v.g.circle(0, 0, NODE_RADIUS).fill({ color: accent(), alpha: 0.1 }).stroke({ width: 2, color: accent(), alpha: 0.5 });
           v.sub.text = "";
           continue;
         }

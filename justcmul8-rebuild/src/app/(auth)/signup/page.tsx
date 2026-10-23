@@ -53,12 +53,12 @@ export default function SignupPage() {
       <SuccessState
         title="Check your inbox"
         action={
-          <button onClick={() => setSuccess(false)} className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#5742FF] hover:text-[#4531E5] transition-colors">
+          <button onClick={() => setSuccess(false)} className="inline-flex items-center gap-1.5 text-[13px] font-bold text-fg-5742ff hover:text-fg-4531e5 transition-colors">
             <ArrowLeft size={15} /> Use a different email
           </button>
         }
       >
-        We sent a confirmation link to <b className="text-[#161622]">{email}</b>. Click it to activate your account.
+        We sent a confirmation link to <b className="text-fg-161622">{email}</b>. Click it to activate your account.
       </SuccessState>
     );
   }

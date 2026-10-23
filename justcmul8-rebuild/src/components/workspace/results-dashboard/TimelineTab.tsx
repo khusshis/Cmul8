@@ -99,9 +99,9 @@ export default function TimelineTab({ result }: { result: SimResult }) {
         title="Load inside the system over time"
         description="The shaded area is how many were inside at each moment. Flat means steady; a climb that never comes down means a backlog."
         legend={[
-          { label: "Inside now (left axis)", color: "#5742FF" },
-          { label: "Finished so far (right axis)", color: "#009E73" },
-          { label: "Average inside", color: "#475569", dashed: true },
+          { label: "Inside now (left axis)", color: "var(--color-sf-5742ff)" },
+          { label: "Finished so far (right axis)", color: "var(--color-sf-009e73)" },
+          { label: "Average inside", color: "var(--color-ln-475569)", dashed: true },
         ]}
         height={280}
         empty={noTimeline}
@@ -112,18 +112,18 @@ export default function TimelineTab({ result }: { result: SimResult }) {
           <ComposedChart data={wipSeries} margin={{ top: 10, right: 4, bottom: 0, left: 4 }}>
             <defs>
               <linearGradient id="tl-wip-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#5742FF" stopOpacity={0.32} />
-                <stop offset="100%" stopColor="#5742FF" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--color-sf-5742ff)" stopOpacity={0.32} />
+                <stop offset="100%" stopColor="var(--color-sf-5742ff)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid {...GRID} />
             {xAxis}
             <YAxis yAxisId="wip" {...AXIS} domain={[0, niceMax]} allowDecimals={false} tickFormatter={fmtCount} width={48} label={axisLabel("Inside")} />
             <YAxis yAxisId="done" orientation="right" {...AXIS} domain={[0, niceMax]} allowDecimals={false} tickFormatter={fmtCount} width={48} label={axisLabel("Finished", "right")} />
-            <Tooltip cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => Math.round(v).toLocaleString()} />} />
-            {avgWip > 0 && <ReferenceLine yAxisId="wip" y={avgWip} stroke="#475569" strokeDasharray="5 4" />}
-            <Area yAxisId="wip" type="monotone" dataKey="wip" name="Inside now" stroke="#5742FF" strokeWidth={2.5} fill="url(#tl-wip-grad)" dot={false} activeDot={{ r: 5, fill: "#5742FF", stroke: "#fff", strokeWidth: 2 }} />
-            <Line yAxisId="done" type="monotone" dataKey="completed" name="Finished so far" stroke="#009E73" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#009E73", stroke: "#fff", strokeWidth: 2 }} />
+            <Tooltip cursor={{ stroke: "var(--color-sf-5742ff)", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => Math.round(v).toLocaleString()} />} />
+            {avgWip > 0 && <ReferenceLine yAxisId="wip" y={avgWip} stroke="var(--color-ln-475569)" strokeDasharray="5 4" />}
+            <Area yAxisId="wip" type="monotone" dataKey="wip" name="Inside now" stroke="var(--color-sf-5742ff)" strokeWidth={2.5} fill="url(#tl-wip-grad)" dot={false} activeDot={{ r: 5, fill: "var(--color-sf-5742ff)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
+            <Line yAxisId="done" type="monotone" dataKey="completed" name="Finished so far" stroke="var(--color-sf-009e73)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "var(--color-sf-009e73)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -153,7 +153,7 @@ export default function TimelineTab({ result }: { result: SimResult }) {
               <CartesianGrid {...GRID} />
               {xAxis}
               <YAxis {...AXIS} domain={[0, niceMax]} allowDecimals={false} tickFormatter={fmtCount} width={48} label={axisLabel("In line")} />
-              <Tooltip cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => `${Math.round(v).toLocaleString()} waiting`} />} />
+              <Tooltip cursor={{ stroke: "var(--color-sf-5742ff)", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => `${Math.round(v).toLocaleString()} waiting`} />} />
               {nodeLabels.map((label, i) => (
                 <Area key={label} type="monotone" dataKey={label} name={label} stackId="depth" stroke={seriesColor(i)} strokeWidth={1.5} fill={`url(#tl-depth-${i})`} dot={false} />
               ))}
@@ -166,8 +166,8 @@ export default function TimelineTab({ result }: { result: SimResult }) {
           title="Finishing speed over time"
           description="How many finished per minute in each slice of the run. Dips show moments the system slowed down."
           legend={[
-            { label: "Finished per minute", color: "#009E73" },
-            { label: "Run average", color: "#475569", dashed: true },
+            { label: "Finished per minute", color: "var(--color-sf-009e73)" },
+            { label: "Run average", color: "var(--color-ln-475569)", dashed: true },
           ]}
           height={260}
           empty={noTimeline}
@@ -178,16 +178,16 @@ export default function TimelineTab({ result }: { result: SimResult }) {
             <AreaChart data={throughput} margin={{ top: 10, right: 12, bottom: 0, left: 4 }}>
               <defs>
                 <linearGradient id="tl-rate-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#009E73" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#009E73" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--color-sf-009e73)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--color-sf-009e73)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid {...GRID} />
               {xAxis}
               <YAxis {...AXIS} domain={[0, niceMax]} tickFormatter={fmtCount} width={48} label={axisLabel("Per minute")} />
-              <Tooltip cursor={{ stroke: "#009E73", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => `${v.toFixed(1)} / min`} />} />
-              {avgRate > 0 && <ReferenceLine y={avgRate} stroke="#475569" strokeDasharray="5 4" ifOverflow="extendDomain" />}
-              <Area type="monotone" dataKey="completedPerMin" name="Finished per minute" stroke="#009E73" strokeWidth={2} fill="url(#tl-rate-grad)" dot={false} activeDot={{ r: 4, fill: "#009E73", stroke: "#fff", strokeWidth: 2 }} />
+              <Tooltip cursor={{ stroke: "var(--color-sf-009e73)", strokeWidth: 1, strokeDasharray: "4 4" }} content={<ChartTooltip labelFormatter={timeLabel} valueFormatter={(v) => `${v.toFixed(1)} / min`} />} />
+              {avgRate > 0 && <ReferenceLine y={avgRate} stroke="var(--color-ln-475569)" strokeDasharray="5 4" ifOverflow="extendDomain" />}
+              <Area type="monotone" dataKey="completedPerMin" name="Finished per minute" stroke="var(--color-sf-009e73)" strokeWidth={2} fill="url(#tl-rate-grad)" dot={false} activeDot={{ r: 4, fill: "var(--color-sf-009e73)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>

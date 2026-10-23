@@ -57,7 +57,7 @@ const NODE_THEMES: Record<
     iconColor: "text-indigo-600",
     badgeBg: "bg-indigo-50",
     badgeText: "text-indigo-700 border-indigo-200",
-    accent: "#6366F1",
+    accent: "var(--color-fg-6366f1)",
     icon: Play,
   },
   queue: {
@@ -67,7 +67,7 @@ const NODE_THEMES: Record<
     iconColor: "text-violet-600",
     badgeBg: "bg-violet-50",
     badgeText: "text-violet-700 border-violet-200",
-    accent: "#8B5CF6",
+    accent: "var(--color-fg-8b5cf6)",
     icon: Clock,
   },
   service: {
@@ -77,7 +77,7 @@ const NODE_THEMES: Record<
     iconColor: "text-cyan-600",
     badgeBg: "bg-cyan-50",
     badgeText: "text-cyan-700 border-cyan-200",
-    accent: "#06B6D4",
+    accent: "var(--color-fg-06b6d4)",
     icon: Activity,
   },
   sink: {
@@ -87,7 +87,7 @@ const NODE_THEMES: Record<
     iconColor: "text-slate-700",
     badgeBg: "bg-slate-100",
     badgeText: "text-slate-700 border-slate-200",
-    accent: "#64748B",
+    accent: "var(--color-fg-64748b)",
     icon: Target,
   },
   resource: {
@@ -97,7 +97,7 @@ const NODE_THEMES: Record<
     iconColor: "text-emerald-600",
     badgeBg: "bg-emerald-50",
     badgeText: "text-emerald-700 border-emerald-200",
-    accent: "#10B981",
+    accent: "var(--color-fg-10b981)",
     icon: Server,
   },
   priority_resource: {
@@ -107,7 +107,7 @@ const NODE_THEMES: Record<
     iconColor: "text-teal-600",
     badgeBg: "bg-teal-50",
     badgeText: "text-teal-700 border-teal-200",
-    accent: "#0D9488",
+    accent: "var(--color-fg-0d9488)",
     icon: ShieldAlert,
   },
   decision: {
@@ -117,7 +117,7 @@ const NODE_THEMES: Record<
     iconColor: "text-amber-600",
     badgeBg: "bg-amber-50",
     badgeText: "text-amber-700 border-amber-200",
-    accent: "#F59E0B",
+    accent: "var(--color-fg-f59e0b)",
     icon: Route,
   },
   channel: {
@@ -127,7 +127,7 @@ const NODE_THEMES: Record<
     iconColor: "text-orange-600",
     badgeBg: "bg-orange-50",
     badgeText: "text-orange-700 border-orange-200",
-    accent: "#EA580C",
+    accent: "var(--color-fg-ea580c)",
     icon: Share2,
   },
   broadcaster: {
@@ -137,7 +137,7 @@ const NODE_THEMES: Record<
     iconColor: "text-red-600",
     badgeBg: "bg-red-50",
     badgeText: "text-red-700 border-red-200",
-    accent: "#EF4444",
+    accent: "var(--color-fg-ef4444)",
     icon: Zap,
   },
   store: {
@@ -147,7 +147,7 @@ const NODE_THEMES: Record<
     iconColor: "text-purple-600",
     badgeBg: "bg-purple-50",
     badgeText: "text-purple-700 border-purple-200",
-    accent: "#9333EA",
+    accent: "var(--color-fg-9333ea)",
     icon: Layers,
   },
   container: {
@@ -157,7 +157,7 @@ const NODE_THEMES: Record<
     iconColor: "text-blue-600",
     badgeBg: "bg-blue-50",
     badgeText: "text-blue-700 border-blue-200",
-    accent: "#2563EB",
+    accent: "var(--color-fg-2563eb)",
     icon: Activity,
   },
   event_trigger: {
@@ -167,7 +167,7 @@ const NODE_THEMES: Record<
     iconColor: "text-pink-600",
     badgeBg: "bg-pink-50",
     badgeText: "text-pink-700 border-pink-200",
-    accent: "#DB2777",
+    accent: "var(--color-fg-db2777)",
     icon: Zap,
   },
 };
@@ -222,9 +222,9 @@ function CustomSelect({
       <button
         type="button"
         onClick={handleToggle}
-        className={`w-full px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all bg-[#FAFAFC] hover:bg-white ${
+        className={`w-full px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all bg-sf-fafafc hover:bg-surface ${
           open
-            ? "border-[#5742FF] ring-2 ring-[#5742FF]/15 shadow-sm"
+            ? "border-ln-5742ff ring-2 ring-ln-5742ff/15 shadow-sm"
             : "border-gray-200/80 hover:border-gray-300"
         }`}
       >
@@ -239,7 +239,7 @@ function CustomSelect({
         <ChevronDown
           size={15}
           className={`text-gray-400 shrink-0 transition-transform duration-200 ${
-            open ? "rotate-180 text-[#5742FF]" : ""
+            open ? "rotate-180 text-fg-5742ff" : ""
           }`}
         />
       </button>
@@ -254,7 +254,7 @@ function CustomSelect({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={`absolute left-0 right-0 ${
               openUpwards ? "bottom-full mb-1.5" : "top-full mt-1.5"
-            } z-50 rounded-2xl bg-white border border-gray-100 shadow-[0_16px_40px_rgba(0,0,0,0.14)] p-1.5 max-h-56 overflow-y-auto custom-scrollbar`}
+            } z-50 rounded-2xl bg-surface border border-gray-100 shadow-[0_16px_40px_rgba(0,0,0,0.14)] p-1.5 max-h-56 overflow-y-auto custom-scrollbar`}
           >
             {options.map((opt) => {
               const isSelected = opt.value === value;
@@ -267,7 +267,7 @@ function CustomSelect({
                   }}
                   className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-2.5 ${
                     isSelected
-                      ? "bg-indigo-50/90 text-[#5742FF] font-bold"
+                      ? "bg-indigo-50/90 text-fg-5742ff font-bold"
                       : "hover:bg-gray-50 text-gray-800"
                   }`}
                 >
@@ -286,7 +286,7 @@ function CustomSelect({
                   </div>
 
                   {isSelected && (
-                    <div className="w-5 h-5 rounded-full bg-[#5742FF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <div className="w-5 h-5 rounded-full bg-sf-5742ff text-white flex items-center justify-center shrink-0 shadow-xs">
                       <Check size={12} strokeWidth={3} />
                     </div>
                   )}
@@ -302,15 +302,15 @@ function CustomSelect({
 
 // ─── Input & Section Card Styles ───────────────────────────────
 const modernInputCls =
-  "w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200/80 bg-[#FAFAFC] focus:bg-white text-[12.5px] font-semibold text-[#111827] focus:border-[#5742FF] focus:ring-2 focus:ring-[#5742FF]/10 transition-all outline-none";
-const labelCls = "block text-[11px] font-extrabold uppercase tracking-wider text-[#64748B]";
+  "w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200/80 bg-sf-fafafc focus:bg-surface text-[12.5px] font-semibold text-fg-111827 focus:border-ln-5742ff focus:ring-2 focus:ring-ln-5742ff/10 transition-all outline-none";
+const labelCls = "block text-[11px] font-extrabold uppercase tracking-wider text-fg-64748b";
 const sectionCls =
-  "rounded-2xl border border-gray-100 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 space-y-3.5";
+  "rounded-2xl border border-gray-100 bg-surface shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 space-y-3.5";
 
 function SectionHeading({
   icon: Icon,
   children,
-  accent = "#6366F1",
+  accent = "var(--color-fg-6366f1)",
   iconBg = "bg-indigo-50",
   iconColor = "text-indigo-600",
 }: {
@@ -513,7 +513,7 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
                   if (!isSchedule && useSchedule) setParam("schedule", []);
                 }}
                 className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-lg transition-all ${
-                  active ? "bg-white text-[#5742FF] shadow-xs" : "text-gray-500 hover:text-gray-900"
+                  active ? "bg-surface text-fg-5742ff shadow-xs" : "text-gray-500 hover:text-gray-900"
                 }`}
               >
                 {mode}
@@ -550,7 +550,7 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
               <label className={labelCls}>Timetable Schedule</label>
               <button
                 onClick={() => setParam("schedule", [...schedule, { simTime: 0, count: 1 }])}
-                className="text-[11px] font-bold text-[#5742FF] hover:underline flex items-center gap-1"
+                className="text-[11px] font-bold text-fg-5742ff hover:underline flex items-center gap-1"
               >
                 <Plus size={12} /> Add Arrival
               </button>
@@ -874,7 +874,7 @@ function DecisionProperties({ params, nodeId, onUpdate, theme }: any) {
               params: { ...params, routes: [...routes, { targetId: "", probability: 0.5 }] },
             })
           }
-          className="text-[11px] font-bold text-[#5742FF] hover:underline flex items-center gap-1"
+          className="text-[11px] font-bold text-fg-5742ff hover:underline flex items-center gap-1"
         >
           <Plus size={12} /> Add Path
         </button>
@@ -1023,13 +1023,13 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
   const IconComp = theme.icon;
 
   return (
-    <div className="h-full flex flex-col bg-[#FAF9FF] text-[#111827]">
+    <div className="h-full flex flex-col bg-sf-faf9ff text-fg-111827">
       {/* ── 1. Hero Block Identity Card (Bold & Vibrant Header) ── */}
-      <div className="p-4 bg-white border-b border-indigo-100/70 shadow-xs">
+      <div className="p-4 bg-surface border-b border-indigo-100/70 shadow-xs">
         <div className="flex items-start gap-3.5">
           {/* Vibrant Category Icon Box */}
           <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 ${theme.iconBg} ${theme.iconColor} shadow-xs border border-white`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 ${theme.iconBg} ${theme.iconColor} shadow-xs border border-surface`}
           >
             <IconComp size={22} strokeWidth={2.3} />
           </div>
@@ -1050,7 +1050,7 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
                 value={label || ""}
                 onChange={(e) => onUpdate(node.id, { label: e.target.value })}
                 placeholder="Station Name"
-                className="text-[16px] font-black text-gray-900 tracking-tight bg-transparent hover:bg-gray-50 focus:bg-white px-2 py-0.5 -ml-2 rounded-lg border border-transparent focus:border-[#5742FF] focus:ring-2 focus:ring-indigo-50 outline-none transition-all w-full"
+                className="text-[16px] font-black text-gray-900 tracking-tight bg-transparent hover:bg-gray-50 focus:bg-surface px-2 py-0.5 -ml-2 rounded-lg border border-transparent focus:border-ln-5742ff focus:ring-2 focus:ring-indigo-50 outline-none transition-all w-full"
               />
             </div>
           </div>
@@ -1098,7 +1098,7 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
       </div>
 
       {/* ── 3. Footer Quick Info ── */}
-      <div className="p-3.5 bg-white border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
+      <div className="p-3.5 bg-surface border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-medium">
         <span className="flex items-center gap-1.5 text-emerald-600 font-bold">
           <CheckCircle2 size={13} /> Changes Saved
         </span>

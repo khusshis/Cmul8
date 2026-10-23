@@ -22,10 +22,10 @@ export function EmptyState({
 }) {
   return (
     <div className={`flex h-full w-full flex-col items-center justify-center text-center ${compact ? "gap-1.5 p-4" : "gap-2 p-8"}`}>
-      <span className={`flex items-center justify-center rounded-2xl bg-[#F3F1FF] text-[#5742FF] ${compact ? "h-10 w-10" : "h-14 w-14"}`}>
+      <span className={`flex items-center justify-center rounded-2xl bg-sf-f3f1ff text-fg-5742ff ${compact ? "h-10 w-10" : "h-14 w-14"}`}>
         <Icon size={compact ? 18 : 24} strokeWidth={2.2} aria-hidden />
       </span>
-      <p className={`font-bold text-[#161622] ${compact ? "text-[13px]" : "text-[15px]"}`}>{title}</p>
+      <p className={`font-bold text-fg-161622 ${compact ? "text-[13px]" : "text-[15px]"}`}>{title}</p>
       {hint && <p className="max-w-sm text-[12.5px] leading-relaxed text-slate-600">{hint}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -108,19 +108,19 @@ export default function ChartCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={`relative flex min-w-0 flex-col rounded-[22px] border border-[#ECEBF7] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-5 ${className}`}
+      className={`relative flex min-w-0 flex-col rounded-[22px] border border-ln-ecebf7 bg-surface p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-5 ${className}`}
       aria-label={title}
     >
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 items-start gap-2.5">
           {Icon && (
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F3F1FF] text-[#5742FF]">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sf-f3f1ff text-fg-5742ff">
               <Icon size={16} strokeWidth={2.3} aria-hidden />
             </span>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1">
-              <h3 className="text-[14.5px] font-extrabold leading-snug tracking-tight text-[#161622]">{title}</h3>
+              <h3 className="text-[14.5px] font-extrabold leading-snug tracking-tight text-fg-161622">{title}</h3>
               {help && <HelpTip text={help} label={`About ${title}`} align="start" />}
             </div>
             {description && <p className="mt-0.5 text-[12.5px] leading-snug text-slate-600">{description}</p>}
@@ -135,11 +135,11 @@ export default function ChartCard({
         </div>
       )}
 
-      <div className="relative mt-3 min-w-0 flex-1" style={height ? { height, minHeight: height } : undefined}>
+      <div className="relative mt-3 min-w-0 flex-auto" style={height ? { height, minHeight: height } : undefined}>
         {loading ? (
-          <div className="relative h-full min-h-[120px] overflow-hidden rounded-2xl bg-[#F6F5FC]" aria-busy="true" aria-label="Loading chart">
+          <div className="relative h-full min-h-[120px] overflow-hidden rounded-2xl bg-sf-f6f5fc" aria-busy="true" aria-label="Loading chart">
             <motion.div
-              className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent"
+              className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-surface/70 to-transparent"
               animate={{ x: ["0%", "400%"] }}
               transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
             />
@@ -151,7 +151,7 @@ export default function ChartCard({
         )}
       </div>
 
-      {footer && !empty && !loading && <div className="mt-4 border-t border-[#F1F0FA] pt-3.5">{footer}</div>}
+      {footer && !empty && !loading && <div className="mt-4 border-t border-ln-f1f0fa pt-3.5">{footer}</div>}
     </motion.section>
   );
 }
@@ -163,7 +163,7 @@ export function StatRow({ items }: { items: { label: string; value: React.ReactN
       {items.map((it) => (
         <div key={it.label} className="min-w-0">
           <dt className="truncate text-[10.5px] font-bold uppercase tracking-wider text-slate-500">{it.label}</dt>
-          <dd className={`mt-0.5 text-[15px] font-extrabold tabular-nums ${it.tone === "bad" ? "text-rose-700" : it.tone === "good" ? "text-emerald-700" : "text-[#161622]"}`}>{it.value}</dd>
+          <dd className={`mt-0.5 text-[15px] font-extrabold tabular-nums ${it.tone === "bad" ? "text-rose-700" : it.tone === "good" ? "text-emerald-700" : "text-fg-161622"}`}>{it.value}</dd>
         </div>
       ))}
     </dl>

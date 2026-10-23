@@ -3,16 +3,20 @@
  * One palette, one axis style, one set of number formatters, so every card and chart reads the same.
  */
 
-export const BRAND = "#5742FF";
+export const BRAND = "var(--color-sf-5742ff)";
 
-/** Status tones. Text colours are the -700 shades so they pass WCAG AA on white. */
+/**
+ * Status tones. Text colours are the -700 shades so they pass WCAG AA on white.
+ * All colours here are theme-aware role tokens (src/app/theme-tokens.css): the original hex in light mode,
+ * tuned values in dark mode. They are CSS vars, so mix alpha with color-mix(), never by appending hex digits.
+ */
 export const TONES = {
-  brand: { solid: "#5742FF", text: "#4331E0", tint: "#EFEDFF", ring: "rgba(87,66,255,.28)" },
-  good: { solid: "#10B981", text: "#047857", tint: "#E8F8F1", ring: "rgba(16,185,129,.28)" },
-  warn: { solid: "#F59E0B", text: "#B45309", tint: "#FEF4E2", ring: "rgba(245,158,11,.30)" },
-  bad: { solid: "#E11D48", text: "#BE123C", tint: "#FDECEF", ring: "rgba(225,29,72,.26)" },
-  info: { solid: "#0EA5E9", text: "#0369A1", tint: "#E6F5FD", ring: "rgba(14,165,233,.28)" },
-  neutral: { solid: "#64748B", text: "#475569", tint: "#F1F5F9", ring: "rgba(100,116,139,.25)" },
+  brand: { solid: "var(--color-sf-5742ff)", text: "var(--color-fg-4331e0)", tint: "var(--color-sf-efedff)", ring: "rgba(87,66,255,.28)" },
+  good: { solid: "var(--color-sf-10b981)", text: "var(--color-fg-047857)", tint: "var(--color-sf-e8f8f1)", ring: "rgba(16,185,129,.28)" },
+  warn: { solid: "var(--color-sf-f59e0b)", text: "var(--color-fg-b45309)", tint: "var(--color-sf-fef4e2)", ring: "rgba(245,158,11,.30)" },
+  bad: { solid: "var(--color-sf-e11d48)", text: "var(--color-fg-be123c)", tint: "var(--color-sf-fdecef)", ring: "rgba(225,29,72,.26)" },
+  info: { solid: "var(--color-sf-0ea5e9)", text: "var(--color-fg-0369a1)", tint: "var(--color-sf-e6f5fd)", ring: "rgba(14,165,233,.28)" },
+  neutral: { solid: "var(--color-sf-64748b)", text: "var(--color-fg-475569)", tint: "var(--color-sf-f1f5f9)", ring: "rgba(100,116,139,.25)" },
 } as const;
 export type Tone = keyof typeof TONES;
 
@@ -21,19 +25,25 @@ export type Tone = keyof typeof TONES;
  * for protanopia / deuteranopia / tritanopia. Use in order.
  */
 export const SERIES = ["#5742FF", "#E69F00", "#009E73", "#CC79A7", "#0072B2", "#D55E00", "#56B4E9", "#7C3AED"];
-export const seriesColor = (i: number) => SERIES[i % SERIES.length];
+
+/**
+ * Paint a data hex (series, scenario colour) with its theme-aware fill token; falls back to the hex itself.
+ * SERIES stays plain hex because scenario colours are stored and compared as values.
+ */
+export const themeColor = (hex: string) => (/^#[0-9a-f]{6}$/i.test(hex) ? `var(--color-sf-${hex.slice(1).toLowerCase()}, ${hex})` : hex);
+export const seriesColor = (i: number) => themeColor(SERIES[i % SERIES.length]);
 
 /** Busy / idle / blocked, picked from the same colour-blind-safe set. */
-export const STATE_COLORS = { busy: "#5742FF", idle: "#E69F00", blocked: "#D55E00" } as const;
+export const STATE_COLORS = { busy: "var(--color-sf-5742ff)", idle: "var(--color-sf-e69f00)", blocked: "var(--color-sf-d55e00)" } as const;
 
 /** Soft horizontal gridlines. Spread onto <CartesianGrid {...GRID} />. */
-export const GRID = { stroke: "#ECEBF7", strokeDasharray: "3 6", vertical: false } as const;
+export const GRID = { stroke: "var(--color-ln-ecebf7)", strokeDasharray: "3 6", vertical: false } as const;
 
 /** Readable axis ticks (slate-500 on white = 4.8:1). Spread onto <XAxis {...AXIS} />. */
 export const AXIS = {
   axisLine: false,
   tickLine: false,
-  tick: { fill: "#64748B", fontSize: 11, fontWeight: 600 },
+  tick: { fill: "var(--color-fg-64748b)", fontSize: 11, fontWeight: 600 },
 } as const;
 
 /** Small axis title, e.g. <YAxis label={axisLabel("Seconds")} />. */
@@ -43,7 +53,7 @@ export function axisLabel(value: string, side: "left" | "right" = "left") {
     angle: side === "left" ? -90 : 90,
     position: side === "left" ? ("insideLeft" as const) : ("insideRight" as const),
     offset: 14,
-    style: { fill: "#64748B", fontSize: 10.5, fontWeight: 700, textAnchor: "middle" as const },
+    style: { fill: "var(--color-fg-64748b)", fontSize: 10.5, fontWeight: 700, textAnchor: "middle" as const },
   };
 }
 

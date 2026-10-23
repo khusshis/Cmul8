@@ -108,13 +108,13 @@ function StatsBar({ running, active }: { running: boolean; active: boolean }) {
     { icon: PieChart, k: "Utilization", v: `${on ? rand.util : "0"}%` },
   ];
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-4 px-1 pt-3 border-t border-[#f1f0fa]">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-4 px-1 pt-3 border-t border-ln-f1f0fa">
       {cells.map((c) => (
         <div key={c.k} className="flex flex-col items-center gap-1.5 last:col-span-2 sm:last:col-span-1">
           <div className="flex items-center gap-1.5 text-gray-500 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-center">
             <c.icon size={12} className="shrink-0" /> {c.k}
           </div>
-          <div className="text-[15px] font-black text-[#161622] tabular-nums">{c.v}</div>
+          <div className="text-[15px] font-black text-fg-161622 tabular-nums">{c.v}</div>
         </div>
       ))}
     </div>
@@ -196,7 +196,7 @@ export default function AISection() {
   const progress = phase >= 3 ? 1 : placed / ORDER.length;
 
   return (
-    <section id="ai" className="relative py-20 md:py-32 px-4 bg-[#fcfcff] font-sans overflow-hidden">
+    <section id="ai" className="relative py-20 md:py-32 px-4 bg-sf-fcfcff font-sans overflow-hidden">
       <Backdrop tone="b" />
       <div className="relative z-10 max-w-[1300px] mx-auto">
         <SectionHeader
@@ -209,7 +209,7 @@ export default function AISection() {
           <AnimatePresence>
             {isFullscreen && (
               <motion.div
-                className="fixed inset-0 bg-[#161622]/40 z-40"
+                className="fixed inset-0 bg-sf-161622/40 dark:bg-black/60 z-40"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -220,18 +220,18 @@ export default function AISection() {
 
           {/* LEFT: the assistant conversation plays out */}
           <Reveal className="w-full lg:w-[32%] relative z-30" delay={0.05}>
-            <div className="h-full bg-white rounded-[2rem] border border-[#ecebf7] shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] p-5 sm:p-6 flex flex-col">
+            <div className="h-full bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] p-5 sm:p-6 flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#5742FF] text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center">
                     <Sparkles size={15} />
                   </div>
-                  <span className="font-bold tracking-tight text-[#161622] text-[14px]">AI ASSISTANT</span>
+                  <span className="font-bold tracking-tight text-fg-161622 text-[14px]">AI ASSISTANT</span>
                 </div>
                 <button
                   onClick={replay}
                   disabled={phase === 1 || phase === 2}
-                  className="flex items-center gap-1.5 text-[11px] font-bold text-[#5742FF] px-2.5 py-1.5 rounded-full hover:bg-[#f5f3ff] disabled:opacity-30 transition"
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-fg-5742ff px-2.5 py-1.5 rounded-full hover:bg-sf-f5f3ff disabled:opacity-30 transition"
                   aria-label="Replay the AI build"
                 >
                   <RotateCcw size={12} /> Replay
@@ -245,10 +245,10 @@ export default function AISection() {
                       initial={{ opacity: 0, y: 12, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={spring(14, 0.8)}
-                      className="bg-gradient-to-br from-[#6d5bff] to-[#5742FF] text-white p-4 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-[0_12px_24px_-12px_rgba(16,24,40,0.16)] self-end max-w-[95%] origin-bottom-right"
+                      className="bg-gradient-to-br from-sf-6d5bff to-sf-5742ff text-white p-4 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-[0_12px_24px_-12px_rgba(16,24,40,0.16)] self-end max-w-[95%] origin-bottom-right"
                     >
                       {PROMPT.slice(0, typed)}
-                      {typed < PROMPT.length && <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-0.5 bg-white/80 animate-pulse" />}
+                      {typed < PROMPT.length && <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-0.5 bg-surface/80 animate-pulse" />}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -259,7 +259,7 @@ export default function AISection() {
                       initial={{ opacity: 0, y: 12, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={spring(14, 0.8)}
-                      className="bg-[#f6f4ff] border border-[#e4defd] text-[#5742FF] p-4 rounded-2xl rounded-tl-sm text-[14px] leading-relaxed self-start w-full origin-top-left"
+                      className="bg-sf-f6f4ff border border-ln-e4defd text-fg-5742ff p-4 rounded-2xl rounded-tl-sm text-[14px] leading-relaxed self-start w-full origin-top-left"
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <Sparkles size={16} />
@@ -277,8 +277,8 @@ export default function AISection() {
                         </AnimatePresence>
                         <span className="ml-auto text-[11px] font-bold tabular-nums">{Math.round(progress * 100)}%</span>
                       </div>
-                      <div className="w-full h-1.5 bg-[#e4defd] rounded-full overflow-hidden">
-                        <motion.div className="h-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] rounded-full origin-left" animate={{ scaleX: progress }} initial={{ scaleX: 0 }} transition={spring(10, 0.9)} />
+                      <div className="w-full h-1.5 bg-sf-e4defd rounded-full overflow-hidden">
+                        <motion.div className="h-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left" animate={{ scaleX: progress }} initial={{ scaleX: 0 }} transition={spring(10, 0.9)} />
                       </div>
                     </motion.div>
                   )}
@@ -297,7 +297,7 @@ export default function AISection() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0 }}
                           transition={spring(14, 0.8, i * 0.12)}
-                          className="flex items-center gap-2 text-[13px] text-[#12a150] font-medium"
+                          className="flex items-center gap-2 text-[13px] text-fg-12a150 font-medium"
                         >
                           <CheckCircle2 size={16} /> {c.label}
                         </motion.div>
@@ -307,12 +307,12 @@ export default function AISection() {
                 </div>
               </div>
 
-              <div className="bg-[#fafaff] border border-[#ecebf7] rounded-2xl p-3 flex items-center gap-3">
+              <div className="bg-sf-fafaff border border-ln-ecebf7 rounded-2xl p-3 flex items-center gap-3">
                 <input type="text" placeholder="Type your simulation..." className="bg-transparent outline-none text-sm text-gray-700 w-full placeholder:text-gray-400 pl-1" disabled />
                 <motion.span
                   animate={phase === 1 ? { scale: [1, 0.85, 1] } : { scale: 1 }}
                   transition={{ duration: 0.3, delay: (PROMPT.length * 22) / 1000 + 0.3 }}
-                  className="w-8 h-8 rounded-xl bg-[#5742FF] text-white flex items-center justify-center shrink-0"
+                  className="w-8 h-8 rounded-xl bg-sf-5742ff text-white flex items-center justify-center shrink-0"
                 >
                   <Send size={15} className="ml-0.5" />
                 </motion.span>
@@ -334,33 +334,33 @@ export default function AISection() {
               transition={spring(14, 0.9)}
               className={
                 isFullscreen
-                  ? "fixed inset-3 md:inset-10 z-50 bg-white rounded-3xl shadow-2xl p-4 md:p-8 flex flex-col"
-                  : "h-full bg-white rounded-[2rem] border border-[#ecebf7] shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] p-4 sm:p-6 flex flex-col"
+                  ? "fixed inset-3 md:inset-10 z-50 bg-surface rounded-3xl shadow-2xl p-4 md:p-8 flex flex-col"
+                  : "h-full bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] p-4 sm:p-6 flex flex-col"
               }
             >
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#fafaff] border border-[#ecebf7] text-[#64748b] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-sf-fafaff border border-ln-ecebf7 text-fg-64748b flex items-center justify-center shrink-0">
                     <BarChart2 size={16} />
                   </div>
-                  <span className="font-bold tracking-tight text-[#161622] text-[14px] truncate">GENERATED RESULT</span>
+                  <span className="font-bold tracking-tight text-fg-161622 text-[14px] truncate">GENERATED RESULT</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
                   <motion.button
                     onClick={toggleRun}
                     whileTap={{ scale: 0.95 }}
-                    className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isRunning ? "bg-red-50 text-red-600 border border-red-100" : "bg-[#f5f3ff] text-[#5742FF] border border-[#e4defd]"}`}
+                    className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isRunning ? "bg-red-50 text-red-600 border border-red-100" : "bg-sf-f5f3ff text-fg-5742ff border border-ln-e4defd"}`}
                   >
                     {isRunning ? <Square size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
                     {isRunning ? "Stop" : "Run"}
                     {phase === 3 && isRunning && (
-                      <motion.span className="absolute inset-0 rounded-xl border-2 border-[#5742FF]" initial={{ opacity: 0.8, scale: 1 }} animate={{ opacity: 0, scale: 1.4 }} transition={{ duration: 0.8 }} />
+                      <motion.span className="absolute inset-0 rounded-xl border-2 border-ln-5742ff" initial={{ opacity: 0.8, scale: 1 }} animate={{ opacity: 0, scale: 1.4 }} transition={{ duration: 0.8 }} />
                     )}
                   </motion.button>
-                  <div className="flex items-center bg-white border border-[#ecebf7] rounded-xl overflow-hidden">
-                    <button onClick={() => setPan({ x: 0, y: 0 })} className="hidden sm:block p-2 text-gray-500 hover:bg-gray-50 border-r border-[#ecebf7]" title="Recenter"><Search size={16} /></button>
-                    <button onClick={() => setScale((s) => Math.max(s - 0.12, 0.3))} className="p-2 text-gray-500 hover:bg-gray-50 border-r border-[#ecebf7]" title="Zoom out"><Minus size={16} /></button>
-                    <button onClick={() => setScale((s) => Math.min(s + 0.12, 1.5))} className="p-2 text-gray-500 hover:bg-gray-50 sm:border-r border-[#ecebf7]" title="Zoom in"><Plus size={16} /></button>
+                  <div className="flex items-center bg-surface border border-ln-ecebf7 rounded-xl overflow-hidden">
+                    <button onClick={() => setPan({ x: 0, y: 0 })} className="hidden sm:block p-2 text-gray-500 hover:bg-gray-50 border-r border-ln-ecebf7" title="Recenter"><Search size={16} /></button>
+                    <button onClick={() => setScale((s) => Math.max(s - 0.12, 0.3))} className="p-2 text-gray-500 hover:bg-gray-50 border-r border-ln-ecebf7" title="Zoom out"><Minus size={16} /></button>
+                    <button onClick={() => setScale((s) => Math.min(s + 0.12, 1.5))} className="p-2 text-gray-500 hover:bg-gray-50 sm:border-r border-ln-ecebf7" title="Zoom in"><Plus size={16} /></button>
                     <button onClick={() => setIsFullscreen((f) => !f)} className="hidden sm:block p-2 text-gray-500 hover:bg-gray-50" title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
                       {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
                     </button>
@@ -370,7 +370,7 @@ export default function AISection() {
 
               <div
                 ref={canvasRef}
-                className={`flex-1 w-full relative min-h-[260px] sm:min-h-[320px] mb-5 bg-[#fafafe] rounded-[1.5rem] border border-[#f1f0fa] overflow-hidden touch-none select-none ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
+                className={`flex-1 w-full relative min-h-[260px] sm:min-h-[320px] mb-5 bg-sf-fafafe rounded-[1.5rem] border border-ln-f1f0fa overflow-hidden touch-none select-none ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
                 onPointerDown={onBgDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
@@ -406,7 +406,7 @@ export default function AISection() {
                             animate={{ opacity: 1, scale: draggedNode === key ? 1.06 : 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ ...spring(15, 0.7) }}
-                            className={`absolute w-[150px] -ml-[75px] -mt-[30px] bg-white rounded-2xl border border-gray-200 border-l-4 ${node.border} p-3 flex gap-3 items-center z-10 select-none ${draggedNode === key ? "cursor-grabbing shadow-lg" : "cursor-grab shadow-sm hover:shadow-md"}`}
+                            className={`absolute w-[150px] -ml-[75px] -mt-[30px] bg-surface rounded-2xl border border-gray-200 border-l-4 ${node.border} p-3 flex gap-3 items-center z-10 select-none ${draggedNode === key ? "cursor-grabbing shadow-lg" : "cursor-grab shadow-sm hover:shadow-md"}`}
                             style={{ left: node.x, top: node.y, touchAction: "none" }}
                           >
                             <div className={node.col}><node.icon size={18} /></div>
@@ -426,7 +426,7 @@ export default function AISection() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-0 flex items-center justify-center text-[13px] font-medium text-[#94a3b8] pointer-events-none"
+                      className="absolute inset-0 flex items-center justify-center text-[13px] font-medium text-fg-94a3b8 pointer-events-none"
                     >
                       Waiting for a prompt…
                     </motion.div>
@@ -445,12 +445,12 @@ export default function AISection() {
               <motion.div
                 whileHover="hover"
                 initial="rest"
-                className="h-full bg-white rounded-2xl p-5 border border-[#ecebf7] flex items-start gap-4 hover:border-[#d9d0fd] hover:shadow-[0_18px_36px_-18px_rgba(16,24,40,0.16)] transition-[border-color,box-shadow]"
+                className="h-full bg-surface rounded-2xl p-5 border border-ln-ecebf7 flex items-start gap-4 hover:border-ln-d9d0fd hover:shadow-[0_18px_36px_-18px_rgba(16,24,40,0.16)] transition-[border-color,box-shadow]"
               >
                 <motion.div
                   variants={{ rest: { rotate: 0, scale: 1 }, hover: { rotate: -10, scale: 1.1 } }}
                   transition={spring(16, 0.6)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#f5f3ff] text-[#5742FF]"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-sf-f5f3ff text-fg-5742ff"
                 >
                   <cap.icon size={20} strokeWidth={2} />
                 </motion.div>

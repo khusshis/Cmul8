@@ -226,7 +226,7 @@ export default function MonteCarloPanel({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0F0B2E]/55 p-2 backdrop-blur-sm sm:p-6">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-sf-0f0b2e/55 p-2 backdrop-blur-sm dark:bg-black/60 sm:p-6">
         <motion.div
           role="dialog"
           aria-modal="true"
@@ -234,12 +234,12 @@ export default function MonteCarloPanel({
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
-          className="flex h-full max-h-[96vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-[22px] border border-indigo-100 bg-[#F8F7FF] shadow-[0_25px_70px_rgba(15,11,46,0.35)] sm:max-h-[94vh] sm:rounded-[28px]"
+          className="flex h-full max-h-[96vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-[22px] border border-indigo-100 bg-sf-f8f7ff shadow-[0_25px_70px_rgba(15,11,46,0.35)] sm:max-h-[94vh] sm:rounded-[28px]"
         >
           {/* ── Header ── */}
-          <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-indigo-100/70 bg-white px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-indigo-100/70 bg-surface px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#5742FF] to-[#8B5CF6] text-white shadow-[0_6px_16px_-4px_rgba(87,66,255,0.5)]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sf-5742ff to-sf-8b5cf6 text-white shadow-[0_6px_16px_-4px_rgba(87,66,255,0.5)]">
                 <BarChart2 size={20} strokeWidth={2.4} />
               </div>
               <div className="min-w-0">
@@ -252,7 +252,7 @@ export default function MonteCarloPanel({
             <button type="button" onClick={onClose} aria-label="Close Reliability Lab" className={`order-2 flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition-colors hover:bg-gray-100 sm:order-3 ${focusRing}`}>
               <X size={16} />
             </button>
-            <div role="tablist" aria-label="Lab mode" className="order-3 flex w-full rounded-xl border border-indigo-100 bg-[#F4F2FF] p-1 sm:order-2 sm:w-auto">
+            <div role="tablist" aria-label="Lab mode" className="order-3 flex w-full rounded-xl border border-indigo-100 bg-sf-f4f2ff p-1 sm:order-2 sm:w-auto">
               {([
                 ["monte_carlo", "Stress test", RefreshCw, stressKinds],
                 ["scenario_compare", "Compare scenarios", Scale, ["compare"] as BatchKind[]],
@@ -264,11 +264,11 @@ export default function MonteCarloPanel({
                   aria-selected={activeTab === id}
                   onClick={() => setActiveTab(id)}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-extrabold transition-all sm:flex-none ${focusRing} ${
-                    activeTab === id ? "bg-white text-[#5742FF] shadow-[0_2px_8px_rgba(87,66,255,0.15)]" : "text-gray-500 hover:text-gray-900"
+                    activeTab === id ? "bg-surface text-fg-5742ff shadow-[0_2px_8px_rgba(87,66,255,0.15)] dark:bg-white/10" : "text-gray-500 hover:text-gray-900"
                   }`}
                 >
                   <Icon size={13} /> {label}
-                  {batch && kinds.includes(batch.kind) && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#5742FF] motion-reduce:animate-none" aria-label="running" />}
+                  {batch && kinds.includes(batch.kind) && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sf-5742ff motion-reduce:animate-none" aria-label="running" />}
                 </button>
               ))}
             </div>

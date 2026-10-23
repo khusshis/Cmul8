@@ -45,7 +45,7 @@ export default function FlowHeatmapTab({
 
   if (nodesWithHeat.length === 0) {
     return (
-      <div className="rounded-[24px] border border-[#ECEBF7] bg-white">
+      <div className="rounded-[24px] border border-ln-ecebf7 bg-surface">
         <EmptyState icon={Network} title="No stations to score" hint="Add blocks to your canvas and run the simulation to see where congestion builds." />
       </div>
     );
@@ -54,12 +54,12 @@ export default function FlowHeatmapTab({
   return (
     <div className="space-y-5">
       {/* ── Legend banner ── */}
-      <div className="flex flex-col gap-3 rounded-[22px] border border-[#E7E3FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#FFF6EC] p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-[22px] border border-ln-e7e3ff bg-gradient-to-r from-sf-f4f2ff via-surface to-sf-fff6ec p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-start gap-2.5">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#D55E00] shadow-sm"><Flame size={16} aria-hidden /></span>
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface text-fg-d55e00 shadow-sm"><Flame size={16} aria-hidden /></span>
           <div className="min-w-0">
             <div className="flex items-center gap-1">
-              <h3 className="text-[15px] font-extrabold text-[#161622]">Congestion heatmap</h3>
+              <h3 className="text-[15px] font-extrabold text-fg-161622">Congestion heatmap</h3>
               <HelpTip
                 align="start"
                 label="How the heat score works"
@@ -71,7 +71,7 @@ export default function FlowHeatmapTab({
         </div>
         <ul className="flex shrink-0 flex-wrap gap-2 text-[11.5px] font-bold" aria-label="Heat levels">
           {LEVELS.map((l, i) => (
-            <li key={l.label} className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 shadow-[0_1px_2px_rgba(16,24,40,.06)]" style={{ color: l.tone.text }}>
+            <li key={l.label} className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 shadow-[0_1px_2px_rgba(16,24,40,.06)]" style={{ color: l.tone.text }}>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.tone.solid }} aria-hidden />
               {l.label} <span className="font-semibold text-slate-500">{i === 0 ? "0–50" : i === 1 ? "51–80" : "81+"}</span>
             </li>
@@ -91,20 +91,20 @@ export default function FlowHeatmapTab({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.04, 0.4) }}
-              className={`group relative flex flex-col overflow-hidden rounded-[20px] border bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-22px_var(--ring)] motion-reduce:transform-none sm:p-5 ${
-                bottleneck ? "border-rose-300 ring-2 ring-rose-400/25" : "border-[#ECEBF7]"
+              className={`group relative flex flex-col overflow-hidden rounded-[20px] border bg-surface p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-22px_var(--ring)] motion-reduce:transform-none sm:p-5 ${
+                bottleneck ? "border-rose-300 ring-2 ring-rose-400/25" : "border-ln-ecebf7"
               }`}
               style={{ ["--ring" as string]: t.ring }}
               aria-label={`${stat.label}: congestion ${heat} of 100, ${level.label}${bottleneck ? ", bottleneck" : ""}`}
             >
-              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${t.solid}, ${t.solid}00 90%)` }} />
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${t.solid}, transparent 90%)` }} />
 
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <h4 className="min-w-0 break-words text-[14.5px] font-extrabold tracking-tight text-[#161622]">{stat.label}</h4>
+                    <h4 className="min-w-0 break-words text-[14.5px] font-extrabold tracking-tight text-fg-161622">{stat.label}</h4>
                     {bottleneck && (
-                      <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Bottleneck</span>
+                      <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white dark:bg-sf-be123c">Bottleneck</span>
                     )}
                   </div>
                   <span className="text-[12px] font-semibold text-slate-500">
@@ -131,12 +131,12 @@ export default function FlowHeatmapTab({
                 />
               </div>
 
-              <dl className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-[#FBFAFF] p-3 text-center">
+              <dl className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-sf-fbfaff p-3 text-center">
                 <div>
                   <dt className="flex items-center justify-center gap-1 text-[10.5px] font-bold uppercase text-slate-500"><ArrowDownToLine size={11} aria-hidden /> In</dt>
-                  <dd className="text-[17px] font-black tabular-nums text-[#161622]">{(stat.entitiesIn ?? 0).toLocaleString()}</dd>
+                  <dd className="text-[17px] font-black tabular-nums text-fg-161622">{(stat.entitiesIn ?? 0).toLocaleString()}</dd>
                 </div>
-                <div className="border-l border-[#ECEBF7]">
+                <div className="border-l border-ln-ecebf7">
                   <dt className="flex items-center justify-center gap-1 text-[10.5px] font-bold uppercase text-slate-500"><ArrowUpFromLine size={11} aria-hidden /> Out</dt>
                   <dd className="text-[17px] font-black tabular-nums text-emerald-700">{(stat.entitiesOut ?? 0).toLocaleString()}</dd>
                 </div>
@@ -146,12 +146,12 @@ export default function FlowHeatmapTab({
                 {stat.utilization !== undefined && (
                   <div className="flex items-center justify-between">
                     <dt>Busy</dt>
-                    <dd className="font-bold tabular-nums text-[#161622]">{Math.round((stat.utilization || 0) * 100)}%</dd>
+                    <dd className="font-bold tabular-nums text-fg-161622">{Math.round((stat.utilization || 0) * 100)}%</dd>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
                   <dt>Average wait</dt>
-                  <dd className="font-bold tabular-nums text-[#161622]">{fmtSeconds(stat.avgWaitTime)}</dd>
+                  <dd className="font-bold tabular-nums text-fg-161622">{fmtSeconds(stat.avgWaitTime)}</dd>
                 </div>
                 {(stat.renegeCount ?? 0) > 0 && (
                   <div className="flex items-center justify-between font-bold text-rose-700">

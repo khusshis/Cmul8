@@ -26,7 +26,7 @@ export default function Tooltip({
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute ${pos} ${x} z-50 flex items-center gap-2 whitespace-nowrap rounded-lg bg-[#161622] border border-[#3a3a4c] px-2.5 py-1.5 text-[11.5px] font-semibold text-white shadow-[0_8px_24px_-6px_rgba(16,24,40,.35)] opacity-0 ${shift} transition-[opacity,translate] duration-150 ease-out group-hover/tt:opacity-100 group-hover/tt:translate-y-0 group-hover/tt:delay-300 group-focus-within/tt:opacity-100 group-focus-within/tt:translate-y-0 motion-reduce:transition-none`}
+        className={`pointer-events-none absolute ${pos} ${x} z-50 flex items-center gap-2 whitespace-nowrap rounded-lg bg-sf-161622 border border-ln-3a3a4c px-2.5 py-1.5 text-[11.5px] font-semibold text-white shadow-[0_8px_24px_-6px_rgba(16,24,40,.35)] opacity-0 ${shift} transition-[opacity,translate] duration-150 ease-out group-hover/tt:opacity-100 group-hover/tt:translate-y-0 group-hover/tt:delay-300 group-focus-within/tt:opacity-100 group-focus-within/tt:translate-y-0 motion-reduce:transition-none`}
       >
         {label}
         {shortcut && (

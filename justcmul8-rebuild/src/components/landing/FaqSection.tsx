@@ -70,14 +70,14 @@ function ChatDemo() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10 }}
           transition={spring(16, 0.8)}
-          className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-white px-3.5 py-2 text-[13px] font-medium text-[#161622] shadow-[0_6px_16px_-8px_rgba(0,0,0,.4)]"
+          className="self-end max-w-[85%] rounded-2xl rounded-br-md bg-surface px-3.5 py-2 text-[13px] font-medium text-fg-161622 shadow-[0_6px_16px_-8px_rgba(0,0,0,.4)]"
         >
           {c.q}
         </motion.div>
         {stage === 1 && (
           <motion.div key={`t${i}`} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="self-start flex gap-1 rounded-2xl rounded-bl-md bg-white/20 px-3.5 py-3">
             {[0, 1, 2].map((d) => (
-              <motion.span key={d} className="h-1.5 w-1.5 rounded-full bg-white" animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.7, repeat: Infinity, delay: d * 0.12 }} />
+              <motion.span key={d} className="h-1.5 w-1.5 rounded-full bg-surface" animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.7, repeat: Infinity, delay: d * 0.12 }} />
             ))}
           </motion.div>
         )}
@@ -89,7 +89,7 @@ function ChatDemo() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10 }}
             transition={spring(16, 0.8)}
-            className="self-start max-w-[85%] rounded-2xl rounded-bl-md bg-[#161622]/35 px-3.5 py-2 text-[13px] font-medium text-white"
+            className="self-start max-w-[85%] rounded-2xl rounded-bl-md bg-sf-161622/35 px-3.5 py-2 text-[13px] font-medium text-white"
           >
             {c.a}
           </motion.div>
@@ -101,7 +101,7 @@ function ChatDemo() {
 
 function SupportCard() {
   return (
-    <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#7a67ff] via-[#5742FF] to-[#4a36e6] p-7 text-white shadow-[0_40px_80px_-35px_rgba(87,66,255,.7)]">
+    <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-7 text-white shadow-[0_40px_80px_-35px_rgba(87,66,255,.7)]">
       <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/12 to-transparent" />
       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 70%)" }} />
       <div className="relative">
@@ -119,7 +119,7 @@ function SupportCard() {
         <div className="mt-6 flex items-center gap-3">
           <div className="flex -space-x-2">
             {[["A", "#f59e0b"], ["R", "#10b981"], ["S", "#f43f5e"]].map(([l, c]) => (
-              <span key={l} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#5742FF] text-[12px] font-bold text-white" style={{ background: c }}>{l}</span>
+              <span key={l} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ln-5742ff text-[12px] font-bold text-white" style={{ background: c }}>{l}</span>
             ))}
           </div>
           <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-white/80">
@@ -129,7 +129,7 @@ function SupportCard() {
         </div>
 
         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-          <a href="mailto:hello@justcmul8.com" className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white border border-white/60 text-[14px] font-semibold text-[#5742FF] shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <a href="mailto:hello@justcmul8.com" className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-surface border border-white/60 text-[14px] font-semibold text-fg-5742ff shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <Mail size={16} /> Email us
           </a>
           <Link href="/signup" className="group inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/10 border border-white/20 text-[14px] font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20">
@@ -147,26 +147,26 @@ function QuestionCard({ item, n, open, onToggle }: { item: QA; n: number; open: 
     <motion.div
       layout
       transition={spring(16, 0.9)}
-      className={`group rounded-2xl border bg-white transition-[border-color,box-shadow,background-color] duration-300 ${
-        open ? "border-[#c4b5fd] bg-[#fbfaff] shadow-[0_18px_40px_-24px_rgba(87,66,255,.45)]" : "border-[#ecebf7] shadow-[0_1px_2px_rgba(16,24,40,.04)] hover:border-[#dcd8f3] hover:shadow-[0_12px_28px_-20px_rgba(16,24,40,.3)]"
+      className={`group rounded-2xl border bg-surface transition-[border-color,box-shadow,background-color] duration-300 ${
+        open ? "border-ln-c4b5fd bg-sf-fbfaff shadow-[0_18px_40px_-24px_rgba(87,66,255,.45)]" : "border-ln-ecebf7 shadow-[0_1px_2px_rgba(16,24,40,.04)] hover:border-ln-dcd8f3 hover:shadow-[0_12px_28px_-20px_rgba(16,24,40,.3)]"
       }`}
     >
       <button onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-4 px-5 py-4 text-left">
         <motion.span
-          animate={{ backgroundColor: open ? "#5742FF" : "#f5f3ff", color: open ? "#ffffff" : "#5742FF", rotate: open ? -8 : 0 }}
+          animate={{ rotate: open ? -8 : 0 }}
           transition={spring(16, 0.7)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${open ? "bg-sf-5742ff text-white" : "bg-sf-f5f3ff text-fg-5742ff"}`}
         >
           <Icon size={18} strokeWidth={2.2} />
         </motion.span>
         <span className="flex-1">
-          <span className="block text-[11px] font-bold tabular-nums text-[#b4b1cc]">{String(n).padStart(2, "0")}</span>
-          <span className="block text-[15.5px] font-semibold leading-snug text-[#161622]">{item.q}</span>
+          <span className="block text-[11px] font-bold tabular-nums text-fg-b4b1cc">{String(n).padStart(2, "0")}</span>
+          <span className="block text-[15.5px] font-semibold leading-snug text-fg-161622">{item.q}</span>
         </span>
         <motion.span
-          animate={{ rotate: open ? 45 : 0, backgroundColor: open ? "#161622" : "#ffffff" }}
+          animate={{ rotate: open ? 45 : 0 }}
           transition={spring(18, 0.8)}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${open ? "border-[#161622] text-white" : "border-[#e7e5f6] text-[#64748b] group-hover:text-[#5742FF]"}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ${open ? "bg-sf-161622 border-ln-161622 dark:border-white/15 text-white" : "bg-surface border-ln-e7e5f6 text-fg-64748b group-hover:text-fg-5742ff"}`}
         >
           <Plus size={15} />
         </motion.span>
@@ -174,7 +174,7 @@ function QuestionCard({ item, n, open, onToggle }: { item: QA; n: number; open: 
       <AnimatePresence initial={false}>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
-            <p className="pb-5 pl-[76px] pr-14 text-[14.5px] leading-relaxed text-[#475569]">{item.a}</p>
+            <p className="pb-5 pl-[76px] pr-14 text-[14.5px] leading-relaxed text-fg-475569">{item.a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -194,7 +194,7 @@ export default function FaqSection() {
       <div>
         {/* Category tabs */}
         <div className="flex overflow-x-auto no-scrollbar" role="tablist" aria-label="FAQ categories">
-          <div className="relative flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
+          <div className="relative flex h-11 items-center rounded-full bg-ink/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
             {CATEGORIES.map((c) => (
               <button
                 key={c.id}
@@ -203,8 +203,8 @@ export default function FaqSection() {
                 onClick={() => { setCat(c.id); setOpen(c.items[0].q); }}
                 className="relative h-9 whitespace-nowrap rounded-full px-4 text-[13.5px] font-semibold"
               >
-                {cat === c.id && <motion.span layoutId="faq-cat-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />}
-                <span className={`relative transition-colors ${cat === c.id ? "text-[#161622]" : "text-[#64748b] hover:text-[#161622]"}`}>{c.label}</span>
+                {cat === c.id && <motion.span layoutId="faq-cat-pill" className="absolute inset-0 rounded-full bg-surface shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff] dark:bg-white/[0.1] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]" transition={spring(20, 0.85)} />}
+                <span className={`relative transition-colors ${cat === c.id ? "text-fg-161622" : "text-fg-64748b hover:text-fg-161622"}`}>{c.label}</span>
               </button>
             ))}
           </div>

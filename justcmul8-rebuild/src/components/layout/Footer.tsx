@@ -85,7 +85,7 @@ function CtaPanel() {
         mx.set(((e.clientX - r.left) / r.width) * 100);
         my.set(((e.clientY - r.top) / r.height) * 100);
       }}
-      className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-[#161622] text-white px-6 py-14 sm:px-12 md:px-16 md:py-20"
+      className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-sf-161622 dark:bg-sf-5742ff/[0.10] dark:ring-1 dark:ring-inset dark:ring-white/[0.06] text-white px-6 py-14 sm:px-12 md:px-16 md:py-20"
     >
       <motion.div aria-hidden className="absolute inset-0" style={{ background: spot }} />
       <div
@@ -132,7 +132,7 @@ function CtaPanel() {
           <Magnetic>
             <Link
               href="/signup"
-              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] border border-[#8d80ff] font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
+              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
             >
               <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
               Start building free
@@ -155,8 +155,8 @@ function CtaPanel() {
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={href} className="group relative inline-flex items-center text-[14px] text-[#64748b] hover:text-[#161622] transition-colors">
-      <span className="absolute -left-3 w-1.5 h-1.5 rounded-full bg-[#8b5cf6] scale-0 group-hover:scale-100 transition-transform duration-200" />
+    <a href={href} className="group relative inline-flex items-center text-[14px] text-fg-64748b hover:text-fg-161622 transition-colors">
+      <span className="absolute -left-3 w-1.5 h-1.5 rounded-full bg-sf-8b5cf6 scale-0 group-hover:scale-100 transition-transform duration-200" />
       <span className="transition-transform duration-200 group-hover:translate-x-1">{children}</span>
     </a>
   );
@@ -175,8 +175,8 @@ function Wordmark() {
       key={i}
       className={`inline-block ${
         ink
-          ? "transition-colors duration-300 hover:text-[#5742FF]"
-          : "bg-gradient-to-r from-[#8b5cf6] via-[#5742FF] to-[#8b5cf6] bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
+          ? "transition-colors duration-300 hover:text-fg-5742ff"
+          : "bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-8b5cf6 bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
       }`}
       style={slice === undefined ? undefined : ({ ["--p" as string]: `${slice}%` } as React.CSSProperties)}
       variants={{
@@ -196,7 +196,7 @@ function Wordmark() {
         whileInView="show"
         viewport={VIEW}
       >
-        <span className="text-[#161622]">{"Just".split("").map((l, i) => letter(l, i, true))}</span>
+        <span className="text-fg-161622">{"Just".split("").map((l, i) => letter(l, i, true))}</span>
         <span>{"Cmul8".split("").map((l, i) => letter(l, i + 4, false, (i / 4) * 100))}</span>
       </motion.div>
     </div>
@@ -208,7 +208,7 @@ export default function Footer() {
   const toTop = () => (lenis ? lenis.scrollTo(0, { duration: 1.6 }) : window.scrollTo({ top: 0, behavior: "smooth" }));
 
   return (
-    <footer className="relative bg-[#fafaff] pt-16 md:pt-24 overflow-hidden">
+    <footer className="relative bg-sf-fafaff pt-16 md:pt-24 overflow-hidden">
       <div className="relative max-w-7xl mx-auto px-4">
         <CtaPanel />
 
@@ -223,14 +223,14 @@ export default function Footer() {
             <Link href="/" className="inline-flex items-center gap-2.5 group">
               <motion.img src={MARK_SRC} alt="" className="h-9 w-auto" whileHover={{ rotate: -12, scale: 1.08 }} transition={spring(14, 0.6)} />
               <span className="flex flex-col">
-                <span className="font-space font-bold text-[19px] leading-none tracking-tight text-[#161622] group-hover:text-[#5742FF] transition-colors">JustCmul8</span>
-                <span className="text-[11px] font-medium text-[#5742FF] mt-1">Model. Simulate. Optimize.</span>
+                <span className="font-space font-bold text-[19px] leading-none tracking-tight text-fg-161622 group-hover:text-fg-5742ff transition-colors">JustCmul8</span>
+                <span className="text-[11px] font-medium text-fg-5742ff mt-1">Model. Simulate. Optimize.</span>
               </span>
             </Link>
-            <p className="mt-5 text-[14px] text-[#64748b] leading-relaxed max-w-sm">
+            <p className="mt-5 text-[14px] text-fg-64748b leading-relaxed max-w-sm">
               The no-code discrete event simulation platform. Build, run and analyze models of any system — right in your browser.
             </p>
-            <a href="mailto:hello@justcmul8.com" className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-[#161622] hover:text-[#5742FF] transition-colors">
+            <a href="mailto:hello@justcmul8.com" className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold text-fg-161622 hover:text-fg-5742ff transition-colors">
               <Mail size={16} /> hello@justcmul8.com
             </a>
             <div className="mt-6 flex gap-2.5">
@@ -247,7 +247,7 @@ export default function Footer() {
                   whileHover={{ y: -3, rotate: -6 }}
                   whileTap={{ scale: 0.92 }}
                   transition={spring(18, 0.6)}
-                  className="w-10 h-10 rounded-full bg-white border border-[#ecebf7] text-[#64748b] hover:text-white hover:bg-[#5742FF] hover:border-[#5742FF] flex items-center justify-center transition-colors shadow-[0_6px_16px_-10px_rgba(16,24,40,0.16)]"
+                  className="w-10 h-10 rounded-full bg-surface border border-ln-ecebf7 text-fg-64748b hover:text-white hover:bg-sf-5742ff hover:border-ln-5742ff flex items-center justify-center transition-colors shadow-[0_6px_16px_-10px_rgba(16,24,40,0.16)]"
                 >
                   {s.icon}
                 </motion.a>
@@ -264,7 +264,7 @@ export default function Footer() {
               viewport={VIEW}
               transition={spring(12, 0.9, 0.08 * (ci + 1))}
             >
-              <h4 className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#94a3b8] mb-5">{col.title}</h4>
+              <h4 className="text-[11px] font-bold tracking-[0.18em] uppercase text-fg-94a3b8 mb-5">{col.title}</h4>
               <ul className="space-y-3.5 pl-3 -ml-3">
                 {col.links.map((l) => (
                   <li key={l.label}><FooterLink href={l.href}>{l.label}</FooterLink></li>
@@ -280,7 +280,7 @@ export default function Footer() {
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.92 }}
               transition={spring(18, 0.6)}
-              className="group w-12 h-12 rounded-full bg-white border border-[#ecebf7] text-[#5742FF] flex items-center justify-center shadow-[0_10px_24px_-12px_rgba(16,24,40,0.16)] hover:bg-[#5742FF] hover:text-white transition-colors"
+              className="group w-12 h-12 rounded-full bg-surface border border-ln-ecebf7 text-fg-5742ff flex items-center justify-center shadow-[0_10px_24px_-12px_rgba(16,24,40,0.16)] hover:bg-sf-5742ff hover:text-white transition-colors"
             >
               <ArrowUp size={18} strokeWidth={2.5} className="transition-transform group-hover:-translate-y-0.5" />
             </motion.button>
@@ -290,10 +290,10 @@ export default function Footer() {
 
       <Wordmark />
 
-      <div className="border-t border-[#ecebf7] bg-white/60">
-        <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12.5px] text-[#94a3b8]">
+      <div className="border-t border-ln-ecebf7 bg-surface/60">
+        <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12.5px] text-fg-94a3b8">
           <span>© {new Date().getFullYear()} JustCmul8. All rights reserved.</span>
-          <button onClick={toTop} className="md:hidden inline-flex items-center gap-1.5 font-semibold text-[#5742FF]">
+          <button onClick={toTop} className="md:hidden inline-flex items-center gap-1.5 font-semibold text-fg-5742ff">
             Back to top <ArrowUp size={14} />
           </button>
           <span className="hidden md:inline">Built for modelers, not coders.</span>

@@ -107,11 +107,11 @@ export default function ExecutiveTab({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           aria-label="System health score"
-          className="relative flex flex-col overflow-hidden rounded-[24px] border border-[#E7E3FF] bg-gradient-to-br from-white to-[#F4F2FF] p-5 shadow-[0_14px_36px_-24px_rgba(87,66,255,.35)] sm:p-6 lg:col-span-4"
+          className="relative flex flex-col overflow-hidden rounded-[24px] border border-ln-e7e3ff bg-gradient-to-br from-surface to-sf-f4f2ff p-5 shadow-[0_14px_36px_-24px_rgba(87,66,255,.35)] sm:p-6 lg:col-span-4"
         >
-          <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl" style={{ background: healthTone.tint }} />
+          <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl dark:opacity-[.16] dark:![background:var(--solid)]" style={{ background: healthTone.tint, ["--solid" as string]: healthTone.solid }} />
           <div className="relative flex items-center justify-between gap-2">
-            <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">System health</span>
+            <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-fg-4331e0">System health</span>
             <span className="rounded-full px-2.5 py-0.5 text-[11.5px] font-bold" style={{ background: healthTone.tint, color: healthTone.text }}>
               {healthScore >= 80 ? "Running great" : healthScore >= 60 ? "Needs attention" : "Heavy congestion"}
             </span>
@@ -128,24 +128,24 @@ export default function ExecutiveTab({
                     </linearGradient>
                   </defs>
                   <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                  <RadialBar dataKey="value" fill="url(#exec-health-grad)" cornerRadius={12} background={{ fill: "#ECEBFA" }} isAnimationActive />
+                  <RadialBar dataKey="value" fill="url(#exec-health-grad)" cornerRadius={12} background={{ fill: "var(--color-sf-ecebfa)" }} isAnimationActive />
                 </RadialBarChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[38px] font-black leading-none text-[#161622] tabular-nums">{healthScore}</span>
+                <span className="text-[38px] font-black leading-none text-fg-161622 tabular-nums">{healthScore}</span>
                 <span className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">of 100</span>
               </div>
             </div>
           </div>
 
-          <dl className="relative space-y-2 border-t border-[#ECEBF7] pt-3 text-[12.5px] text-slate-600">
+          <dl className="relative space-y-2 border-t border-ln-ecebf7 pt-3 text-[12.5px] text-slate-600">
             <div className="flex items-center justify-between gap-2">
               <dt className="flex items-center gap-1.5"><Check size={14} className="text-emerald-600" aria-hidden /> Completion rate</dt>
-              <dd className="font-bold text-[#161622] tabular-nums">{efficiencyRate}% finished</dd>
+              <dd className="font-bold text-fg-161622 tabular-nums">{efficiencyRate}% finished</dd>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <dt className="flex items-center gap-1.5"><Check size={14} className="text-[#5742FF]" aria-hidden /> Flow balance</dt>
-              <dd className="font-bold text-[#161622]">{result.littlesLaw?.isStable ? "Smooth flow" : "Line building up"}</dd>
+              <dt className="flex items-center gap-1.5"><Check size={14} className="text-fg-5742ff" aria-hidden /> Flow balance</dt>
+              <dd className="font-bold text-fg-161622">{result.littlesLaw?.isStable ? "Smooth flow" : "Line building up"}</dd>
             </div>
           </dl>
         </motion.section>
@@ -155,14 +155,14 @@ export default function ExecutiveTab({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
           aria-label="AI performance summary"
-          className="flex flex-col justify-between rounded-[24px] border border-[#ECEBF7] bg-white p-5 shadow-[0_14px_36px_-24px_rgba(16,24,40,.25)] sm:p-6 lg:col-span-8"
+          className="flex flex-col justify-between rounded-[24px] border border-ln-ecebf7 bg-surface p-5 shadow-[0_14px_36px_-24px_rgba(16,24,40,.25)] sm:p-6 lg:col-span-8"
         >
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F3F1FF] text-[#5742FF]"><Sparkles size={15} aria-hidden /></span>
-              <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">AI summary</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-f3f1ff text-fg-5742ff"><Sparkles size={15} aria-hidden /></span>
+              <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-fg-4331e0">AI summary</span>
             </div>
-            <h2 className="mb-2 text-[19px] font-extrabold tracking-tight text-[#161622] sm:text-[21px]">
+            <h2 className="mb-2 text-[19px] font-extrabold tracking-tight text-fg-161622 sm:text-[21px]">
               {aiDiagnosis?.title || "System performance overview"}
             </h2>
             <p className="text-[13.5px] leading-relaxed text-slate-600">
@@ -175,17 +175,17 @@ export default function ExecutiveTab({
             className="mt-4 flex items-start gap-3.5 rounded-2xl border p-4"
             style={{
               background: bottleneck ? TONES.warn.tint : TONES.good.tint,
-              borderColor: bottleneck ? "#FCD9A0" : "#BDEBD6",
+              borderColor: bottleneck ? "var(--color-ln-fcd9a0)" : "var(--color-ln-bdebd6)",
             }}
           >
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface"
               style={{ color: bottleneck ? TONES.warn.text : TONES.good.text }}
             >
               {bottleneck ? <AlertTriangle size={18} aria-hidden /> : <ShieldCheck size={18} aria-hidden />}
             </span>
             <div className="min-w-0 text-[13px] leading-relaxed">
-              <p className="font-extrabold text-[#161622]">
+              <p className="font-extrabold text-fg-161622">
                 {bottleneck ? (
                   <>Biggest delay: <span className="break-words">“{bottleneck.label}”</span></>
                 ) : (
@@ -242,7 +242,7 @@ export default function ExecutiveTab({
           label="Typical wait"
           value={isNum(waitP?.p50) ? waitP!.p50 : 0}
           format={fmtSeconds}
-          caption={<>Unlucky 5% wait <b className="text-[#161622]">{fmtSeconds(waitP?.p95)}</b> or more</>}
+          caption={<>Unlucky 5% wait <b className="text-fg-161622">{fmtSeconds(waitP?.p95)}</b> or more</>}
           range={
             waitP && waitP.max > 0
               ? { min: 0, max: waitP.max, value: waitP.p50, marker: waitP.p95, minLabel: "0s", markerLabel: "p95", maxLabel: `max ${fmtSeconds(waitP.max)}` }
@@ -273,7 +273,7 @@ export default function ExecutiveTab({
           </h3>
 
           {resolvedKpis.length === 0 ? (
-            <div className="rounded-[20px] border border-[#ECEBF7] bg-white">
+            <div className="rounded-[20px] border border-ln-ecebf7 bg-surface">
               <EmptyState compact title="No extra metrics for this simulation type" />
             </div>
           ) : (
@@ -293,14 +293,14 @@ export default function ExecutiveTab({
                     delay={0.05 + idx * 0.03}
                   >
                     {series && (
-                      <ul className="space-y-1.5 border-t border-[#F1F0FA] pt-2.5" aria-label={`${kpi.label} by station`}>
+                      <ul className="space-y-1.5 border-t border-ln-f1f0fa pt-2.5" aria-label={`${kpi.label} by station`}>
                         {[...series].sort((a, b) => b.value - a.value).slice(0, 3).map((item, sIdx) => (
                           <li key={sIdx} className="flex items-center gap-2 text-[11px]">
                             <span className="w-[72px] shrink-0 truncate font-semibold text-slate-600" title={item.name}>{item.name}</span>
                             <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                              <span className="block h-full rounded-full bg-gradient-to-r from-[#8b7bff] to-[#5742FF]" style={{ width: `${Math.min(100, (item.value / seriesMax) * 100)}%` }} />
+                              <span className="block h-full rounded-full bg-gradient-to-r from-sf-8b7bff to-sf-5742ff" style={{ width: `${Math.min(100, (item.value / seriesMax) * 100)}%` }} />
                             </span>
-                            <span className="shrink-0 font-bold tabular-nums text-[#161622]">
+                            <span className="shrink-0 font-bold tabular-nums text-fg-161622">
                               {isNum(item.value) ? item.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"}
                               {kpi.unit === "%" ? "%" : ""}
                             </span>
@@ -317,13 +317,13 @@ export default function ExecutiveTab({
 
         <section className="space-y-3 lg:col-span-6" aria-labelledby="exec-recs">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 id="exec-recs" className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">
+            <h3 id="exec-recs" className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-fg-4331e0">
               {aiRecs ? "AI recommendations" : "Ways to speed things up"}
             </h3>
             <button
               onClick={runAiOptimizer}
               disabled={aiLoading}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 disabled:opacity-60"
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
               {aiLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Sparkles size={13} aria-hidden />}
               {aiLoading ? "Analyzing…" : "Optimize with AI"}
@@ -331,7 +331,7 @@ export default function ExecutiveTab({
           </div>
 
           {activeRecommendations.length === 0 ? (
-            <div className="rounded-[20px] border border-[#ECEBF7] bg-white">
+            <div className="rounded-[20px] border border-ln-ecebf7 bg-surface">
               <EmptyState
                 compact
                 icon={Lightbulb}
@@ -350,12 +350,12 @@ export default function ExecutiveTab({
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 + i * 0.05 }}
-                    className="group flex items-start gap-3.5 rounded-[18px] border border-[#ECEBF7] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[border-color,box-shadow] hover:border-[#D9D3FB] hover:shadow-[0_12px_28px_-20px_rgba(87,66,255,.45)]"
+                    className="group flex items-start gap-3.5 rounded-[18px] border border-ln-ecebf7 bg-surface p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[border-color,box-shadow] hover:border-ln-d9d3fb hover:shadow-[0_12px_28px_-20px_rgba(87,66,255,.45)]"
                   >
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F3F1FF] text-[12px] font-black text-[#5742FF]">{i + 1}</span>
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sf-f3f1ff text-[12px] font-black text-fg-5742ff">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                        <h4 className="text-[13.5px] font-extrabold text-[#161622] group-hover:text-[#4331E0]">{rec.title}</h4>
+                        <h4 className="text-[13.5px] font-extrabold text-fg-161622 group-hover:text-fg-4331e0">{rec.title}</h4>
                         {isNum(rec.confidence) && (
                           <span className="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold" style={{ background: TONES.good.tint, color: TONES.good.text }} title="How confident the model is in this change">
                             {Math.round(rec.confidence)}% confident
@@ -363,10 +363,10 @@ export default function ExecutiveTab({
                         )}
                       </div>
                       <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">{rec.action}</p>
-                      {rec.impact && <p className="mt-1 text-[12px] font-semibold text-[#4331E0]">Expected benefit: {rec.impact}</p>}
+                      {rec.impact && <p className="mt-1 text-[12px] font-semibold text-fg-4331e0">Expected benefit: {rec.impact}</p>}
 
                       {fix && onApplyFix && (
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#F1F0FA] pt-2.5">
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-ln-f1f0fa pt-2.5">
                           <span className="min-w-0 truncate text-[11.5px] font-semibold text-slate-600" title={fix.description}>Fix: {fix.description}</span>
                           <button
                             onClick={() => {
@@ -374,8 +374,8 @@ export default function ExecutiveTab({
                               setAppliedFixIds((prev) => new Set([...prev, i]));
                             }}
                             disabled={applied}
-                            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
-                              applied ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-[#5742FF] text-white hover:bg-[#4531E5]"
+                            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${
+                              applied ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-sf-5742ff text-white hover:bg-sf-4531e5"
                             }`}
                           >
                             {applied ? <><Check size={13} strokeWidth={3} aria-hidden /> Applied</> : <><Zap size={13} fill="currentColor" aria-hidden /> Apply fix</>}

@@ -68,7 +68,7 @@ function LoginForm() {
             icon={<Lock size={18} strokeWidth={1.8} />}
           />
           <div className="flex justify-end mt-2.5">
-            <Link href="/forgot-password" className="text-[12.5px] font-semibold text-[#5742FF] hover:text-[#4531E5] transition-colors">
+            <Link href="/forgot-password" className="text-[12.5px] font-semibold text-fg-5742ff hover:text-fg-4531e5 transition-colors">
               Forgot password?
             </Link>
           </div>

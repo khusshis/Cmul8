@@ -74,7 +74,7 @@ export default function ToastContainer() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.94 }}
               transition={{ type: "spring", stiffness: 450, damping: 32 }}
-              className="pointer-events-auto w-full p-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-gray-100 shadow-[0_12px_36px_rgba(0,0,0,0.12)] flex items-start gap-3 text-left"
+              className="pointer-events-auto w-full p-3.5 rounded-2xl bg-surface/95 backdrop-blur-md border border-gray-100 shadow-[0_12px_36px_rgba(0,0,0,0.12)] flex items-start gap-3 text-left"
             >
               {/* Icon */}
               <div

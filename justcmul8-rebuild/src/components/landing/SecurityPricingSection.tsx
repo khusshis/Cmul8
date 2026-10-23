@@ -8,7 +8,7 @@ import PricingSection from "@/components/landing/PricingSection";
 
 const THEMES = {
   red: { bg: "bg-red-50", tag: "bg-red-50/60", text: "text-red-500", bar: "from-red-400 to-rose-500" },
-  purple: { bg: "bg-violet-50", tag: "bg-violet-50/60", text: "text-violet-600", bar: "from-[#8b5cf6] to-[#5742FF]" },
+  purple: { bg: "bg-violet-50", tag: "bg-violet-50/60", text: "text-violet-600", bar: "from-sf-8b5cf6 to-sf-5742ff" },
   green: { bg: "bg-green-50", tag: "bg-green-50/60", text: "text-green-600", bar: "from-emerald-400 to-green-500" },
 };
 
@@ -24,7 +24,7 @@ function SecurityCard({ color, title, desc, Icon, tags }: { color: keyof typeof 
         onHoverEnd={() => setHover(false)}
         animate={{ y: hover ? -8 : 0 }}
         transition={spring(18, 0.8)}
-        className="relative bg-white rounded-[2rem] border border-[#ecebf7] shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_28px_50px_-26px_rgba(16,24,40,0.16)] transition-shadow p-6 md:p-8 flex flex-col h-full overflow-hidden"
+        className="relative bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_28px_50px_-26px_rgba(16,24,40,0.16)] transition-shadow p-6 md:p-8 flex flex-col h-full overflow-hidden"
       >
         <motion.div
           className={`absolute top-0 left-1/2 -translate-x-1/2 h-[4px] rounded-b-md bg-gradient-to-r ${theme.bar}`}
@@ -65,7 +65,7 @@ function SecurityCard({ color, title, desc, Icon, tags }: { color: keyof typeof 
 
 export default function SecurityPricingSection() {
   return (
-    <section id="security" className="relative py-20 md:py-32 px-4 bg-white overflow-hidden">
+    <section id="security" className="relative py-20 md:py-32 px-4 bg-surface dark:bg-sf-fcfcff overflow-hidden">
       <Backdrop tone="a" />
       <div className="relative z-10 max-w-7xl mx-auto">
         <SectionHeader
@@ -108,7 +108,7 @@ export default function SecurityPricingSection() {
           <motion.div
             whileHover="hover"
             initial="rest"
-            className="bg-white rounded-3xl p-6 md:p-8 border border-[#ecebf7] shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_24px_50px_-28px_rgba(16,24,40,0.16)] transition-shadow flex flex-col xl:flex-row items-center gap-8 xl:gap-12"
+            className="bg-surface rounded-3xl p-6 md:p-8 border border-ln-ecebf7 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_24px_50px_-28px_rgba(16,24,40,0.16)] transition-shadow flex flex-col xl:flex-row items-center gap-8 xl:gap-12"
           >
             <div className="flex items-start gap-5 flex-1 w-full">
               <motion.div variants={{ rest: { rotate: 0, scale: 1 }, hover: { rotate: 8, scale: 1.08 } }} transition={spring(14, 0.6)} className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
@@ -119,7 +119,7 @@ export default function SecurityPricingSection() {
                 <p className="text-[13px] text-gray-500 leading-relaxed max-w-md">From a single project to millions of simulations — our architecture is built to scale without compromising on security or performance.</p>
               </div>
             </div>
-            <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 w-full xl:w-auto shrink-0 border-t border-[#f1f0fa] pt-6 xl:pt-0 xl:border-t-0 xl:border-l xl:pl-8" gap={0.08}>
+            <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 w-full xl:w-auto shrink-0 border-t border-ln-f1f0fa pt-6 xl:pt-0 xl:border-t-0 xl:border-l xl:pl-8" gap={0.08}>
               {[
                 { icon: Users, title: "Multi-Tenant", sub: "Isolated by Design" },
                 { icon: Shield, title: "99.9% Uptime", sub: "Enterprise SLA" },

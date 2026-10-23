@@ -294,7 +294,7 @@ export default function CompareTab(p: Props) {
           <div className={scenarios.length < 2
             ? `${cardCls} flex min-h-[220px] flex-col items-center justify-center gap-3 border-dashed p-6 text-center`
             : `${cardCls} flex flex-wrap items-center gap-3 border-dashed px-4 py-3 xl:col-span-2`}>
-            <span className={`flex shrink-0 items-center justify-center rounded-2xl bg-[#F3F1FF] text-[#5742FF] ${scenarios.length < 2 ? "h-12 w-12" : "h-9 w-9"}`}><Plus size={scenarios.length < 2 ? 22 : 17} aria-hidden /></span>
+            <span className={`flex shrink-0 items-center justify-center rounded-2xl bg-sf-f3f1ff text-fg-5742ff ${scenarios.length < 2 ? "h-12 w-12" : "h-9 w-9"}`}><Plus size={scenarios.length < 2 ? 22 : 17} aria-hidden /></span>
             <div className={scenarios.length < 2 ? "" : "min-w-0 flex-1"}>
               <p className="text-[13.5px] font-black text-gray-900">{scenarios.length === 0 ? "Add your first scenario" : `Add scenario ${SLOT_LETTERS[scenarios.length]}`}</p>
               <p className={`text-[12px] text-gray-500 ${scenarios.length < 2 ? "mx-auto mt-1 max-w-xs" : ""}`}>
@@ -350,7 +350,7 @@ export default function CompareTab(p: Props) {
               {p.library.length === 0 ? (
                 <p className="text-[12.5px] text-gray-500">Nothing saved yet.</p>
               ) : (
-                <ul className="divide-y divide-[#F1F0FA]">
+                <ul className="divide-y divide-ln-f1f0fa">
                   {p.library.map((it) => (
                     <li key={it.id} className="flex flex-wrap items-center gap-2 py-2">
                       <input defaultValue={it.name} aria-label="Saved scenario name" onBlur={(e) => e.target.value !== it.name && p.onLibrary.rename(it.id, e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()} className={`${inputCls} min-w-0 flex-1 border-transparent font-black hover:border-gray-200`} />
@@ -393,7 +393,7 @@ export default function CompareTab(p: Props) {
                     {METRIC_KEYS.map((k) => {
                       const on = !settings.hiddenMetrics.includes(k);
                       return (
-                        <button key={k} type="button" aria-pressed={on} onClick={() => update({ hiddenMetrics: on ? [...settings.hiddenMetrics, k] : settings.hiddenMetrics.filter((x) => x !== k) })} className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ring-1 ${on ? "bg-[#EFEDFF] text-[#4331E0] ring-indigo-200" : "bg-white text-gray-500 ring-gray-200 line-through"} ${focusRing}`}>
+                        <button key={k} type="button" aria-pressed={on} onClick={() => update({ hiddenMetrics: on ? [...settings.hiddenMetrics, k] : settings.hiddenMetrics.filter((x) => x !== k) })} className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ring-1 ${on ? "bg-sf-efedff text-fg-4331e0 ring-indigo-200" : "bg-surface text-gray-500 ring-gray-200 line-through"} ${focusRing}`}>
                           {meta[k].label}
                         </button>
                       );

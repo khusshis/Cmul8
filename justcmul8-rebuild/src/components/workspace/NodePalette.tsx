@@ -46,12 +46,12 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
 
   return (
     // Tinted panel so the white block cards read as the draggable items and the header as a plain label.
-    <div className="w-full border-r border-[#E6E1FB] bg-[#F3F0FF] h-full flex flex-col overflow-hidden shadow-[2px_0_12px_rgba(0,0,0,0.03)]">
+    <div className="w-full border-r border-ln-e6e1fb bg-sf-f3f0ff h-full flex flex-col overflow-hidden shadow-[2px_0_12px_rgba(0,0,0,0.03)]">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#5742FF]/80">Block Palette</h2>
-          <p className="mt-0.5 text-[11px] font-medium text-[#64748b]">Drag a block onto the canvas</p>
+          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-fg-5742ff/80">Block Palette</h2>
+          <p className="mt-0.5 text-[11px] font-medium text-fg-64748b">Drag a block onto the canvas</p>
         </div>
         <Tooltip label="Hide blocks" shortcut="[" align="end">
           <button onClick={onMinimize} aria-label="Hide blocks" className="p-1 hover:bg-gray-50 hover:text-gray-700 rounded-lg text-gray-400 transition-colors">
@@ -61,14 +61,14 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
       </div>
 
       {/* Search */}
-      <div className="px-3 pb-2.5 border-b border-[#ECE9FB]">
+      <div className="px-3 pb-2.5 border-b border-ln-ece9fb">
         <div className="relative">
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search blocks..."
-            className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-[#E7E3FF] text-[12px] bg-white outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-50 transition-all text-[#111827] placeholder:text-gray-400 font-medium"
+            className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-ln-e7e3ff text-[12px] bg-surface outline-none focus:border-indigo-200 focus:ring-2 focus:ring-indigo-50 transition-all text-fg-111827 placeholder:text-gray-400 font-medium"
           />
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
               </button>
 
               {!isCollapsed && (
-                <div className="rounded-2xl border border-gray-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+                <div className="rounded-2xl border border-gray-100 bg-surface shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
                   {filtered.map((n, idx) => {
                     const isLast = idx === filtered.length - 1;
                     return (
@@ -113,7 +113,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
                         draggable
                         onDragStart={(e) => onDragStart(e, n.type)}
                         onClick={() => onAddNode(n.type)}
-                        className={`p-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-[#FAF9FF] transition-colors group ${!isLast ? "border-b border-gray-100" : ""}`}
+                        className={`p-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-sf-faf9ff transition-colors group ${!isLast ? "border-b border-gray-100" : ""}`}
                       >
                         {/* Icon Box */}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${theme.iconBg} ${theme.iconColor} group-hover:scale-105 transition-transform duration-200`}>
@@ -125,9 +125,9 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
 
                         {/* Text */}
                         <div className="min-w-0">
-                          <div className="text-[12.5px] font-bold text-[#111827] leading-tight">{n.label}</div>
+                          <div className="text-[12.5px] font-bold text-fg-111827 leading-tight">{n.label}</div>
                           {(n as any).desc && (
-                            <div className="text-[11px] text-[#64748b] leading-snug mt-0.5 line-clamp-1">{(n as any).desc}</div>
+                            <div className="text-[11px] text-fg-64748b leading-snug mt-0.5 line-clamp-1">{(n as any).desc}</div>
                           )}
                         </div>
                       </div>
@@ -141,7 +141,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-[#ECE9FB]">
+      <div className="p-3 border-t border-ln-ece9fb">
         <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors font-bold text-[12.5px] border border-indigo-100/60">
           <Plus size={14} strokeWidth={2.5} />
           Add Custom Block

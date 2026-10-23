@@ -30,6 +30,7 @@ import TemplateGallery from "@/components/workspace/TemplateGallery";
 import ShareExportModal from "@/components/workspace/ShareExportModal";
 import AdvancedResultsDashboard from "@/components/workspace/AdvancedResultsDashboard";
 import MonteCarloPanel from "@/components/workspace/MonteCarloPanel";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import DigitalTwinCanvas, { type TwinViewport, type TwinFrameInfo } from "@/components/workspace/DigitalTwinCanvas";
 import PlaybackControls from "@/components/workspace/PlaybackControls";
 import LiveCursor from "@/components/workspace/LiveCursor";
@@ -103,9 +104,9 @@ function SidePanel({ side, open, width, animate, onResize, children }: { side: "
             if (step) { e.preventDefault(); onResize(clampPanel(side, width + step * dir)); }
           }}
           title="Drag (or use arrow keys) to resize • Double-click to reset"
-          className={`group absolute top-0 z-30 flex h-full w-3 cursor-col-resize items-center justify-center transition-colors hover:bg-[#5742FF]/10 focus-visible:bg-[#5742FF]/10 focus-visible:outline-none ${side === "left" ? "-right-1.5" : "-left-1.5"}`}
+          className={`group absolute top-0 z-30 flex h-full w-3 cursor-col-resize items-center justify-center transition-colors hover:bg-sf-5742ff/10 focus-visible:bg-sf-5742ff/10 focus-visible:outline-none ${side === "left" ? "-right-1.5" : "-left-1.5"}`}
         >
-          <div className="h-16 w-1 rounded-full bg-indigo-200/0 transition-all group-hover:h-24 group-hover:bg-[#5742FF] group-focus-visible:h-24 group-focus-visible:bg-[#5742FF]" />
+          <div className="h-16 w-1 rounded-full bg-indigo-200/0 transition-all group-hover:h-24 group-hover:bg-sf-5742ff group-focus-visible:h-24 group-focus-visible:bg-sf-5742ff" />
         </div>
       )}
       <div
@@ -147,9 +148,9 @@ function ReopenButton({ side, visible, animate, onClick, label, shortcut }: { si
           onClick={onClick}
           tabIndex={visible ? 0 : -1}
           aria-label={`Show ${label}`}
-          className={`flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white border border-gray-200 text-[12px] font-bold text-gray-700 shadow-[0_4px_14px_rgba(16,24,40,0.08)] hover:bg-gray-50 transition-colors ${side === "right" ? "flex-row-reverse" : ""}`}
+          className={`flex items-center gap-1.5 h-9 px-3 rounded-xl bg-surface border border-gray-200 text-[12px] font-bold text-gray-700 shadow-[0_4px_14px_rgba(16,24,40,0.08)] hover:bg-gray-50 transition-colors ${side === "right" ? "flex-row-reverse" : ""}`}
         >
-          <Icon size={15} strokeWidth={2.25} className="text-[#5742FF]" />
+          <Icon size={15} strokeWidth={2.25} className="text-fg-5742ff" />
           {label}
         </button>
       </Tooltip>
@@ -845,7 +846,7 @@ export default function WorkspacePage() {
     {!loading && (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
       {/* ── Top Toolbar ──────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-white relative z-30">
+      <div className="flex-shrink-0 h-[60px] flex items-center justify-between px-4 border-b border-gray-100 bg-surface relative z-30">
         
         {/* Left Section: Logo, Breadcrumbs, Undo/Redo */}
         <div className="flex items-center gap-3 shrink-0 min-w-0 mr-3">
@@ -853,8 +854,8 @@ export default function WorkspacePage() {
           <Link href="/dashboard" className="flex items-center gap-2 group cursor-pointer shrink-0" title="Go to Dashboard">
             <img src="/logo-transparent.png" alt="JustCmul8" className="w-8 h-8 object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105" />
             <div className="flex flex-col">
-              <span className="font-extrabold text-[15px] text-[#111827] group-hover:text-[#5742FF] transition-colors leading-[1.1] tracking-tight whitespace-nowrap">JustCmul8</span>
-              <span className="text-[10px] text-[#5742FF] font-medium leading-[1.1] whitespace-nowrap">Model. Simulate. Optimize.</span>
+              <span className="font-extrabold text-[15px] text-fg-111827 group-hover:text-fg-5742ff transition-colors leading-[1.1] tracking-tight whitespace-nowrap">JustCmul8</span>
+              <span className="text-[10px] text-fg-5742ff font-medium leading-[1.1] whitespace-nowrap">Model. Simulate. Optimize.</span>
             </div>
           </Link>
 
@@ -863,14 +864,14 @@ export default function WorkspacePage() {
 
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-400 shrink-0 min-w-0">
-            <Link href="/dashboard" className="flex items-center gap-1 hover:text-[#5742FF] transition-colors shrink-0 whitespace-nowrap">
+            <Link href="/dashboard" className="flex items-center gap-1 hover:text-fg-5742ff transition-colors shrink-0 whitespace-nowrap">
               <Home size={14} /> My Simulations
             </Link>
-            <ChevronRight size={13} className="text-gray-300 shrink-0" />
-            <div className="flex items-center gap-1 text-[#111827] font-bold cursor-pointer group hover:text-[#5742FF] transition-colors shrink-0">
+            <ChevronRight size={13} className="text-gray-300 dark:text-white/25 shrink-0" />
+            <div className="flex items-center gap-1 text-fg-111827 font-bold cursor-pointer group hover:text-fg-5742ff transition-colors shrink-0">
               <span className="max-w-[120px] lg:max-w-[160px] truncate">{project?.name || "Loading..."}</span>
-              <ChevronDown size={13} className="text-gray-400 group-hover:text-[#5742FF] transition-colors shrink-0" />
-              <Edit2 size={12} className="text-gray-400 group-hover:text-[#5742FF] transition-colors ml-0.5 shrink-0" />
+              <ChevronDown size={13} className="text-gray-400 group-hover:text-fg-5742ff transition-colors shrink-0" />
+              <Edit2 size={12} className="text-gray-400 group-hover:text-fg-5742ff transition-colors ml-0.5 shrink-0" />
             </div>
           </div>
 
@@ -888,7 +889,7 @@ export default function WorkspacePage() {
               disabled={!canUndo}
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
-              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-[#5742FF] hover:bg-white hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-fg-5742ff hover:bg-surface hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
             >
               <Undo2 size={14} strokeWidth={2.4} />
             </button>
@@ -899,7 +900,7 @@ export default function WorkspacePage() {
               disabled={!canRedo}
               title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
               aria-label="Redo"
-              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-[#5742FF] hover:bg-white hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
+              className="flex items-center justify-center w-7 h-7 rounded-full text-gray-700 hover:text-fg-5742ff hover:bg-surface hover:shadow-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-700 active:scale-95"
             >
               <Redo2 size={14} strokeWidth={2.4} />
             </button>
@@ -952,9 +953,9 @@ export default function WorkspacePage() {
           </div>
 
           {/* Simulation Duration Control Pill */}
-          <div className="relative flex items-center h-[32px] rounded-full bg-white border border-gray-200 text-[#111827] shadow-xs px-2.5 text-[12px] font-bold shrink-0 whitespace-nowrap">
+          <div className="relative flex items-center h-[32px] rounded-full bg-surface border border-gray-200 text-fg-111827 shadow-xs px-2.5 text-[12px] font-bold shrink-0 whitespace-nowrap">
             <div className="flex items-center pl-0.5 pr-1.5 text-gray-400">
-              <Clock size={13} strokeWidth={2.3} className="text-[#5742FF] shrink-0" />
+              <Clock size={13} strokeWidth={2.3} className="text-fg-5742ff shrink-0" />
             </div>
 
             <input
@@ -964,7 +965,7 @@ export default function WorkspacePage() {
               value={durationValue}
               onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
               disabled={simState === "running"}
-              className="w-12 min-w-[46px] h-6 px-1 text-center font-extrabold text-[12.5px] text-[#111827] bg-gray-50 rounded-md border border-gray-200 focus:bg-white focus:border-[#5742FF] focus:outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-12 min-w-[46px] h-6 px-1 text-center font-extrabold text-[12.5px] text-fg-111827 bg-gray-50 rounded-md border border-gray-200 focus:bg-surface focus:border-ln-5742ff focus:outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               title="Simulation Duration"
             />
 
@@ -973,7 +974,7 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={() => setDurationUnitOpen((o) => !o)}
                 disabled={simState === "running"}
-                className="flex items-center gap-1 px-1.5 py-0.5 text-[11.5px] font-bold text-gray-700 hover:text-[#5742FF] transition-colors rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center gap-1 px-1.5 py-0.5 text-[11.5px] font-bold text-gray-700 hover:text-fg-5742ff transition-colors rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 <span>{durationUnit}</span>
                 <ChevronDown size={11} strokeWidth={2.5} className="text-gray-400 shrink-0" />
@@ -982,7 +983,7 @@ export default function WorkspacePage() {
               {durationUnitOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setDurationUnitOpen(false)} />
-                  <div className="absolute top-full right-0 mt-2 w-28 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50">
+                  <div className="absolute top-full right-0 mt-2 w-28 bg-surface rounded-xl shadow-xl border border-gray-100 py-1.5 z-50">
                     <div className="px-3 py-1 text-[9.5px] font-extrabold text-gray-400 uppercase tracking-widest">
                       Unit
                     </div>
@@ -998,8 +999,8 @@ export default function WorkspacePage() {
                           setDurationUnit(u.id as any);
                           setDurationUnitOpen(false);
                         }}
-                        className={`w-full text-left px-3.5 py-1.5 text-[12px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${
-                          durationUnit === u.id ? "text-[#5742FF] bg-indigo-50/60" : "text-gray-700"
+                        className={`w-full text-left px-3.5 py-1.5 text-[12px] font-bold hover:bg-sf-f8f7ff flex items-center justify-between transition-colors ${
+                          durationUnit === u.id ? "text-fg-5742ff bg-indigo-50/60" : "text-gray-700"
                         }`}
                       >
                         <span>{u.label}</span>
@@ -1018,14 +1019,14 @@ export default function WorkspacePage() {
               type="button"
               onClick={handleRun}
               disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
-              className="flex items-center h-full gap-1.5 pl-3.5 pr-2.5 rounded-l-full bg-[#5742FF] text-white text-[12.5px] font-bold hover:bg-[#4531E5] disabled:opacity-50 transition-colors border-r border-[#4531E5]"
+              className="flex items-center h-full gap-1.5 pl-3.5 pr-2.5 rounded-l-full bg-sf-5742ff text-white text-[12.5px] font-bold hover:bg-sf-4531e5 disabled:opacity-50 transition-colors border-r border-ln-4531e5"
             >
               <Play size={13} fill="currentColor" className="shrink-0" /> Run
             </button>
             <button
               type="button"
               onClick={() => setSpeedDropdownOpen(!speedDropdownOpen)}
-              className="flex items-center justify-center h-full pl-1.5 pr-2.5 rounded-r-full bg-[#5742FF] text-white hover:bg-[#4531E5] transition-colors disabled:opacity-50"
+              className="flex items-center justify-center h-full pl-1.5 pr-2.5 rounded-r-full bg-sf-5742ff text-white hover:bg-sf-4531e5 transition-colors disabled:opacity-50"
               title="Select Simulation Speed"
             >
               <ChevronDown size={13} strokeWidth={2.5} />
@@ -1035,7 +1036,7 @@ export default function WorkspacePage() {
             {speedDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setSpeedDropdownOpen(false)}></div>
-                <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                <div className="absolute top-full right-0 mt-2 w-32 bg-surface rounded-xl shadow-xl border border-gray-100 py-2 z-50">
                   <div className="px-3 py-1 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Speed</div>
                   {speedOptions.map(s => (
                     <button
@@ -1045,7 +1046,7 @@ export default function WorkspacePage() {
                         if (engineRef.current?.updateSpeed) engineRef.current.updateSpeed(s);
                         setSpeedDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-[13px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${speed === s ? 'text-[#5742FF]' : 'text-gray-600'}`}
+                      className={`w-full text-left px-4 py-2 text-[13px] font-bold hover:bg-sf-f8f7ff flex items-center justify-between transition-colors ${speed === s ? 'text-fg-5742ff' : 'text-gray-600'}`}
                     >
                       {s}x
                       {speed === s && <Check size={14} strokeWidth={3} />}
@@ -1067,7 +1068,7 @@ export default function WorkspacePage() {
                 : "Pause Simulation"
             }
             aria-label="Pause"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#5742FF] hover:bg-gray-50 disabled:opacity-40 transition-all shadow-xs disabled:cursor-not-allowed shrink-0 active:scale-95"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-gray-200 text-gray-700 hover:text-fg-5742ff hover:bg-gray-50 disabled:opacity-40 transition-all shadow-xs disabled:cursor-not-allowed shrink-0 active:scale-95"
           >
             <Pause size={13} fill="currentColor" />
           </button>
@@ -1079,7 +1080,7 @@ export default function WorkspacePage() {
             disabled={simState === "idle"}
             title="Stop Simulation"
             aria-label="Stop"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 transition-all shadow-xs shrink-0 active:scale-95"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-gray-200 text-gray-700 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 transition-all shadow-xs shrink-0 active:scale-95"
           >
             <Square size={12} fill="currentColor" />
           </button>
@@ -1092,17 +1093,17 @@ export default function WorkspacePage() {
             const currentVal = (currentSecs / unitMult).toFixed(1);
             const pct = Math.min(100, Math.round((currentSecs / totalSecs) * 100));
             return (
-              <div className="flex items-center gap-2 h-[32px] px-3 rounded-full bg-[#F5F3FF] border border-indigo-100 text-[#1E1B4B] text-[11.5px] font-bold shadow-xs shrink-0 whitespace-nowrap">
-                <div className="flex items-center gap-1 text-[#5742FF]">
+              <div className="flex items-center gap-2 h-[32px] px-3 rounded-full bg-sf-f5f3ff border border-indigo-100 text-fg-1e1b4b text-[11.5px] font-bold shadow-xs shrink-0 whitespace-nowrap">
+                <div className="flex items-center gap-1 text-fg-5742ff">
                   <Clock size={12} strokeWidth={2.5} className="shrink-0" />
                   <span>{currentVal}/{durationValue} {durationUnit}</span>
                 </div>
-                <span className="text-indigo-200">|</span>
+                <span className="text-indigo-200 dark:text-white/20">|</span>
                 <span className="text-emerald-600 font-extrabold" title="Total Entities Arrived">↑{simTick?.totalArrived ?? 0}</span>
-                <span className="text-[#5742FF] font-extrabold" title="Total Entities Completed">↓{simTick?.totalCompleted ?? 0}</span>
+                <span className="text-fg-5742ff font-extrabold" title="Total Entities Completed">↓{simTick?.totalCompleted ?? 0}</span>
                 <div className="w-10 h-1.5 bg-indigo-200/60 rounded-full overflow-hidden shrink-0">
                   <div
-                    className="h-full bg-[#5742FF] rounded-full transition-all duration-200"
+                    className="h-full bg-sf-5742ff rounded-full transition-all duration-200"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -1118,22 +1119,22 @@ export default function WorkspacePage() {
               onClick={() => setMoreMenuOpen((v) => !v)}
               className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all shadow-xs active:scale-95 ${
                 digitalTwinActive || moreMenuOpen
-                  ? "bg-indigo-50 border-[#5742FF] text-[#5742FF]"
-                  : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-[#5742FF]"
+                  ? "bg-indigo-50 border-ln-5742ff text-fg-5742ff"
+                  : "bg-surface border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-fg-5742ff"
               }`}
               title="More Options (Digital Twin, Monte Carlo, Python Code)"
               aria-label="More Options"
             >
               <MoreHorizontal size={15} strokeWidth={2.4} />
               {digitalTwinActive && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#5742FF] rounded-full border-2 border-white" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-sf-5742ff rounded-full border-2 border-surface" />
               )}
             </button>
 
             {moreMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMoreMenuOpen(false)} />
-                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute top-full right-0 mt-2 w-64 bg-surface rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-3.5 py-1 text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
                     Simulation Views & Tools
                   </div>
@@ -1145,12 +1146,12 @@ export default function WorkspacePage() {
                       setDigitalTwinActive((d) => !d);
                       setMoreMenuOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors ${
-                      digitalTwinActive ? "text-[#5742FF] bg-indigo-50/50" : "text-gray-700"
+                    className={`w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-sf-f8f7ff flex items-center justify-between transition-colors ${
+                      digitalTwinActive ? "text-fg-5742ff bg-indigo-50/50" : "text-gray-700"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${digitalTwinActive ? "bg-[#5742FF] text-white" : "bg-gray-100 text-gray-600"}`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${digitalTwinActive ? "bg-sf-5742ff text-white" : "bg-gray-100 text-gray-600"}`}>
                         <Activity size={14} strokeWidth={2.4} />
                       </div>
                       <div>
@@ -1158,7 +1159,7 @@ export default function WorkspacePage() {
                         <div className="text-[10.5px] font-medium text-gray-400">Live 2D physics animation</div>
                       </div>
                     </div>
-                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${digitalTwinActive ? "bg-[#5742FF] text-white" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${digitalTwinActive ? "bg-sf-5742ff text-white" : "bg-gray-100 text-gray-500"}`}>
                       {digitalTwinActive ? "ON" : "OFF"}
                     </span>
                   </button>
@@ -1171,10 +1172,10 @@ export default function WorkspacePage() {
                       setMoreMenuOpen(false);
                     }}
                     disabled={simState === "running"}
-                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-sf-f8f7ff flex items-center justify-between transition-colors text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-[#5742FF] flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-fg-5742ff flex items-center justify-center">
                         <BarChart2 size={14} strokeWidth={2.4} />
                       </div>
                       <div>
@@ -1191,7 +1192,7 @@ export default function WorkspacePage() {
                       setCodeInspectorOpen(true);
                       setMoreMenuOpen(false);
                     }}
-                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-[#F8F7FF] flex items-center justify-between transition-colors text-gray-700"
+                    className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold hover:bg-sf-f8f7ff flex items-center justify-between transition-colors text-gray-700"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -1214,7 +1215,7 @@ export default function WorkspacePage() {
                 <div
                   key={u.id}
                   title={u.name}
-                  className="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-white shrink-0"
+                  className="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-surface shrink-0"
                   style={{ background: u.color }}
                 >
                   {u.name.charAt(0).toUpperCase()}
@@ -1223,7 +1224,7 @@ export default function WorkspacePage() {
               {remoteUsers.length > 4 && (
                 <div
                   title={remoteUsers.slice(4).map((u) => u.name).join(", ")}
-                  className="w-7 h-7 rounded-full bg-gray-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-white shrink-0"
+                  className="w-7 h-7 rounded-full bg-gray-500 text-white flex items-center justify-center font-bold text-[11px] shadow-xs border-2 border-surface shrink-0"
                 >
                   +{remoteUsers.length - 4}
                 </div>
@@ -1234,20 +1235,22 @@ export default function WorkspacePage() {
           {/* Right Divider */}
           <div className="w-px h-6 bg-gray-200 mx-0.5 shrink-0" />
 
+          <ThemeToggle />
+
           {/* Share Button (Circular) */}
           <button
             type="button"
             onClick={() => setShareModalOpen(true)}
             title="Share & Export Simulation"
             aria-label="Share"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#5742FF] hover:bg-gray-50 transition-all shadow-xs shrink-0 active:scale-95"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-gray-200 text-gray-700 hover:text-fg-5742ff hover:bg-gray-50 transition-all shadow-xs shrink-0 active:scale-95"
           >
             <Share2 size={14} strokeWidth={2.2} />
           </button>
 
           {/* Avatar (Circular) */}
           <div className="flex items-center gap-1 cursor-pointer group ml-0.5 shrink-0" title={currentUser?.email || "User Profile"}>
-            <div className="w-8 h-8 rounded-full bg-[#5742FF] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+            <div className="w-8 h-8 rounded-full bg-sf-5742ff text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               {currentUser?.email ? currentUser.email[0].toUpperCase() : "M"}
             </div>
             <ChevronDown size={13} className="text-gray-400 group-hover:text-gray-600 transition-colors shrink-0" />
@@ -1331,14 +1334,14 @@ export default function WorkspacePage() {
                 <summary
                   title={`Compare ${selectedCount} selected block${selectedCount > 1 ? "s" : ""}`}
                   aria-label="Compare selected blocks"
-                  className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-2xl border border-[#ecebf7] bg-white text-[#5742FF] shadow-[0_10px_28px_-12px_rgba(16,24,40,0.22)] transition-colors hover:bg-[#f5f3ff] group-open:bg-[#f5f3ff] [&::-webkit-details-marker]:hidden"
+                  className="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-2xl border border-ln-ecebf7 bg-surface text-fg-5742ff shadow-[0_10px_28px_-12px_rgba(16,24,40,0.22)] transition-colors hover:bg-sf-f5f3ff group-open:bg-sf-f5f3ff [&::-webkit-details-marker]:hidden"
                 >
                   <GitCompareArrows size={16} strokeWidth={2.2} />
-                  <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#5742FF] px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-sf-5742ff px-1 text-[10px] font-bold text-white ring-2 ring-surface">
                     {selectedCount}
                   </span>
                 </summary>
-                <div className="absolute bottom-12 left-0 w-52 whitespace-nowrap rounded-2xl border border-[#ecebf7] bg-white p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.28)]">
+                <div className="absolute bottom-12 left-0 w-52 whitespace-nowrap rounded-2xl border border-ln-ecebf7 bg-surface p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,0.28)]">
                   <p className="px-2.5 pb-1 pt-1.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-gray-400">
                     Compare {selectedCount} block{selectedCount > 1 ? "s" : ""}
                   </p>
@@ -1386,10 +1389,10 @@ export default function WorkspacePage() {
         </div>
 
         <SidePanel side="right" open={rightOpen} width={rightWidth} onResize={setRightWidth} animate={panelsReady}>
-        <div className="w-full border-l border-gray-100 bg-[#fcfcfd] h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
+        <div className="w-full border-l border-gray-100 bg-sf-fcfcfd h-full flex flex-col overflow-hidden shadow-[-2px_0_12px_rgba(0,0,0,0.03)] shrink-0">
           {/* Top Unified Header with Circular Pill Shaped Animated Tab Switcher */}
-          <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between gap-2 shrink-0">
-            <div className="flex bg-[#F1F2F6] p-1 rounded-full w-full border border-gray-200/60 relative">
+          <div className="p-3 bg-surface border-b border-gray-100 flex items-center justify-between gap-2 shrink-0">
+            <div className="flex bg-sf-f1f2f6 p-1 rounded-full w-full border border-gray-200/60 relative">
               <button
                 type="button"
                 onClick={() => setActiveRightPanel("ai")}
@@ -1403,7 +1406,7 @@ export default function WorkspacePage() {
                   <motion.div
                     layoutId="activeRightSidebarTabPill"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    className="absolute inset-0 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] border border-[#8d80ff] rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
+                    className="absolute inset-0 bg-gradient-to-r from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
                   />
                 )}
                 <Sparkles size={13} className={activeRightPanel === "ai" ? "text-white" : "text-gray-400"} />
@@ -1423,7 +1426,7 @@ export default function WorkspacePage() {
                   <motion.div
                     layoutId="activeRightSidebarTabPill"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    className="absolute inset-0 bg-[#111827] rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.25)] -z-10"
+                    className="absolute inset-0 bg-sf-111827 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.25)] -z-10"
                   />
                 )}
                 <Settings size={13} className={activeRightPanel === "properties" ? "text-white" : "text-gray-400"} />
@@ -1478,11 +1481,11 @@ export default function WorkspacePage() {
                   }}
                 />
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center gap-2 text-[#9ca3af] px-6">
-                  <div className="w-12 h-12 rounded-[14px] bg-[#f5f5fa] flex items-center justify-center mb-1">
-                    <Settings size={22} className="text-[#c4c4d0]" />
+                <div className="h-full flex flex-col items-center justify-center text-center gap-2 text-fg-9ca3af px-6">
+                  <div className="w-12 h-12 rounded-[14px] bg-sf-f5f5fa flex items-center justify-center mb-1">
+                    <Settings size={22} className="text-fg-c4c4d0" />
                   </div>
-                  <p className="text-[13px] text-[#6b7280] leading-relaxed">Select a block on the canvas to configure it.</p>
+                  <p className="text-[13px] text-fg-6b7280 leading-relaxed">Select a block on the canvas to configure it.</p>
                 </div>
               )
             ) : (

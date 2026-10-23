@@ -49,7 +49,7 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
         components={{
           a: ({ href, children }) =>
             typeof href === "string" && /^https?:\/\//i.test(href) ? (
-              <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-[#4F46E5] underline break-all">
+              <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-fg-4f46e5 underline break-all">
                 {children}
               </a>
             ) : (
@@ -66,7 +66,7 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-[12px] font-black text-[#4338CA] mt-2 mb-0.5 tracking-tight flex items-center gap-1">
+            <h3 className="text-[12px] font-black text-fg-4338ca mt-2 mb-0.5 tracking-tight flex items-center gap-1">
               {children}
             </h3>
           ),
@@ -86,12 +86,12 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
             </strong>
           ),
           ul: ({ children }) => (
-            <ul className="list-disc pl-4 space-y-1 my-1 text-[11.5px] marker:text-[#6366F1]">
+            <ul className="list-disc pl-4 space-y-1 my-1 text-[11.5px] marker:text-fg-6366f1">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal pl-4 space-y-1 my-1 text-[11.5px] marker:text-[#6366F1] font-semibold">
+            <ol className="list-decimal pl-4 space-y-1 my-1 text-[11.5px] marker:text-fg-6366f1 font-semibold">
               {children}
             </ol>
           ),
@@ -104,7 +104,7 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
             const isInline = !className?.includes("language-");
             return isInline ? (
               <code
-                className="px-1.5 py-0.5 rounded bg-indigo-50 text-[#4F46E5] font-mono text-[11px] font-semibold border border-indigo-100/70"
+                className="px-1.5 py-0.5 rounded bg-indigo-50 text-fg-4f46e5 font-mono text-[11px] font-semibold border border-indigo-100/70"
                 {...props}
               >
                 {children}
@@ -116,12 +116,12 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
             );
           },
           pre: ({ children }) => (
-            <pre className="bg-[#181825] text-indigo-100 p-2.5 rounded-xl font-mono text-[11px] overflow-x-auto my-1.5 shadow-inner border border-slate-800">
+            <pre className="bg-sf-181825 text-fg-e0e7ff p-2.5 rounded-xl font-mono text-[11px] overflow-x-auto my-1.5 shadow-inner border border-slate-800 dark:border-white/10">
               {children}
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-[#6366F1] bg-indigo-50/50 pl-2.5 py-1 my-1.5 rounded-r text-[11.5px] text-indigo-900 italic">
+            <blockquote className="border-l-2 border-ln-6366f1 bg-indigo-50/50 pl-2.5 py-1 my-1.5 rounded-r text-[11.5px] text-indigo-900 italic">
               {children}
             </blockquote>
           ),
@@ -190,9 +190,9 @@ export interface AIChatPanelProps {
 function CustomAIBotAvatar({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <div
-      className={`${className} rounded-full bg-gradient-to-tr from-[#5742FF] via-[#7B61FF] to-[#00E5FF] p-[1.5px] shadow-[0_2px_8px_rgba(87,66,255,0.35)] shrink-0 flex items-center justify-center`}
+      className={`${className} rounded-full bg-gradient-to-tr from-sf-5742ff via-sf-7b61ff to-sf-00e5ff p-[1.5px] shadow-[0_2px_8px_rgba(87,66,255,0.35)] shrink-0 flex items-center justify-center`}
     >
-      <div className="w-full h-full bg-[#111029] rounded-full flex items-center justify-center">
+      <div className="w-full h-full bg-sf-111029 rounded-full flex items-center justify-center">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5">
           <path
             d="M12 2C12 7.5 7.5 12 2 12C7.5 12 12 16.5 12 22C12 16.5 16.5 12 22 12C16.5 12 12 7.5 12 2Z"
@@ -623,8 +623,8 @@ export default function AIChatPanel({
 
   if (loading) {
     return (
-      <div className="w-full h-full bg-[#FAF9FF] flex flex-col items-center justify-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#6366F1]">
+      <div className="w-full h-full bg-sf-faf9ff flex flex-col items-center justify-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-fg-6366f1">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
         <p className="text-[12px] font-semibold text-gray-400">Loading AI Assistant...</p>
@@ -633,11 +633,11 @@ export default function AIChatPanel({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#FAF9FF] text-[#111827] overflow-hidden select-none">
+    <div className="w-full h-full flex flex-col bg-sf-faf9ff text-fg-111827 overflow-hidden select-none">
       {/* ── Context & Telemetry Inspector Bar ── */}
-      <div className="px-3.5 py-2.5 bg-white border-b border-indigo-100/70 flex items-center justify-between gap-2 shrink-0">
+      <div className="px-3.5 py-2.5 bg-surface border-b border-indigo-100/70 flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-          <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100/80 text-[10.5px] font-extrabold text-[#5742FF] flex items-center gap-1 shrink-0">
+          <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100/80 text-[10.5px] font-extrabold text-fg-5742ff flex items-center gap-1 shrink-0">
             <Layers size={11} /> {nodes.length} Blocks
           </span>
           <span className="px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200/80 text-[10.5px] font-extrabold text-gray-600 flex items-center gap-1 shrink-0">
@@ -664,7 +664,7 @@ export default function AIChatPanel({
         {nodes.length > 0 && (
           <button
             onClick={handleAutoLayoutCurrentCanvas}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-[#5742FF] hover:bg-indigo-50 transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-fg-5742ff hover:bg-indigo-50 transition-colors shrink-0"
             title="Auto-Arrange Canvas Layout"
           >
             <LayoutGrid size={14} />
@@ -678,7 +678,7 @@ export default function AIChatPanel({
           /* ── Hero Empty State with Interactive Starter Cards ── */
           <div className="py-3 space-y-4 animate-in fade-in duration-300">
             <div className="text-center space-y-1.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sf-6366f1 to-sf-8b5cf6 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20">
                 <Sparkles size={20} />
               </div>
               <h3 className="text-[14.5px] font-black text-gray-900 tracking-tight">AI Simulation Architect</h3>
@@ -700,17 +700,17 @@ export default function AIChatPanel({
                       key={idx}
                       onClick={() => sendMessage(item.prompt)}
                       disabled={generating}
-                      className="w-full p-2.5 rounded-xl bg-white border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/40 text-left transition-all group flex items-start gap-2.5 shadow-2xs"
+                      className="w-full p-2.5 rounded-xl bg-surface border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/40 text-left transition-all group flex items-start gap-2.5 shadow-2xs"
                     >
                       <div className={`p-1.5 rounded-lg border shrink-0 mt-0.5 ${item.color}`}>
                         <IconComp size={13} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11.5px] font-bold text-gray-900 group-hover:text-[#6366F1] flex items-center justify-between">
+                        <div className="text-[11.5px] font-bold text-gray-900 group-hover:text-fg-6366f1 flex items-center justify-between">
                           <span>{item.title}</span>
                           <ArrowRight
                             size={12}
-                            className="text-gray-300 group-hover:text-[#6366F1] group-hover:translate-x-0.5 transition-all"
+                            className="text-gray-300 dark:text-white/25 group-hover:text-fg-6366f1 group-hover:translate-x-0.5 transition-all"
                           />
                         </div>
                         <p className="text-[10.5px] text-gray-400 line-clamp-1 mt-0.5">{item.prompt}</p>
@@ -752,8 +752,8 @@ export default function AIChatPanel({
                     <div
                       className={`px-3.5 py-2.5 rounded-2xl text-[12px] leading-relaxed select-text ${
                         isUser
-                          ? "bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white rounded-br-xs font-medium shadow-xs"
-                          : "bg-white border border-indigo-100/70 text-gray-800 rounded-bl-xs shadow-2xs"
+                          ? "bg-gradient-to-r from-sf-6366f1 to-sf-8b5cf6 text-white rounded-br-xs font-medium shadow-xs"
+                          : "bg-surface border border-indigo-100/70 text-gray-800 rounded-bl-xs shadow-2xs"
                       }`}
                     >
                       <MarkdownMessage content={m.content} isUser={isUser} />
@@ -762,7 +762,7 @@ export default function AIChatPanel({
 
                   {/* Interactive Action / Graph Preview Card */}
                   {hasGraph && (
-                    <div className="mt-2 ml-6 p-2.5 rounded-xl bg-white border border-indigo-100/90 shadow-2xs max-w-[88%] space-y-2">
+                    <div className="mt-2 ml-6 p-2.5 rounded-xl bg-surface border border-indigo-100/90 shadow-2xs max-w-[88%] space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-indigo-700 font-extrabold text-[11px]">
                           <CheckCircle2 size={13} className="text-emerald-500" />
@@ -776,7 +776,7 @@ export default function AIChatPanel({
                       {canApply && (
                         <div className="flex items-center gap-3 text-[10.5px] text-gray-500 font-semibold bg-gray-50/80 p-1.5 rounded-lg">
                           <span className="flex items-center gap-1">
-                            <Layers size={12} className="text-[#6366F1]" /> {stationCount} Stations
+                            <Layers size={12} className="text-fg-6366f1" /> {stationCount} Stations
                           </span>
                           <span className="flex items-center gap-1">
                             <Zap size={12} className="text-amber-500" /> {metadata.graph.edges?.length || 0} Links
@@ -788,7 +788,7 @@ export default function AIChatPanel({
                         {canApply && (
                           <button
                             onClick={() => handleApplyGraphToCanvas(metadata.graph.nodes, metadata.graph.edges || [])}
-                            className="flex-1 py-1.5 text-[11px] font-extrabold bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-[#5742FF] hover:to-[#7C3AED] text-[#5742FF] hover:text-white border border-indigo-200/80 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5"
+                            className="flex-1 py-1.5 text-[11px] font-extrabold bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-sf-5742ff hover:to-sf-7c3aed text-fg-5742ff hover:text-white border border-indigo-200/80 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5"
                           >
                             <Check size={12} />
                             <span>Apply / Re-Align Canvas</span>
@@ -798,7 +798,7 @@ export default function AIChatPanel({
                           <button
                             onClick={() => restoreSnapshot(metadata.graphBefore, "Change Undone")}
                             title="Put the canvas back as it was before this change"
-                            className={`${canApply ? "px-2.5" : "flex-1"} py-1.5 text-[11px] font-extrabold bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5`}
+                            className={`${canApply ? "px-2.5" : "flex-1"} py-1.5 text-[11px] font-extrabold bg-surface hover:bg-gray-50 text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5`}
                           >
                             <Undo2 size={12} />
                             <span>Undo</span>
@@ -810,10 +810,10 @@ export default function AIChatPanel({
 
                   {/* Simulation Insights (megaprompt simulationInsights block) */}
                   {insights && (
-                    <div className="mt-2 ml-6 p-2.5 rounded-xl bg-white border border-indigo-100/90 shadow-2xs max-w-[88%] space-y-2">
+                    <div className="mt-2 ml-6 p-2.5 rounded-xl bg-surface border border-indigo-100/90 shadow-2xs max-w-[88%] space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-indigo-700 font-extrabold text-[11px]">
-                          <Sliders size={13} className="text-[#6366F1]" />
+                          <Sliders size={13} className="text-fg-6366f1" />
                           <span>Simulation Insights</span>
                         </div>
                         {insights.bottleneckRisk && (
@@ -844,7 +844,7 @@ export default function AIChatPanel({
                       <button
                         onClick={() => sendMessage(m.retryPrompt, { echoUser: false, clearMessageId: m.id })}
                         disabled={generating}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50/60 text-[#5742FF] text-[10.5px] font-bold border border-indigo-100 shadow-2xs transition-colors flex items-center gap-1.5 disabled:opacity-40"
+                        className="px-2.5 py-1 rounded-lg bg-surface hover:bg-indigo-50/60 text-fg-5742ff text-[10.5px] font-bold border border-indigo-100 shadow-2xs transition-colors flex items-center gap-1.5 disabled:opacity-40"
                       >
                         <RotateCcw size={11} />
                         <span>Try again</span>
@@ -860,7 +860,7 @@ export default function AIChatPanel({
                           key={qIdx}
                           onClick={() => sendMessage(q)}
                           disabled={generating}
-                          className="px-2 py-1 rounded-lg bg-indigo-50/70 hover:bg-indigo-100/90 text-[#5742FF] text-[10px] font-bold border border-indigo-100 transition-colors flex items-center gap-1"
+                          className="px-2 py-1 rounded-lg bg-indigo-50/70 hover:bg-indigo-100/90 text-fg-5742ff text-[10px] font-bold border border-indigo-100 transition-colors flex items-center gap-1"
                         >
                           <span>{q}</span>
                           <ChevronRight size={10} />
@@ -876,8 +876,8 @@ export default function AIChatPanel({
             {generating && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-2">
                 <CustomAIBotAvatar className="w-5 h-5 mt-0.5" />
-                <div className="px-3 py-2 rounded-2xl rounded-bl-xs bg-white border border-indigo-100 text-[11.5px] font-semibold text-gray-600 flex items-center gap-2 shadow-2xs">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#6366F1]" />
+                <div className="px-3 py-2 rounded-2xl rounded-bl-xs bg-surface border border-indigo-100 text-[11.5px] font-semibold text-gray-600 flex items-center gap-2 shadow-2xs">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-fg-6366f1" />
                   <span>Designing simulation architecture...</span>
                 </div>
               </motion.div>
@@ -888,7 +888,7 @@ export default function AIChatPanel({
 
       {/* ── Contextual Suggestion Chips ── */}
       {contextualChips.length > 0 && (
-        <div className="px-3 py-1.5 bg-white border-t border-indigo-50 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="px-3 py-1.5 bg-surface border-t border-indigo-50 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           {contextualChips.map((chip, idx) => {
             const IconComp = chip.icon;
             return (
@@ -896,9 +896,9 @@ export default function AIChatPanel({
                 key={idx}
                 onClick={() => sendMessage(chip.prompt)}
                 disabled={generating}
-                className="px-2.5 py-1 rounded-full bg-[#F1F0FB] hover:bg-indigo-100/80 text-gray-700 hover:text-[#5742FF] text-[10.5px] font-bold border border-indigo-100/70 transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                className="px-2.5 py-1 rounded-full bg-sf-f1f0fb hover:bg-indigo-100/80 text-gray-700 hover:text-fg-5742ff text-[10.5px] font-bold border border-indigo-100/70 transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap"
               >
-                <IconComp size={11} className="text-[#6366F1]" />
+                <IconComp size={11} className="text-fg-6366f1" />
                 <span>{chip.label}</span>
               </button>
             );
@@ -907,7 +907,7 @@ export default function AIChatPanel({
       )}
 
       {/* ── Modern Floating Input Box & Footer ── */}
-      <div className="p-3 bg-white border-t border-gray-100 shadow-xs">
+      <div className="p-3 bg-surface border-t border-gray-100 shadow-xs">
         {/* Custom Inline Confirmation Banner */}
         <AnimatePresence>
           {showClearConfirm && (
@@ -922,13 +922,13 @@ export default function AIChatPanel({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={confirmClearChat}
-                    className="px-2.5 py-1 rounded-lg bg-rose-600 border border-rose-400 hover:bg-rose-700 text-white text-[10.5px] font-extrabold shadow-xs transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-sf-e11d48 border border-rose-400 hover:bg-sf-be123c text-white text-[10.5px] font-extrabold shadow-xs transition-colors"
                   >
                     Clear
                   </button>
                   <button
                     onClick={() => setShowClearConfirm(false)}
-                    className="px-2 py-1 rounded-lg bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 text-[10.5px] font-semibold transition-colors"
+                    className="px-2 py-1 rounded-lg bg-surface hover:bg-gray-100 text-gray-700 border border-gray-200 text-[10.5px] font-semibold transition-colors"
                   >
                     Cancel
                   </button>
@@ -941,7 +941,7 @@ export default function AIChatPanel({
         {messages.length > 0 && !showClearConfirm && (
           <div className="flex justify-between items-center mb-1.5 px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={11} className="text-[#6366F1]" /> Simulation Co-Pilot
+              <Sparkles size={11} className="text-fg-6366f1" /> Simulation Co-Pilot
             </span>
             <button
               onClick={handleClearChat}
@@ -954,7 +954,7 @@ export default function AIChatPanel({
 
         <form
           onSubmit={handleFormSubmit}
-          className="relative rounded-2xl border border-gray-200/80 bg-[#FAFAFC] focus-within:bg-white focus-within:border-[#6366F1] focus-within:ring-2 focus-within:ring-[#6366F1]/10 transition-all p-1.5 flex items-center gap-2"
+          className="relative rounded-2xl border border-gray-200/80 bg-sf-fafafc focus-within:bg-surface focus-within:border-ln-6366f1 focus-within:ring-2 focus-within:ring-ln-6366f1/10 transition-all p-1.5 flex items-center gap-2"
         >
           <input
             type="text"
@@ -967,7 +967,7 @@ export default function AIChatPanel({
           <button
             type="submit"
             disabled={!input.trim() || generating}
-            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] border border-[#8d80ff] text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             title="Send prompt"
           >
             {generating ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}

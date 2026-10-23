@@ -39,9 +39,9 @@ export function WorkflowPreview({ graph, accent }: { graph: unknown; accent: str
       <svg viewBox="0 0 320 150" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
         <path d="M 108 75 C 140 75, 150 75, 182 75" fill="none" stroke={accent} strokeOpacity={0.35} strokeWidth={2} strokeDasharray="4 6" className="wf-flow-always" />
         {[36, 184].map((x) => (
-          <rect key={x} x={x} y={56} width={100} height={38} rx={12} fill="#fff" stroke={accent} strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="5 5" />
+          <rect key={x} x={x} y={56} width={100} height={38} rx={12} style={{ fill: "var(--color-sf-ffffff)" }} stroke={accent} strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="5 5" />
         ))}
-        <text x={160} y={128} textAnchor="middle" fontSize={11} fontWeight={600} fill="#64748b">Blank canvas</text>
+        <text x={160} y={128} textAnchor="middle" fontSize={11} fontWeight={600} style={{ fill: "var(--color-fg-64748b)" }}>Blank canvas</text>
       </svg>
     );
   }
@@ -66,7 +66,7 @@ export function WorkflowPreview({ graph, accent }: { graph: unknown; accent: str
         const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
         return (
           <g key={i}>
-            <path d={d} fill="none" stroke="#c9c5e4" strokeWidth={3} />
+            <path d={d} fill="none" style={{ stroke: "var(--color-ln-c9c5e4)" }} strokeWidth={3} />
             <path d={d} fill="none" stroke={accent} strokeWidth={3} className="wf-flow" />
           </g>
         );
@@ -77,12 +77,12 @@ export function WorkflowPreview({ graph, accent }: { graph: unknown; accent: str
         const label = (n.data?.label ?? n.data?.nodeType ?? "Block").slice(0, 16);
         return (
           <g key={n.id}>
-            <rect x={x} y={y + 4} width={NW} height={NH} rx={14} fill="#1e1b4b" opacity={0.06} />
-            <rect x={x} y={y} width={NW} height={NH} rx={14} fill="#fff" stroke="#e7e5f6" strokeWidth={2} />
+            <rect x={x} y={y + 4} width={NW} height={NH} rx={14} fill="#1e1b4b" opacity={0.06} className="dark:fill-black dark:opacity-40" />
+            <rect x={x} y={y} width={NW} height={NH} rx={14} style={{ fill: "var(--color-sf-ffffff)", stroke: "var(--color-ln-e7e5f6)" }} strokeWidth={2} />
             <rect x={x + 10} y={y + 11} width={24} height={24} rx={8} style={{ fill: color }} opacity={0.9} />
             <circle cx={x + 22} cy={y + 23} r={4} fill="#fff" />
-            <text x={x + 44} y={y + 28} fontSize={14} fontWeight={700} fill="#1e293b">{label}</text>
-            <circle cx={x + NW} cy={y + NH / 2} r={4.5} fill="#fff" style={{ stroke: color }} strokeWidth={2.5} />
+            <text x={x + 44} y={y + 28} fontSize={14} fontWeight={700} style={{ fill: "var(--color-fg-1e293b)" }}>{label}</text>
+            <circle cx={x + NW} cy={y + NH / 2} r={4.5} style={{ fill: "var(--color-sf-ffffff)", stroke: color }} strokeWidth={2.5} />
           </g>
         );
       })}

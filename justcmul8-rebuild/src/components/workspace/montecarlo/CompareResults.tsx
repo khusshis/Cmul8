@@ -6,6 +6,7 @@ import { Trophy, Scale, Minus, ArrowUpRight, ArrowDownRight, ListOrdered, Crown 
 import ChartCard from "@/components/ui/ChartCard";
 import type { MetricComparison, MetricKey, ScenarioComparisonResult } from "@/lib/simulation/monteCarlo";
 import type { ScoredEntry, WinnerCall } from "@/lib/simulation/decisionScore";
+import { themeColor } from "@/components/ui/chartTheme";
 import { HelpTip, LetterSwatch, RangeBar, deltaText, fmtP, levelText, niceTicks, type MetricMeta } from "./shared";
 
 interface Props {
@@ -102,9 +103,9 @@ function CompareResults({ comp, meta, ranked, winner, visible, letters, entity, 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         aria-label="Comparison verdict"
-        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#1E1B4B] via-[#3B2FB8] to-[#5742FF] p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
+        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-sf-1e1b4b via-sf-3b2fb8 to-sf-5742ff p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
       >
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full bg-[#E69F00]/25 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full bg-sf-e69f00/25 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11.5px] font-black uppercase tracking-wider ring-1 ring-white/25">
             <BadgeIcon size={13} aria-hidden /> {v.badge.text}
@@ -141,7 +142,7 @@ function CompareResults({ comp, meta, ranked, winner, visible, letters, entity, 
                     {s.id === winner.winnerId && <span className="rounded-full bg-emerald-50 px-1.5 text-[10px] font-black uppercase text-emerald-700 ring-1 ring-emerald-100">winner</span>}
                   </div>
                   <div className="h-2.5 rounded-full bg-gray-100" aria-hidden>
-                    <div className="h-full rounded-full" style={{ width: `${Math.max(2, r.score)}%`, background: s.color }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(2, r.score)}%`, background: themeColor(s.color) }} />
                   </div>
                 </div>
                 <span className="w-12 text-right text-[17px] font-black tabular-nums text-gray-900">{r.score.toFixed(0)}</span>
@@ -152,10 +153,10 @@ function CompareResults({ comp, meta, ranked, winner, visible, letters, entity, 
       </ChartCard>
 
       {/* ── Forest plot: one row per metric, each on its own scale (units never mixed) ── */}
-      <section aria-label="Metric by metric comparison" className="rounded-[20px] border border-[#ECEBF7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F1F0FA] px-4 py-3.5 sm:px-5">
+      <section aria-label="Metric by metric comparison" className="rounded-[20px] border border-ln-ecebf7 bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ln-f1f0fa px-4 py-3.5 sm:px-5">
           <div>
-            <h3 className="text-[14.5px] font-extrabold text-[#161622]">Metric by metric</h3>
+            <h3 className="text-[14.5px] font-extrabold text-fg-161622">Metric by metric</h3>
             <p className="text-[12px] text-slate-600">Each row has its own scale. Dot = average · dark bar = {levelText(comp.level)} band for the average · faint bar = typical range of runs. Changes are vs the baseline.</p>
           </div>
           <ul className="flex flex-wrap gap-3 text-[11.5px] font-bold text-gray-700">
@@ -164,7 +165,7 @@ function CompareResults({ comp, meta, ranked, winner, visible, letters, entity, 
             ))}
           </ul>
         </div>
-        <ul className="divide-y divide-[#F6F5FC]">
+        <ul className="divide-y divide-ln-f6f5fc">
           {rows.map((k, i) => (
             <ForestRow key={k} metric={k} meta={meta[k]} comp={comp} letters={letters} delay={0.04 * i} />
           ))}
@@ -193,11 +194,11 @@ function ForestRow({ metric, meta, comp, letters, delay }: { metric: MetricKey; 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: "easeOut" }}
-      className="relative grid gap-4 px-4 py-4 transition-colors last:rounded-b-[20px] focus-within:z-10 hover:z-10 hover:bg-[#FAF9FF] sm:px-5 md:grid-cols-[200px_1fr_250px] md:items-center"
+      className="relative grid gap-4 px-4 py-4 transition-colors last:rounded-b-[20px] focus-within:z-10 hover:z-10 hover:bg-sf-faf9ff sm:px-5 md:grid-cols-[200px_1fr_250px] md:items-center"
     >
       <div>
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5742FF]/10 text-[#5742FF]"><Icon size={14} /></span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-5742ff/10 text-fg-5742ff"><Icon size={14} /></span>
           <span className="text-[13px] font-black leading-tight text-gray-900">{meta.label}</span>
           <HelpTip text={meta.help} label={`About ${meta.label}`} align="start" />
         </div>

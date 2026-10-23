@@ -10,6 +10,7 @@ import LogoutDialog from "@/components/ui/LogoutDialog";
 import { PLAN_CREDITS, TRIAL_DAYS, type Billing } from "@/lib/billing/plans";
 import { MARK_SRC } from "@/components/brand/CubeMark";
 import { createClient } from "@/lib/supabase/client";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const navLinks = [
   { label: "Features", href: "/#features" },
@@ -119,25 +120,25 @@ export default function Navbar() {
     return (
       <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-3 sm:px-6">
         <div
-          className="w-full flex h-14 items-center justify-between rounded-full border border-white/80 bg-white/65 pl-5 pr-2 shadow-[0_12px_40px_-12px_rgba(16,24,40,.25),inset_0_1px_0_rgba(255,255,255,.95),inset_0_-1px_0_rgba(16,24,40,.05)]"
+          className="w-full flex h-14 items-center justify-between rounded-full border border-white/80 bg-surface/65 pl-5 pr-2 shadow-[0_12px_40px_-12px_rgba(16,24,40,.25),inset_0_1px_0_rgba(255,255,255,.95),inset_0_-1px_0_rgba(16,24,40,.05)] dark:border-white/[0.07] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,.6),inset_0_1px_0_rgba(255,255,255,.06)]"
           style={{ maxWidth: "1280px", backdropFilter: "saturate(180%) blur(24px)", WebkitBackdropFilter: "saturate(180%) blur(24px)" }}
         >
           {/* Left: Branding */}
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/" aria-label="JustCmul8 home" className="group flex shrink-0 items-center gap-2">
               <img src={MARK_SRC} alt="" className="h-[24px] w-auto transition-transform duration-300 group-hover:-rotate-6" />
-              <span className="hidden sm:block font-space text-[16px] font-bold tracking-tight text-[#1d1d1f]">JustCmul8</span>
+              <span className="hidden sm:block font-space text-[16px] font-bold tracking-tight text-fg-1d1d1f">JustCmul8</span>
             </Link>
 
-            <div className="hidden md:block w-px h-6 bg-black/[0.08]" />
+            <div className="hidden md:block w-px h-6 bg-ink/[0.08]" />
 
             {/* Center Breadcrumb */}
             {/* Breadcrumb: recessed track with a glass pill on the current page */}
-            <div className="hidden md:flex items-center rounded-full bg-black/[0.035] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
-              <Link href="/" className="flex h-9 items-center rounded-full px-3.5 text-[13px] text-[#1d1d1f]/65 transition-colors hover:text-[#1d1d1f]">
+            <div className="hidden md:flex items-center rounded-full bg-ink/[0.035] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
+              <Link href="/" className="flex h-9 items-center rounded-full px-3.5 text-[13px] text-fg-1d1d1f/65 transition-colors hover:text-fg-1d1d1f">
                 Home
               </Link>
-              <span className="flex h-9 items-center rounded-full border border-white bg-gradient-to-b from-white to-white/70 px-3.5 text-[13px] font-medium text-[#1d1d1f] shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]">
+              <span className="flex h-9 items-center rounded-full border border-surface bg-gradient-to-b from-surface to-surface/70 px-3.5 text-[13px] font-medium text-fg-1d1d1f shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]">
                 My Simulations
               </span>
             </div>
@@ -147,13 +148,15 @@ export default function Navbar() {
           <div className="flex items-center gap-1.5 sm:gap-2 relative">
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-new-sim-modal'))}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-4 sm:px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-4 sm:px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <Plus size={16} strokeWidth={2.5} />
               <span className="hidden sm:inline">New Simulation</span>
             </button>
 
-            <button onClick={() => setShowLogoutConfirm(true)} className="hidden sm:inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] text-[#1d1d1f]/70 transition-colors hover:bg-black/[0.04] hover:text-[#1d1d1f]">
+            <ThemeToggle className="h-10 w-10" />
+
+            <button onClick={() => setShowLogoutConfirm(true)} className="hidden sm:inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] text-fg-1d1d1f/70 transition-colors hover:bg-ink/[0.04] hover:text-fg-1d1d1f">
               <LogOut size={15} strokeWidth={2} />
               Log out
             </button>
@@ -166,7 +169,7 @@ export default function Navbar() {
                 aria-expanded={profileOpen}
                 className="flex items-center gap-1.5 p-1 rounded-full hover:bg-gray-50 transition-colors"
               >
-                <div className="w-9 h-9 rounded-full bg-[#5742FF] flex items-center justify-center text-white font-bold text-[14px] shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-sf-5742ff flex items-center justify-center text-white font-bold text-[14px] shadow-sm">
                   {initial}
                 </div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400"><polyline points="6 9 12 15 18 9"/></svg>
@@ -186,22 +189,22 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute right-0 top-[calc(100%+12px)] w-[380px] bg-white rounded-[24px] shadow-[0_12px_40px_-8px_rgba(0,0,0,0.15)] border border-gray-100 p-5 z-50 pointer-events-auto"
+                      className="absolute right-0 top-[calc(100%+12px)] w-[380px] bg-surface rounded-[24px] shadow-[0_12px_40px_-8px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,.7)] border border-gray-100 p-5 z-50 pointer-events-auto"
                     >
                       {/* Triangle pointer */}
-                      <div className="absolute -top-2 right-5 w-4 h-4 bg-white border-l border-t border-gray-100 rotate-45" />
+                      <div className="absolute -top-2 right-5 w-4 h-4 bg-surface border-l border-t border-gray-100 rotate-45" />
                       
                       {/* Header */}
                       <div className="flex items-center gap-4 mb-5 relative z-10">
                         <div className="relative">
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#5742FF] flex items-center justify-center text-white font-semibold text-[28px] shadow-sm">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center text-white font-semibold text-[28px] shadow-sm">
                             {initial}
                           </div>
-                          <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-white" />
+                          <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="font-bold text-[17px] text-[#111827] truncate">{displayName}</h4>
+                            <h4 className="font-bold text-[17px] text-fg-111827 truncate">{displayName}</h4>
                             {billing && (
                               billing.plan === "free" ? (
                                 <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wide">Free</span>
@@ -223,7 +226,7 @@ export default function Navbar() {
                       </div>
 
                       {/* Plan + credits (live from /api/billing) */}
-                      <div className="bg-[#F8F7FF] rounded-[16px] p-4 mb-5 relative z-10">
+                      <div className="bg-sf-f8f7ff rounded-[16px] p-4 mb-5 relative z-10">
                         {billing ? (() => {
                           const pro = billing.plan !== "free";
                           const allowance = PLAN_CREDITS[billing.plan];
@@ -239,11 +242,11 @@ export default function Navbar() {
                             <>
                               <div className="flex items-start justify-between gap-3 mb-4">
                                 <div className="flex gap-3 min-w-0">
-                                  <div className="w-9 h-9 shrink-0 rounded-full bg-white flex items-center justify-center text-[#5742FF] shadow-sm">
+                                  <div className="w-9 h-9 shrink-0 rounded-full bg-surface flex items-center justify-center text-fg-5742ff shadow-sm">
                                     {pro ? <Rocket size={18} strokeWidth={2} /> : <Sparkles size={18} strokeWidth={2} />}
                                   </div>
                                   <div className="min-w-0">
-                                    <h5 className="font-bold text-[#111827] text-[14px]">
+                                    <h5 className="font-bold text-fg-111827 text-[14px]">
                                       {!pro ? "You're on the Free plan" : billing.status === "trialing" ? "You're on a Pro trial" : "You're on Pro"}
                                     </h5>
                                     <p className="text-[12px] text-gray-500 leading-snug mt-0.5">{sub}</p>
@@ -252,14 +255,14 @@ export default function Navbar() {
                                 <Link
                                   href="/settings?tab=billing"
                                   onClick={() => setProfileOpen(false)}
-                                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-colors shadow-sm ${pro ? "bg-white border border-gray-200 text-[#5742FF] hover:bg-gray-50" : "bg-[#5742FF] text-white hover:bg-[#4a36e6]"}`}
+                                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-colors shadow-sm ${pro ? "bg-surface border border-gray-200 text-fg-5742ff hover:bg-gray-50" : "bg-sf-5742ff text-white hover:bg-sf-4a36e6"}`}
                                 >
                                   {pro ? "Manage" : "Upgrade"} <ChevronRight size={14} />
                                 </Link>
                               </div>
                               <div className="space-y-2">
-                                <div className="w-full h-1.5 bg-[#E5E0FF] rounded-full overflow-hidden">
-                                  <motion.div className="h-full bg-[#5742FF] rounded-full" initial={{ width: 0 }} animate={{ width: `${Math.min(100, (used / allowance) * 100)}%` }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} />
+                                <div className="w-full h-1.5 bg-sf-e5e0ff rounded-full overflow-hidden">
+                                  <motion.div className="h-full bg-sf-5742ff rounded-full" initial={{ width: 0 }} animate={{ width: `${Math.min(100, (used / allowance) * 100)}%` }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} />
                                 </div>
                                 <div className="flex justify-between text-[11px] font-medium text-gray-500">
                                   <span className="flex items-center gap-1"><Coins size={11} /> Credits used this month</span>
@@ -271,9 +274,9 @@ export default function Navbar() {
                           );
                         })() : (
                           <div className="space-y-3 animate-pulse" aria-label="Loading plan">
-                            <div className="h-4 w-1/2 rounded-full bg-[#E5E0FF]" />
-                            <div className="h-3 w-3/4 rounded-full bg-[#ECE9FF]" />
-                            <div className="h-1.5 w-full rounded-full bg-[#E5E0FF]" />
+                            <div className="h-4 w-1/2 rounded-full bg-sf-e5e0ff" />
+                            <div className="h-3 w-3/4 rounded-full bg-sf-ece9ff" />
+                            <div className="h-1.5 w-full rounded-full bg-sf-e5e0ff" />
                           </div>
                         )}
                       </div>
@@ -288,11 +291,11 @@ export default function Navbar() {
                         ].map((item, idx) => (
                           item.href ? (
                             <Link key={idx} href={item.href} onClick={() => setProfileOpen(false)} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors group text-left">
-                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-surface group-hover:shadow-sm transition-all">
                                 <item.icon size={16} strokeWidth={2} />
                               </div>
                               <div className="flex-1">
-                                <h6 className="font-bold text-[#111827] text-[13px]">{item.title}</h6>
+                                <h6 className="font-bold text-fg-111827 text-[13px]">{item.title}</h6>
                                 <p className="text-[11px] text-gray-500">{item.sub}</p>
                               </div>
                               <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
@@ -314,7 +317,7 @@ export default function Navbar() {
                       {/* Logout Button */}
                       <button 
                         onClick={() => { setProfileOpen(false); setShowLogoutConfirm(true); }}
-                        className="w-full flex flex-col items-center justify-center p-4 rounded-[16px] bg-[#FFF5F5] hover:bg-[#FFEBEB] transition-colors relative z-10"
+                        className="w-full flex flex-col items-center justify-center p-4 rounded-[16px] bg-sf-fff5f5 hover:bg-sf-ffebeb transition-colors relative z-10"
                       >
                         <div className="flex items-center gap-2 text-red-500 font-bold text-[14px] mb-1">
                           <LogOut size={16} strokeWidth={2.5} />
@@ -355,19 +358,19 @@ export default function Navbar() {
         <div
           className={`pointer-events-auto flex h-14 w-full max-w-[980px] items-center gap-3 rounded-full border pl-5 pr-2 transition-[background-color,box-shadow] duration-300 ${
             scrolled || mobileOpen
-              ? "bg-white/65 border-white/80 shadow-[0_12px_40px_-12px_rgba(16,24,40,.25),inset_0_1px_0_rgba(255,255,255,.95),inset_0_-1px_0_rgba(16,24,40,.05)]"
-              : "bg-white/45 border-white/70 shadow-[0_8px_30px_-14px_rgba(16,24,40,.18),inset_0_1px_0_rgba(255,255,255,.9),inset_0_-1px_0_rgba(16,24,40,.04)]"
+              ? "bg-surface/65 border-white/80 shadow-[0_12px_40px_-12px_rgba(16,24,40,.25),inset_0_1px_0_rgba(255,255,255,.95),inset_0_-1px_0_rgba(16,24,40,.05)] dark:border-white/[0.07] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,.6),inset_0_1px_0_rgba(255,255,255,.06)]"
+              : "bg-white/45 border-white/70 shadow-[0_8px_30px_-14px_rgba(16,24,40,.18),inset_0_1px_0_rgba(255,255,255,.9),inset_0_-1px_0_rgba(16,24,40,.04)] dark:bg-surface/45 dark:border-white/[0.06] dark:shadow-[0_8px_30px_-14px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.05)]"
           }`}
           style={{ backdropFilter: "saturate(180%) blur(24px)", WebkitBackdropFilter: "saturate(180%) blur(24px)" }}
         >
           <Link href="/" aria-label="JustCmul8 home" className="group flex shrink-0 items-center gap-2">
             <img src={MARK_SRC} alt="" className="h-[24px] w-auto transition-transform duration-300 group-hover:-rotate-6" />
-            <span className="font-space text-[16px] font-bold tracking-tight text-[#1d1d1f]">JustCmul8</span>
+            <span className="font-space text-[16px] font-bold tracking-tight text-fg-1d1d1f">JustCmul8</span>
           </Link>
 
           {isLanding && (
             <ul
-              className="mx-auto hidden items-center rounded-full bg-black/[0.035] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)] md:flex"
+              className="mx-auto hidden items-center rounded-full bg-ink/[0.035] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)] md:flex"
               onMouseLeave={() => setHoverId(null)}
             >
               {navLinks.map((link) => {
@@ -378,7 +381,7 @@ export default function Navbar() {
                     {on && (
                       <motion.span
                         layoutId="nav-glass-pill"
-                        className="absolute inset-0 rounded-full border border-white bg-gradient-to-b from-white to-white/70 shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),0_0_0_0.5px_rgba(16,24,40,.06),inset_0_1px_0_#fff]"
+                        className="absolute inset-0 rounded-full border border-surface bg-gradient-to-b from-surface to-surface/70 shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),0_0_0_0.5px_rgba(16,24,40,.06),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]"
                         initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 520, damping: 34, mass: 0.9 }}
@@ -390,7 +393,7 @@ export default function Navbar() {
                       onMouseEnter={() => setHoverId(id)}
                       aria-current={activeId === id ? "location" : undefined}
                       className={`relative z-10 flex h-9 items-center rounded-full px-3.5 text-[13px] tracking-[-0.01em] transition-colors duration-200 ${
-                        on ? "font-medium text-[#1d1d1f]" : "text-[#1d1d1f]/65 hover:text-[#1d1d1f]"
+                        on ? "font-medium text-fg-1d1d1f" : "text-fg-1d1d1f/65 hover:text-fg-1d1d1f"
                       }`}
                     >
                       {link.label}
@@ -401,22 +404,24 @@ export default function Navbar() {
             </ul>
           )}
 
-          <div className="ml-auto hidden shrink-0 items-center gap-1 md:flex">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+          <ThemeToggle className="h-10 w-10 border-transparent! bg-transparent! hover:bg-ink/[0.05]!" />
+          <div className="hidden items-center gap-1 md:flex">
             {isAuthenticated ? (
               <>
-                <button onClick={() => { setMobileOpen(false); setShowLogoutConfirm(true); }} className="h-10 rounded-full px-4 text-[13px] text-[#1d1d1f]/70 transition-colors hover:bg-black/[0.04] hover:text-[#1d1d1f]">
+                <button onClick={() => { setMobileOpen(false); setShowLogoutConfirm(true); }} className="h-10 rounded-full px-4 text-[13px] text-fg-1d1d1f/70 transition-colors hover:bg-ink/[0.04] hover:text-fg-1d1d1f">
                   Log out
                 </button>
-                <Link href="/dashboard" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+                <Link href="/dashboard" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
                   Dashboard
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/login" className="inline-flex h-10 items-center rounded-full px-4 text-[13px] text-[#1d1d1f]/70 transition-colors hover:bg-black/[0.04] hover:text-[#1d1d1f]">
+                <Link href="/login" className="inline-flex h-10 items-center rounded-full px-4 text-[13px] text-fg-1d1d1f/70 transition-colors hover:bg-ink/[0.04] hover:text-fg-1d1d1f">
                   Log in
                 </Link>
-                <Link href="/signup" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+                <Link href="/signup" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
                   Get started
                 </Link>
               </>
@@ -425,24 +430,25 @@ export default function Navbar() {
 
           {/* Two lines that fold into an X */}
           <button
-            className="ml-auto flex h-10 w-10 items-center justify-center rounded-full hover:bg-black/[0.04] md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-ink/[0.04] md:hidden"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
             <span className="relative block h-3 w-[18px]">
               <motion.span
-                className="absolute inset-x-0 h-[1.5px] rounded-full bg-[#1d1d1f]"
+                className="absolute inset-x-0 h-[1.5px] rounded-full bg-fg-1d1d1f"
                 animate={mobileOpen ? { top: 5, rotate: 45 } : { top: 1, rotate: 0 }}
                 transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
               />
               <motion.span
-                className="absolute inset-x-0 h-[1.5px] rounded-full bg-[#1d1d1f]"
+                className="absolute inset-x-0 h-[1.5px] rounded-full bg-fg-1d1d1f"
                 animate={mobileOpen ? { top: 5, rotate: -45 } : { top: 9, rotate: 0 }}
                 transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
               />
             </span>
           </button>
+          </div>
         </div>
       </nav>
 
@@ -450,7 +456,7 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            className="fixed inset-0 z-40 bg-white/95 px-8 pt-24 md:hidden"
+            className="fixed inset-0 z-40 bg-surface/95 px-8 pt-24 md:hidden"
             style={{ backdropFilter: "saturate(180%) blur(20px)", WebkitBackdropFilter: "saturate(180%) blur(20px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -460,27 +466,27 @@ export default function Navbar() {
             <motion.ul initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}>
               {(isLanding ? navLinks : []).map((link) => (
                 <motion.li key={link.label} variants={{ hidden: { opacity: 0, y: -8 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } } }}>
-                  <a href={link.href} onClick={(e) => go(e, link.href)} className="block py-2 text-[28px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">
+                  <a href={link.href} onClick={(e) => go(e, link.href)} className="block py-2 text-[28px] font-semibold tracking-[-0.02em] text-fg-1d1d1f">
                     {link.label}
                   </a>
                 </motion.li>
               ))}
-              <motion.li variants={{ hidden: { opacity: 0, y: -8 }, show: { opacity: 1, y: 0 } }} className="mt-8 flex flex-col gap-3 border-t border-black/[0.08] pt-6">
+              <motion.li variants={{ hidden: { opacity: 0, y: -8 }, show: { opacity: 1, y: 0 } }} className="mt-8 flex flex-col gap-3 border-t border-ink/[0.08] pt-6">
                 {isAuthenticated ? (
                   <>
-                    <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center rounded-full bg-[#5742FF] text-[15px] font-medium text-white">
+                    <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center rounded-full bg-sf-5742ff text-[15px] font-medium text-white">
                       Dashboard
                     </Link>
-                    <button onClick={() => { setMobileOpen(false); setShowLogoutConfirm(true); }} className="h-11 text-[15px] text-[#1d1d1f]/75">
+                    <button onClick={() => { setMobileOpen(false); setShowLogoutConfirm(true); }} className="h-11 text-[15px] text-fg-1d1d1f/75">
                       Log out
                     </button>
                   </>
                 ) : (
                   <>
-                    <Link href="/signup" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center rounded-full bg-[#5742FF] text-[15px] font-medium text-white">
+                    <Link href="/signup" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center rounded-full bg-sf-5742ff text-[15px] font-medium text-white">
                       Get started
                     </Link>
-                    <Link href="/login" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center text-[15px] text-[#1d1d1f]/75">
+                    <Link href="/login" onClick={() => setMobileOpen(false)} className="inline-flex h-11 items-center justify-center text-[15px] text-fg-1d1d1f/75">
                       Log in
                     </Link>
                   </>

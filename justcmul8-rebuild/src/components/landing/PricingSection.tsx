@@ -66,8 +66,8 @@ function RollingPrice({ value, className = "" }: { value: string; className?: st
 // A tick that draws itself when it scrolls into view.
 function Tick({ light, delay }: { light?: boolean; delay: number }) {
   return (
-    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${light ? "bg-white/20" : "bg-[#f1eeff]"}`}>
-      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke={light ? "#fff" : "#5742FF"} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round">
+    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${light ? "bg-white/20" : "bg-sf-f1eeff"}`}>
+      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke={light ? "#fff" : "var(--color-fg-5742ff)"} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round">
         <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay }} />
       </svg>
     </span>
@@ -84,8 +84,8 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       transition={spring(18, 0.8)}
       className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] p-7 sm:p-8 ${
         f
-          ? "bg-gradient-to-b from-[#7a67ff] via-[#5742FF] to-[#4a36e6] text-white shadow-[0_40px_80px_-30px_rgba(87,66,255,.65)] lg:-my-5 lg:py-12"
-          : "border border-[#ecebf7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_16px_40px_-28px_rgba(16,24,40,.25)]"
+          ? "bg-gradient-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 text-white shadow-[0_40px_80px_-30px_rgba(87,66,255,.65)] lg:-my-5 lg:py-12"
+          : "border border-ln-ecebf7 bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_16px_40px_-28px_rgba(16,24,40,.25)]"
       }`}
     >
       {f && (
@@ -97,32 +97,32 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       )}
 
       <div className="relative flex items-center justify-between">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${f ? "bg-white/15 text-white ring-1 ring-white/25" : "bg-[#f5f3ff] text-[#5742FF]"}`}>
+        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${f ? "bg-white/15 text-white ring-1 ring-white/25" : "bg-sf-f5f3ff text-fg-5742ff"}`}>
           <Icon size={21} strokeWidth={2} />
         </span>
         {f && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#5742FF] shadow-[0_6px_16px_-6px_rgba(0,0,0,.35)]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-fg-5742ff shadow-[0_6px_16px_-6px_rgba(0,0,0,.35)]">
             <Sparkles size={12} /> Most popular
           </span>
         )}
       </div>
 
-      <h3 className={`relative mt-5 font-space text-[22px] font-bold tracking-[-0.02em] ${f ? "text-white" : "text-[#161622]"}`}>{plan.name}</h3>
-      <p className={`relative mt-1 text-[14px] ${f ? "text-white/75" : "text-[#64748b]"}`}>{plan.tagline}</p>
+      <h3 className={`relative mt-5 font-space text-[22px] font-bold tracking-[-0.02em] ${f ? "text-white" : "text-fg-161622"}`}>{plan.name}</h3>
+      <p className={`relative mt-1 text-[14px] ${f ? "text-white/75" : "text-fg-64748b"}`}>{plan.tagline}</p>
 
       <div className="relative mt-6 flex items-end gap-1.5">
         {price === null ? (
-          <span className={`font-space text-[44px] font-bold leading-none tracking-[-0.03em] ${f ? "text-white" : "text-[#161622]"}`}>Custom</span>
+          <span className={`font-space text-[44px] font-bold leading-none tracking-[-0.03em] ${f ? "text-white" : "text-fg-161622"}`}>Custom</span>
         ) : (
           <>
-            <span className={`font-space text-[52px] font-bold leading-none tracking-[-0.04em] ${f ? "text-white" : "text-[#161622]"}`}>
+            <span className={`font-space text-[52px] font-bold leading-none tracking-[-0.04em] ${f ? "text-white" : "text-fg-161622"}`}>
               ₹<RollingPrice value={price.toLocaleString("en-IN")} />
             </span>
-            <span className={`mb-1.5 text-[14px] font-medium ${f ? "text-white/70" : "text-[#94a3b8]"}`}>/ month</span>
+            <span className={`mb-1.5 text-[14px] font-medium ${f ? "text-white/70" : "text-fg-94a3b8"}`}>/ month</span>
           </>
         )}
       </div>
-      <div className={`relative mt-2 h-5 text-[12.5px] font-medium ${f ? "text-white/70" : "text-[#94a3b8]"}`}>
+      <div className={`relative mt-2 h-5 text-[12.5px] font-medium ${f ? "text-white/70" : "text-fg-94a3b8"}`}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.span key={`${billing}-${plan.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className="block">
             {price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : billing === "yearly" ? `Billed ${inr(plan.id === "pro" ? PRO_YEARLY_TOTAL : price * 12)} yearly` : "Billed monthly"}
@@ -133,21 +133,21 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       <Link
         href={plan.id === "pro" ? `${plan.href}&billing=${billing}` : plan.href}
         className={`group/cta relative mt-7 inline-flex h-12 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full text-[14.5px] font-semibold transition-transform hover:scale-[1.02] active:scale-[0.98] ${
-          f ? "bg-white text-[#5742FF] shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)]" : "bg-[#161622] text-white hover:bg-[#2a2940]"
+          f ? "bg-surface text-fg-5742ff shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)]" : "bg-sf-161622 text-white hover:bg-sf-2a2940"
         }`}
       >
         {plan.cta}
         <ArrowRight size={16} className="transition-transform group-hover/cta:translate-x-0.5" />
       </Link>
 
-      <div className={`relative my-7 h-px ${f ? "bg-white/20" : "bg-[#f1f0fa]"}`} />
+      <div className={`relative my-7 h-px ${f ? "bg-white/20" : "bg-sf-f1f0fa"}`} />
 
       {plan.inherits && (
-        <p className={`relative mb-3.5 text-[12.5px] font-bold uppercase tracking-[0.12em] ${f ? "text-white/80" : "text-[#94a3b8]"}`}>Everything in {plan.inherits}, plus</p>
+        <p className={`relative mb-3.5 text-[12.5px] font-bold uppercase tracking-[0.12em] ${f ? "text-white/80" : "text-fg-94a3b8"}`}>Everything in {plan.inherits}, plus</p>
       )}
       <ul className="relative space-y-3">
         {plan.features.map((feat, i) => (
-          <li key={feat} className={`flex items-start gap-3 text-[14.5px] ${f ? "text-white" : "text-[#334155]"}`}>
+          <li key={feat} className={`flex items-start gap-3 text-[14.5px] ${f ? "text-white" : "text-fg-334155"}`}>
             <Tick light={f} delay={0.15 + i * 0.07} />
             {feat}
           </li>
@@ -158,9 +158,9 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
 }
 
 function Cell({ v }: { v: boolean | string }) {
-  if (v === true) return <Check size={17} strokeWidth={2.6} className="mx-auto text-[#5742FF]" />;
-  if (v === false) return <Minus size={16} className="mx-auto text-[#cbd5e1]" />;
-  return <span className="text-[13px] font-semibold text-[#334155]">{v}</span>;
+  if (v === true) return <Check size={17} strokeWidth={2.6} className="mx-auto text-fg-5742ff" />;
+  if (v === false) return <Minus size={16} className="mx-auto text-fg-cbd5e1 dark:text-white/25" />;
+  return <span className="text-[13px] font-semibold text-fg-334155">{v}</span>;
 }
 
 export default function PricingSection() {
@@ -171,13 +171,13 @@ export default function PricingSection() {
 
       {/* Billing toggle */}
       <Reveal className="flex justify-center mb-12 md:mb-16" y={12}>
-        <div className="relative flex h-12 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist" aria-label="Billing period">
+        <div className="relative flex h-12 items-center rounded-full bg-ink/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist" aria-label="Billing period">
           {(["monthly", "yearly"] as const).map((b) => (
             <button key={b} role="tab" aria-selected={billing === b} onClick={() => setBilling(b)} className="relative h-10 rounded-full px-5 text-[14px] font-semibold">
-              {billing === b && <motion.span layoutId="billing-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />}
-              <span className={`relative flex items-center gap-2 transition-colors ${billing === b ? "text-[#161622]" : "text-[#64748b]"}`}>
+              {billing === b && <motion.span layoutId="billing-pill" className="absolute inset-0 rounded-full bg-surface shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff] dark:bg-white/[0.1] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]" transition={spring(20, 0.85)} />}
+              <span className={`relative flex items-center gap-2 transition-colors ${billing === b ? "text-fg-161622" : "text-fg-64748b"}`}>
                 {b === "monthly" ? "Monthly" : "Yearly"}
-                {b === "yearly" && <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10.5px] font-bold text-[#15803d]">Save {YEARLY_SAVING_PCT}%</span>}
+                {b === "yearly" && <span className="rounded-full bg-sf-dcfce7 px-2 py-0.5 text-[10.5px] font-bold text-fg-15803d">Save {YEARLY_SAVING_PCT}%</span>}
               </span>
             </button>
           ))}
@@ -192,31 +192,31 @@ export default function PricingSection() {
         ))}
       </Stagger>
 
-      <Reveal className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-medium text-[#64748b]" y={10}>
+      <Reveal className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-medium text-fg-64748b" y={10}>
         {["No credit card required", "Cancel anytime", "Student-friendly"].map((t) => (
-          <span key={t} className="inline-flex items-center gap-1.5"><Check size={14} className="text-[#12a150]" /> {t}</span>
+          <span key={t} className="inline-flex items-center gap-1.5"><Check size={14} className="text-fg-12a150" /> {t}</span>
         ))}
       </Reveal>
 
       {/* Compare plans */}
       <Reveal className="mx-auto mt-20 max-w-5xl" y={24}>
-        <h3 className="mb-6 text-center font-space text-[26px] font-bold tracking-[-0.03em] text-[#161622]">Compare plans</h3>
-        <div className="overflow-x-auto rounded-3xl border border-[#ecebf7] bg-white shadow-[0_16px_40px_-28px_rgba(16,24,40,.25)]">
+        <h3 className="mb-6 text-center font-space text-[26px] font-bold tracking-[-0.03em] text-fg-161622">Compare plans</h3>
+        <div className="overflow-x-auto rounded-3xl border border-ln-ecebf7 bg-surface shadow-[0_16px_40px_-28px_rgba(16,24,40,.25)]">
           <table className="w-full min-w-[560px] text-left">
             <thead>
-              <tr className="border-b border-[#f1f0fa]">
-                <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">Feature</th>
+              <tr className="border-b border-ln-f1f0fa">
+                <th className="px-6 py-4 text-[12px] font-bold uppercase tracking-[0.12em] text-fg-94a3b8">Feature</th>
                 {PLANS.map((p) => (
-                  <th key={p.id} className={`px-4 py-4 text-center text-[14px] font-bold ${p.featured ? "text-[#5742FF]" : "text-[#161622]"}`}>{p.name}</th>
+                  <th key={p.id} className={`px-4 py-4 text-center text-[14px] font-bold ${p.featured ? "text-fg-5742ff" : "text-fg-161622"}`}>{p.name}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {COMPARE.map((row) => (
-                <tr key={row.label} className="border-b border-[#f7f6fc] last:border-0 transition-colors hover:bg-[#faf9ff]">
-                  <td className="px-6 py-3.5 text-[14px] font-medium text-[#334155]">{row.label}</td>
+                <tr key={row.label} className="border-b border-ln-f7f6fc last:border-0 transition-colors hover:bg-sf-faf9ff dark:hover:bg-ink/[0.03]">
+                  <td className="px-6 py-3.5 text-[14px] font-medium text-fg-334155">{row.label}</td>
                   {row.values.map((v, i) => (
-                    <td key={i} className={`px-4 py-3.5 text-center ${PLANS[i].featured ? "bg-[#f8f7ff]" : ""}`}><Cell v={v} /></td>
+                    <td key={i} className={`px-4 py-3.5 text-center ${PLANS[i].featured ? "bg-sf-f8f7ff dark:bg-sf-5742ff/[0.09]" : ""}`}><Cell v={v} /></td>
                   ))}
                 </tr>
               ))}

@@ -136,7 +136,7 @@ export default function AdvancedResultsDashboard({
   }
 
   const ghostBtn =
-    "flex h-9 items-center gap-1.5 rounded-xl border border-[#ECEBF7] bg-white px-2.5 sm:px-3.5 text-[12.5px] font-bold text-slate-700 transition-colors hover:border-[#D9D3FB] hover:bg-[#F8F7FF] hover:text-[#5742FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50";
+    "flex h-9 items-center gap-1.5 rounded-xl border border-ln-ecebf7 bg-surface px-2.5 sm:px-3.5 text-[12.5px] font-bold text-slate-700 transition-colors hover:border-ln-d9d3fb hover:bg-sf-f8f7ff hover:text-fg-5742ff focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50";
 
   return (
     <MotionConfig reducedMotion="user">
@@ -146,7 +146,7 @@ export default function AdvancedResultsDashboard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#161622]/45 p-0 backdrop-blur-sm sm:p-6"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-sf-161622/45 p-0 backdrop-blur-sm dark:bg-black/60 sm:p-6"
           >
             <motion.div
               role="dialog"
@@ -156,12 +156,12 @@ export default function AdvancedResultsDashboard({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="flex h-full w-full max-w-[1440px] flex-col overflow-hidden border border-[#E7E3FF] bg-[#F8F7FF] shadow-[0_25px_70px_rgba(22,22,34,0.3)] sm:rounded-[28px]"
+              className="flex h-full w-full max-w-[1440px] flex-col overflow-hidden border border-ln-e7e3ff bg-sf-f8f7ff shadow-[0_25px_70px_rgba(22,22,34,0.3)] sm:rounded-[28px]"
             >
               {/* ── Header ── */}
-              <div className="flex h-[64px] shrink-0 items-center justify-between gap-3 border-b border-[#ECEBF7] bg-white px-4 sm:px-6">
+              <div className="flex h-[64px] shrink-0 items-center justify-between gap-3 border-b border-ln-ecebf7 bg-surface px-4 sm:px-6">
                 <div className="min-w-0">
-                  <h1 id="results-suite-title" className="truncate text-[16px] font-black leading-tight tracking-tight text-[#161622] sm:text-[17px]">
+                  <h1 id="results-suite-title" className="truncate text-[16px] font-black leading-tight tracking-tight text-fg-161622 sm:text-[17px]">
                     Simulation Analytics
                   </h1>
                   <p className="flex min-w-0 items-center gap-1.5 truncate text-[12px] font-semibold leading-tight text-slate-600">
@@ -181,7 +181,7 @@ export default function AdvancedResultsDashboard({
                     disabled={pdfGenerating}
                     aria-label="Download PDF report"
                     title="Download the executive PDF report, including a snapshot of your canvas"
-                    className="flex h-9 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-2.5 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 disabled:opacity-60 sm:px-3.5"
+                    className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60 sm:px-3.5"
                   >
                     {pdfGenerating ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
                     <span className="hidden sm:inline">{pdfGenerating ? "Building PDF…" : "Download PDF"}</span>
@@ -198,7 +198,7 @@ export default function AdvancedResultsDashboard({
                     onClick={onClose}
                     aria-label="Close analytics"
                     title="Close (Esc)"
-                    className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-[#ECEBF7] text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+                    className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-ln-ecebf7 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50"
                   >
                     <X size={17} strokeWidth={2.5} />
                   </button>
@@ -206,10 +206,10 @@ export default function AdvancedResultsDashboard({
               </div>
 
               {/* ── Tabs + plain-English intro ── */}
-              <div className="shrink-0 border-b border-[#ECEBF7] bg-white/95 px-4 pt-2 pb-2.5 sm:px-6">
+              <div className="shrink-0 border-b border-ln-ecebf7 bg-surface/95 px-4 pt-2 pb-2.5 sm:px-6">
                 <TabStrip tabs={TABS} value={tab} onChange={setTab} layoutId="results-suite-tabs" label="Analytics sections" className="-mx-1 px-1 pb-1" />
                 <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-slate-600">
-                  <Info size={13} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+                  <Info size={13} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
                   <span>{activeTab.intro}</span>
                 </p>
               </div>

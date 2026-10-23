@@ -8,7 +8,7 @@ import { Stagger, Item, FormTitle, SubmitButton, FormError, SuccessState, useInt
 
 function BackToLogin() {
   return (
-    <Link href="/login" className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#5742FF] hover:text-[#4531E5] transition-colors group">
+    <Link href="/login" className="inline-flex items-center gap-1.5 text-[13px] font-bold text-fg-5742ff hover:text-fg-4531e5 transition-colors group">
       <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" /> Back to log in
     </Link>
   );
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <SuccessState title="Check your inbox" action={<BackToLogin />}>
-        If an account exists for <b className="text-[#161622]">{email}</b>, a password reset link is on its way.
+        If an account exists for <b className="text-fg-161622">{email}</b>, a password reset link is on its way.
       </SuccessState>
     );
   }

@@ -34,9 +34,9 @@ export default function UpdatePasswordPage() {
         title="Password updated"
         action={
           // Progress bar that fills over the redirect delay.
-          <div className="mx-auto w-40 h-1 rounded-full bg-[#eeedf7] overflow-hidden">
+          <div className="mx-auto w-40 h-1 rounded-full bg-sf-eeedf7 overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] origin-left"
+              className="h-full rounded-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff origin-left"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: REDIRECT_MS / 1000, ease: "linear" }}

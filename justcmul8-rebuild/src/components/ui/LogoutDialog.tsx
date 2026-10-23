@@ -50,14 +50,14 @@ export default function LogoutDialog({
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
         >
-          <div className="absolute inset-0 bg-[#161622]/35 backdrop-blur-[6px]" onClick={() => !leaving && onClose()} />
+          <div className="absolute inset-0 bg-sf-161622/35 dark:bg-black/55 backdrop-blur-[6px]" onClick={() => !leaving && onClose()} />
 
           <motion.div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="logout-title"
             aria-describedby="logout-desc"
-            className="relative w-full max-w-[400px] overflow-hidden rounded-[28px] border border-white bg-white shadow-[0_40px_90px_-30px_rgba(87,66,255,.45),0_12px_30px_-12px_rgba(22,22,34,.25)]"
+            className="relative w-full max-w-[400px] overflow-hidden rounded-[28px] border border-surface bg-surface shadow-[0_40px_90px_-30px_rgba(87,66,255,.45),0_12px_30px_-12px_rgba(22,22,34,.25)]"
             initial={{ opacity: 0, scale: 0.92, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12, transition: { duration: 0.18 } }}
@@ -65,14 +65,14 @@ export default function LogoutDialog({
           >
             {/* Canvas strip: you → Exit */}
             <div
-              className="relative h-[120px] border-b border-[#f1f0fa] bg-[#fbfbff]"
+              className="relative h-[120px] border-b border-ln-f1f0fa bg-sf-fbfbff"
               style={{ backgroundImage: "radial-gradient(rgba(99,102,241,.16) 1.2px, transparent 1.7px)", backgroundSize: "18px 18px" }}
             >
               <svg viewBox="0 0 240 80" className="absolute inset-x-0 top-1/2 mx-auto h-[80px] w-[300px] max-w-full -translate-y-1/2 overflow-visible">
-                <motion.path d={PATH} fill="none" stroke="#d9d3fb" strokeWidth={2.5} strokeLinecap="round" strokeDasharray="3 6"
+                <motion.path d={PATH} fill="none" style={{ stroke: "var(--color-ln-d9d3fb)" }} strokeWidth={2.5} strokeLinecap="round" strokeDasharray="3 6"
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.15 }} />
                 {!leaving && [0, 1, 2].map((k) => (
-                  <circle key={k} r={3.5} fill="#8b5cf6" stroke="#fff" strokeWidth={1.5} opacity={0}>
+                  <circle key={k} r={3.5} fill="#8b5cf6" style={{ stroke: "var(--color-sf-fbfbff)" }} strokeWidth={1.5} opacity={0}>
                     <animateMotion dur="2.2s" begin={`${k * 0.73}s`} repeatCount="indefinite" path={PATH} />
                     <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.15;.85;1" dur="2.2s" begin={`${k * 0.73}s`} repeatCount="indefinite" />
                   </circle>
@@ -81,7 +81,7 @@ export default function LogoutDialog({
 
               {/* Your block slides down the link into Exit when confirmed */}
               <motion.div
-                className="absolute left-1/2 top-1/2 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8b5cf6] to-[#5742FF] font-space text-[18px] font-bold text-white shadow-[0_12px_24px_-10px_rgba(87,66,255,.8)]"
+                className="absolute left-1/2 top-1/2 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[18px] font-bold text-white shadow-[0_12px_24px_-10px_rgba(87,66,255,.8)]"
                 style={{ marginLeft: -24, marginTop: -24 }}
                 initial={{ x: -96, scale: 0.6, opacity: 0 }}
                 animate={leaving ? { x: 96, scale: 0.35, opacity: 0 } : { x: -96, scale: 1, opacity: 1 }}
@@ -96,8 +96,8 @@ export default function LogoutDialog({
                 style={{ marginLeft: 96 - 24, marginTop: -24 }}
                 initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={spring(14, 0.6, 0.2)}
               >
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[#ecebf7] bg-white text-[#5742FF] shadow-[0_10px_24px_-12px_rgba(60,50,160,.45)]">
-                  <span className="lp-pulse absolute inset-0 rounded-2xl border-2 border-[#5742FF]/25" />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-ln-ecebf7 bg-surface text-fg-5742ff shadow-[0_10px_24px_-12px_rgba(60,50,160,.45)]">
+                  <span className="lp-pulse absolute inset-0 rounded-2xl border-2 border-ln-5742ff/25" />
                   <AnimatePresence mode="wait" initial={false}>
                     {leaving ? (
                       <motion.span key="done" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} transition={spring(18, 0.55, 0.15)}>
@@ -108,19 +108,19 @@ export default function LogoutDialog({
                     )}
                   </AnimatePresence>
                 </div>
-                <span className="absolute left-1/2 top-[54px] -translate-x-1/2 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#a1a1b5]">Exit</span>
+                <span className="absolute left-1/2 top-[54px] -translate-x-1/2 text-[9.5px] font-bold uppercase tracking-[0.14em] text-fg-a1a1b5">Exit</span>
               </motion.div>
             </div>
 
             <div className="px-6 pb-6 pt-5 text-center">
-              <h3 id="logout-title" className="font-space text-[21px] font-bold tracking-[-0.02em] text-[#161622]">
+              <h3 id="logout-title" className="font-space text-[21px] font-bold tracking-[-0.02em] text-fg-161622">
                 {leaving ? "Signing you out…" : "Sign out of JustCmul8?"}
               </h3>
-              <p id="logout-desc" className="mx-auto mt-1.5 max-w-[300px] text-[13.5px] leading-relaxed text-[#64748b]">
+              <p id="logout-desc" className="mx-auto mt-1.5 max-w-[300px] text-[13.5px] leading-relaxed text-fg-64748b">
                 You&apos;ll be signed out on all your devices. Your simulations and results stay saved.
               </p>
               {email && (
-                <span className="mt-3 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-[#ecebf7] bg-[#fafaff] px-3 py-1 text-[12px] font-semibold text-[#475569]">
+                <span className="mt-3 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-ln-ecebf7 bg-sf-fafaff px-3 py-1 text-[12px] font-semibold text-fg-475569">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" /> {email}
                 </span>
               )}
@@ -130,7 +130,7 @@ export default function LogoutDialog({
                   ref={stayRef}
                   onClick={onClose}
                   disabled={leaving}
-                  className="h-11 rounded-full border border-[#e7e5f6] bg-white text-[14px] font-semibold text-[#334155] transition-colors hover:border-[#5742FF] hover:text-[#5742FF] disabled:opacity-50"
+                  className="h-11 rounded-full border border-ln-e7e5f6 bg-surface text-[14px] font-semibold text-fg-334155 transition-colors hover:border-ln-5742ff hover:text-fg-5742ff disabled:opacity-50"
                 >
                   Stay signed in
                 </button>
@@ -139,7 +139,7 @@ export default function LogoutDialog({
                   disabled={leaving}
                   whileHover={leaving ? undefined : { scale: 1.02 }}
                   whileTap={leaving ? undefined : { scale: 0.97 }}
-                  className="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full bg-[#161622] border border-[#3a3a4c] text-[14px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(22,22,34,.6)] transition-colors hover:bg-[#2a2940] disabled:cursor-wait"
+                  className="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full bg-sf-161622 border border-ln-3a3a4c text-[14px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(22,22,34,.6)] transition-colors hover:bg-sf-2a2940 disabled:cursor-wait dark:border-white dark:bg-white dark:text-[#161622] dark:shadow-[0_10px_24px_-10px_rgba(0,0,0,.8)] dark:hover:bg-white/85"
                 >
                   {leaving ? <Loader2 size={15} className="animate-spin" /> : <LogOut size={15} className="transition-transform group-hover:translate-x-0.5" />}
                   {leaving ? "Signing out" : "Sign out"}

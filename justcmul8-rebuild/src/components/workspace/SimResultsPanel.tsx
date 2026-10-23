@@ -191,13 +191,13 @@ export default function SimResultsPanel({
   const activeIntro = TABS.find((t) => t.id === activeTab)!.intro;
 
   const iconBtn =
-    "flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50";
+    "flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50";
 
   return (
     <MotionConfig reducedMotion="user">
       <div
         style={{ height: collapsed ? "52px" : `${height}px`, maxHeight: "88vh" }}
-        className="relative z-40 flex min-h-0 w-full flex-shrink-0 flex-col border-t border-[#E7E3FF] bg-white/95 shadow-[0_-10px_40px_rgba(87,66,255,0.08)] backdrop-blur-2xl transition-[height] duration-75"
+        className="relative z-40 flex min-h-0 w-full flex-shrink-0 flex-col border-t border-ln-e7e3ff bg-surface/95 shadow-[0_-10px_40px_rgba(87,66,255,0.08)] backdrop-blur-2xl transition-[height] duration-75"
         aria-label="Simulation results"
         role="region"
       >
@@ -213,19 +213,19 @@ export default function SimResultsPanel({
           onPointerDown={handlePointerDown}
           onDoubleClick={handleDoubleClickHandle}
           onKeyDown={handleResizeKey}
-          className="group absolute -top-2 left-0 right-0 z-50 flex h-4 w-full cursor-row-resize select-none items-center justify-center transition-colors hover:bg-[#5742FF]/10 focus-visible:bg-[#5742FF]/10 focus-visible:outline-none"
+          className="group absolute -top-2 left-0 right-0 z-50 flex h-4 w-full cursor-row-resize select-none items-center justify-center transition-colors hover:bg-sf-5742ff/10 focus-visible:bg-sf-5742ff/10 focus-visible:outline-none"
           title="Drag (or use arrow keys) to resize • Double-click to toggle height"
         >
-          <div className="h-1.5 w-24 rounded-full bg-indigo-200/90 transition-all group-hover:w-36 group-hover:bg-[#5742FF] group-focus-visible:w-36 group-focus-visible:bg-[#5742FF]" />
+          <div className="h-1.5 w-24 rounded-full bg-indigo-200/90 transition-all group-hover:w-36 group-hover:bg-sf-5742ff group-focus-visible:w-36 group-focus-visible:bg-sf-5742ff" />
         </div>
 
         {/* ── Header ── */}
-        <div className="flex h-[52px] shrink-0 select-none items-center justify-between gap-3 border-b border-[#F1F0FA] bg-white/90 px-3 sm:px-5">
+        <div className="flex h-[52px] shrink-0 select-none items-center justify-between gap-3 border-b border-ln-f1f0fa bg-surface/90 px-3 sm:px-5">
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
             aria-expanded={!collapsed}
-            className="group flex min-w-0 items-center gap-2.5 rounded-xl py-1 pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+            className="group flex min-w-0 items-center gap-2.5 rounded-xl py-1 pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50"
           >
             <span className="relative flex shrink-0 items-center justify-center">
               {healthScore !== undefined && healthScore < 80 && (
@@ -236,7 +236,7 @@ export default function SimResultsPanel({
               </span>
             </span>
             <span className="flex min-w-0 flex-col leading-tight sm:flex-row sm:items-baseline sm:gap-2">
-              <span className="flex items-center gap-1.5 truncate text-[13.5px] font-black tracking-tight text-[#161622] group-hover:text-[#4331E0]">
+              <span className="flex items-center gap-1.5 truncate text-[13.5px] font-black tracking-tight text-fg-161622 group-hover:text-fg-4331e0">
                 {headline}
                 {grade && (
                   <span className="rounded-md px-1.5 py-px text-[10.5px] font-black" style={{ background: healthTone.tint, color: healthTone.text }}>
@@ -269,7 +269,7 @@ export default function SimResultsPanel({
             <button
               onClick={onExpand}
               aria-label="Open full analytics"
-              className="flex h-8 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 sm:px-3.5"
+              className="flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 sm:px-3.5"
             >
               <Maximize2 size={13} aria-hidden />
               <span className="hidden sm:inline">Full analytics</span>
@@ -285,10 +285,10 @@ export default function SimResultsPanel({
 
         {/* ── Tabs + intro ── */}
         {!collapsed && (
-          <div className="shrink-0 border-b border-[#F1F0FA] bg-[#FAF9FF] px-3 py-2 sm:px-5">
+          <div className="shrink-0 border-b border-ln-f1f0fa bg-sf-faf9ff px-3 py-2 sm:px-5">
             <TabStrip tabs={TABS} value={activeTab} onChange={setActiveTab} layoutId="results-panel-tabs" label="Result sections" />
             <p className="mt-1.5 hidden items-start gap-1.5 text-[12px] leading-snug text-slate-600 sm:flex">
-              <Info size={13} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+              <Info size={13} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
               <span>{activeIntro}</span>
             </p>
           </div>
@@ -297,7 +297,7 @@ export default function SimResultsPanel({
         {/* ── Content ── */}
         {!collapsed && (
           <div
-            className="custom-scrollbar min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-[#FAF9FF] to-[#F3F2FC] p-3 sm:p-5"
+            className="custom-scrollbar min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-sf-faf9ff to-sf-f3f2fc p-3 sm:p-5"
             style={{ overscrollBehavior: "contain" }}
             {...tabPanelProps("results-panel-tabs", activeTab)}
           >
@@ -314,14 +314,14 @@ export default function SimResultsPanel({
                   {/* 1. Diagnosis banner */}
                   <div
                     className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-[20px] border p-4 md:flex-row md:items-center"
-                    style={{ background: `linear-gradient(100deg, ${healthTone.tint}, #ffffff 70%)`, borderColor: healthTone.ring }}
+                    style={{ background: `linear-gradient(100deg, ${healthTone.tint}, var(--color-sf-ffffff) 70%)`, borderColor: healthTone.ring }}
                   >
                     <div className="flex min-w-0 items-start gap-3.5">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm" style={{ color: healthTone.text }}>
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-surface shadow-sm" style={{ color: healthTone.text }}>
                         {healthScore === undefined ? <Activity size={20} aria-hidden /> : healthScore >= 80 ? <ShieldCheck size={20} aria-hidden /> : <AlertTriangle size={20} aria-hidden />}
                       </span>
                       <div className="min-w-0">
-                        <h4 className="text-[15px] font-black leading-tight text-[#161622]">
+                        <h4 className="text-[15px] font-black leading-tight text-fg-161622">
                           {result.aiDiagnosis?.title || (healthScore !== undefined && healthScore < 60 ? "Bottleneck detected" : "Run summary")}
                         </h4>
                         <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-slate-700">
@@ -333,7 +333,7 @@ export default function SimResultsPanel({
                       </div>
                     </div>
                     {healthScore !== undefined && (
-                      <div className="flex shrink-0 items-center gap-3 self-start rounded-2xl border border-white bg-white/85 px-4 py-2.5 shadow-sm md:self-auto">
+                      <div className="flex shrink-0 items-center gap-3 self-start rounded-2xl border border-surface bg-surface/85 px-4 py-2.5 shadow-sm md:self-auto">
                         <div className="text-right">
                           <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Health</div>
                           <div className="text-[22px] font-black leading-none tabular-nums" style={{ color: healthTone.text }}>
@@ -365,7 +365,7 @@ export default function SimResultsPanel({
                       label="Typical wait in line"
                       value={waitP?.p50 ?? 0}
                       format={fmtSeconds}
-                      caption={<>Slowest 5% wait <b className="text-[#161622]">{fmtSeconds(waitP?.p95)}</b>+ · visit {fmtSeconds(cycleP?.p50)}</>}
+                      caption={<>Slowest 5% wait <b className="text-fg-161622">{fmtSeconds(waitP?.p95)}</b>+ · visit {fmtSeconds(cycleP?.p50)}</>}
                       range={waitP && waitP.max > 0 ? { min: 0, max: waitP.max, value: waitP.p50, marker: waitP.p95 } : undefined}
                       help="Half of everyone waited less than this. The bar runs from no wait to the longest wait; the tick marks where the slowest 5% begin."
                       delay={0.04}
@@ -385,7 +385,7 @@ export default function SimResultsPanel({
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.12, duration: 0.4 }}
-                      className="relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#8d80ff] bg-gradient-to-br from-[#6a57ff] via-[#5742FF] to-[#4531E5] p-3.5 text-white shadow-[0_18px_40px_-22px_rgba(87,66,255,.9)]"
+                      className="relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-ln-8d80ff bg-gradient-to-br from-sf-6a57ff via-sf-5742ff to-sf-4531e5 p-3.5 text-white shadow-[0_18px_40px_-22px_rgba(87,66,255,.9)]"
                     >
                       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1px, transparent 1.5px)", backgroundSize: "16px 16px", maskImage: "linear-gradient(160deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(160deg,#000,transparent 70%)" }} />
                       <div className="relative flex items-center justify-between">
@@ -409,7 +409,7 @@ export default function SimResultsPanel({
                     <section aria-labelledby="panel-domain-kpis">
                       <div className="mb-2 flex items-center justify-between">
                         <h3 id="panel-domain-kpis" className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-slate-600">{simConfig.label} metrics</h3>
-                        <span className="rounded-full bg-[#EFEDFF] px-2 py-0.5 text-[10.5px] font-bold text-[#4331E0]">{resolvedKpis.length} tracked</span>
+                        <span className="rounded-full bg-sf-efedff px-2 py-0.5 text-[10.5px] font-bold text-fg-4331e0">{resolvedKpis.length} tracked</span>
                       </div>
                       <div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
                         {resolvedKpis.map((kpi, idx) => (
@@ -429,11 +429,11 @@ export default function SimResultsPanel({
                   )}
 
                   {/* 3. Station pipeline */}
-                  <section aria-labelledby="panel-pipeline" className="rounded-[20px] border border-[#ECEBF7] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
+                  <section aria-labelledby="panel-pipeline" className="rounded-[20px] border border-ln-ecebf7 bg-surface p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Layers size={15} className="text-[#5742FF]" aria-hidden />
-                        <h3 id="panel-pipeline" className="text-[12.5px] font-black uppercase tracking-wider text-[#161622]">Station pipeline</h3>
+                        <Layers size={15} className="text-fg-5742ff" aria-hidden />
+                        <h3 id="panel-pipeline" className="text-[12.5px] font-black uppercase tracking-wider text-fg-161622">Station pipeline</h3>
                       </div>
                       <ul className="flex flex-wrap items-center gap-3 text-[11.5px] font-semibold text-slate-600">
                         <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: TONES.good.solid }} aria-hidden /> Smooth (&lt;60% busy)</li>
@@ -446,7 +446,7 @@ export default function SimResultsPanel({
                       <li className="flex shrink-0 items-center gap-2">
                         <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-center">
                           <span className="block text-[10.5px] font-black uppercase tracking-wider text-sky-800">Arrivals</span>
-                          <span className="text-[14px] font-black tabular-nums text-[#161622]">{result.totalArrived.toLocaleString()}</span>
+                          <span className="text-[14px] font-black tabular-nums text-fg-161622">{result.totalArrived.toLocaleString()}</span>
                         </div>
                         <ArrowRight size={15} className="shrink-0 text-indigo-300" aria-hidden />
                       </li>
@@ -480,13 +480,13 @@ export default function SimResultsPanel({
                           <li key={id} className="flex shrink-0 items-center gap-2">
                             <div
                               className={`min-w-[148px] rounded-2xl border px-3.5 py-2.5 text-center transition-shadow hover:shadow-[0_10px_24px_-14px_var(--ring)] ${isChoke ? "ring-2 ring-rose-400/40" : ""}`}
-                              style={{ background: severity === "none" ? "#F8FAFC" : tone.tint, borderColor: severity === "none" ? "#E2E8F0" : tone.ring, ["--ring" as string]: tone.ring }}
+                              style={{ background: severity === "none" ? "var(--color-sf-f8fafc)" : tone.tint, borderColor: severity === "none" ? "var(--color-ln-e2e8f0)" : tone.ring, ["--ring" as string]: tone.ring }}
                             >
                               <div className="mb-0.5 flex items-center justify-center gap-1.5">
                                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: tone.solid }} aria-hidden />
-                                <span className="max-w-[118px] truncate text-[12.5px] font-black text-[#161622]" title={s.label}>{s.label}</span>
+                                <span className="max-w-[118px] truncate text-[12.5px] font-black text-fg-161622" title={s.label}>{s.label}</span>
                               </div>
-                              <div className="text-[11.5px] font-extrabold" style={{ color: severity === "none" ? "#475569" : tone.text }}>{headlineText}</div>
+                              <div className="text-[11.5px] font-extrabold" style={{ color: severity === "none" ? "var(--color-fg-475569)" : tone.text }}>{headlineText}</div>
                               {/* Only steps where people actually queue have a "line"; arrival/exit/router don't. */}
                               {(isServer || isWaitingNode) && <div className="mt-0.5 text-[11px] font-medium text-slate-600">{fmtSeconds(s.avgWaitTime ?? 0)} wait</div>}
                             </div>
@@ -499,7 +499,7 @@ export default function SimResultsPanel({
                         <ArrowRight size={15} className="shrink-0 text-indigo-300" aria-hidden />
                         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center">
                           <span className="block text-[10.5px] font-black uppercase tracking-wider text-emerald-800">Finished</span>
-                          <span className="text-[14px] font-black tabular-nums text-[#161622]">{result.totalCompleted.toLocaleString()}</span>
+                          <span className="text-[14px] font-black tabular-nums text-fg-161622">{result.totalCompleted.toLocaleString()}</span>
                         </div>
                       </li>
                     </ol>
@@ -511,7 +511,7 @@ export default function SimResultsPanel({
                       icon={TrendingUp}
                       title="Load inside over time"
                       description="Flat = steady flow. A rise that never falls = lines backing up."
-                      actions={<span className="rounded-md bg-[#EFEDFF] px-2 py-0.5 text-[11px] font-bold tabular-nums text-[#4331E0]">Peak {maxWip.toLocaleString()}</span>}
+                      actions={<span className="rounded-md bg-sf-efedff px-2 py-0.5 text-[11px] font-bold tabular-nums text-fg-4331e0">Peak {maxWip.toLocaleString()}</span>}
                       height={190}
                       empty={wipChartData.length === 0}
                       emptyTitle="No timeline recorded"
@@ -521,21 +521,21 @@ export default function SimResultsPanel({
                         <AreaChart data={wipChartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                           <defs>
                             <linearGradient id="panel-wip-grad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#5742FF" stopOpacity={0.34} />
-                              <stop offset="100%" stopColor="#5742FF" stopOpacity={0} />
+                              <stop offset="0%" stopColor="var(--color-sf-5742ff)" stopOpacity={0.34} />
+                              <stop offset="100%" stopColor="var(--color-sf-5742ff)" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid {...GRID} />
                           <XAxis dataKey="simTime" type="number" domain={["dataMin", "dataMax"]} tickFormatter={fmtSeconds} tickCount={5} {...AXIS} />
                           <YAxis {...AXIS} domain={[0, niceMax]} allowDecimals={false} tickFormatter={fmtCount} width={40} />
                           <Tooltip
-                            cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }}
+                            cursor={{ stroke: "var(--color-sf-5742ff)", strokeWidth: 1, strokeDasharray: "4 4" }}
                             content={<ChartTooltip labelFormatter={(l) => `At ${fmtSeconds(Number(l))}`} valueFormatter={(v) => `${Math.round(v).toLocaleString()} inside`} />}
                           />
                           {avgWip !== undefined && avgWip > 0 && (
-                            <ReferenceLine y={avgWip} stroke="#475569" strokeDasharray="5 4" label={{ value: "avg", position: "insideTopRight", fill: "#475569", fontSize: 10.5, fontWeight: 700 }} />
+                            <ReferenceLine y={avgWip} stroke="var(--color-ln-475569)" strokeDasharray="5 4" label={{ value: "avg", position: "insideTopRight", fill: "var(--color-fg-475569)", fontSize: 10.5, fontWeight: 700 }} />
                           )}
-                          <Area type="monotone" dataKey="wip" name="Inside now" stroke="#5742FF" strokeWidth={2.5} fill="url(#panel-wip-grad)" dot={false} activeDot={{ r: 5, fill: "#5742FF", stroke: "#fff", strokeWidth: 2 }} />
+                          <Area type="monotone" dataKey="wip" name="Inside now" stroke="var(--color-sf-5742ff)" strokeWidth={2.5} fill="url(#panel-wip-grad)" dot={false} activeDot={{ r: 5, fill: "var(--color-sf-5742ff)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </ChartCard>
@@ -545,8 +545,8 @@ export default function SimResultsPanel({
                       title="Wait time: typical to worst case"
                       description="Left is a quick visit, right is the unlucky 1%. The gap shows how uneven the experience is."
                       legend={[
-                        { label: "Total visit", color: "#5742FF" },
-                        { label: "Waiting in line", color: "#E69F00", dashed: chartViewMode === "curve" },
+                        { label: "Total visit", color: "var(--color-sf-5742ff)" },
+                        { label: "Waiting in line", color: "var(--color-sf-e69f00)", dashed: chartViewMode === "curve" },
                       ]}
                       actions={
                         <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5" role="group" aria-label="Chart style">
@@ -557,7 +557,7 @@ export default function SimResultsPanel({
                               aria-label={lbl}
                               aria-pressed={chartViewMode === mode}
                               title={lbl}
-                              className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${chartViewMode === mode ? "bg-white text-[#4331E0] shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+                              className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${chartViewMode === mode ? "bg-surface text-fg-4331e0 shadow-sm dark:bg-white/10" : "text-slate-500 hover:text-slate-900"}`}
                             >
                               <Icon size={14} />
                             </button>
@@ -573,27 +573,27 @@ export default function SimResultsPanel({
                           <AreaChart data={percentileData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                             <defs>
                               <linearGradient id="panel-pct-grad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#5742FF" stopOpacity={0.32} />
-                                <stop offset="100%" stopColor="#5742FF" stopOpacity={0} />
+                                <stop offset="0%" stopColor="var(--color-sf-5742ff)" stopOpacity={0.32} />
+                                <stop offset="100%" stopColor="var(--color-sf-5742ff)" stopOpacity={0} />
                               </linearGradient>
                             </defs>
                             <CartesianGrid {...GRID} />
                             <XAxis dataKey="name" {...AXIS} interval={0} tick={{ ...AXIS.tick, fontSize: 10.5 }} />
                             <YAxis {...AXIS} domain={[0, niceMaxFloat]} tickFormatter={fmtSeconds} width={50} />
-                            <Tooltip cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }} content={pctTooltip} />
-                            <Area type="monotone" dataKey="total" name="Total visit" stroke="#5742FF" strokeWidth={2.5} fill="url(#panel-pct-grad)" activeDot={{ r: 5, fill: "#5742FF", stroke: "#fff", strokeWidth: 2 }} />
-                            <Area type="monotone" dataKey="wait" name="Waiting in line" stroke="#E69F00" strokeWidth={2} fill="none" strokeDasharray="5 4" />
+                            <Tooltip cursor={{ stroke: "var(--color-sf-5742ff)", strokeWidth: 1, strokeDasharray: "4 4" }} content={pctTooltip} />
+                            <Area type="monotone" dataKey="total" name="Total visit" stroke="var(--color-sf-5742ff)" strokeWidth={2.5} fill="url(#panel-pct-grad)" activeDot={{ r: 5, fill: "var(--color-sf-5742ff)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
+                            <Area type="monotone" dataKey="wait" name="Waiting in line" stroke="var(--color-sf-e69f00)" strokeWidth={2} fill="none" strokeDasharray="5 4" />
                           </AreaChart>
                         ) : (
                           <BarChart data={percentileData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={4}>
                             <defs>
                               <linearGradient id="panel-bar-total" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#6a57ff" />
-                                <stop offset="100%" stopColor="#5742FF" stopOpacity={0.75} />
+                                <stop offset="0%" stopColor="var(--color-sf-6a57ff)" />
+                                <stop offset="100%" stopColor="var(--color-sf-5742ff)" stopOpacity={0.75} />
                               </linearGradient>
                               <linearGradient id="panel-bar-wait" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#F2B440" />
-                                <stop offset="100%" stopColor="#E69F00" stopOpacity={0.8} />
+                                <stop offset="0%" stopColor="var(--color-sf-f2b440)" />
+                                <stop offset="100%" stopColor="var(--color-sf-e69f00)" stopOpacity={0.8} />
                               </linearGradient>
                             </defs>
                             <CartesianGrid {...GRID} />

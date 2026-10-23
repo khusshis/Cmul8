@@ -208,7 +208,7 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
           strokeWidth: selected ? 2 : 1.5,
           transition: "stroke 0.3s ease, stroke-width 0.3s ease",
           strokeDasharray: isRunning ? "4 4" : "none",
-          opacity: 0.6,
+          opacity: "var(--jc-edge-opacity, 0.6)", // lifted on dark in globals.css
           ...style,
         }}
       />
@@ -234,7 +234,7 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
               style={HANDLE_STYLE(m.x, m.y)}
               className="nodrag nopan group w-[22px] h-[22px] flex items-center justify-center cursor-copy"
             >
-              <span className="w-4 h-4 rounded-full bg-white border border-dashed border-[#5742FF] text-[#5742FF] text-[11px] leading-none font-black flex items-center justify-center shadow-sm group-hover:bg-[#5742FF] group-hover:text-white group-hover:border-solid">
+              <span className="w-4 h-4 rounded-full bg-surface border border-dashed border-ln-5742ff text-fg-5742ff text-[11px] leading-none font-black flex items-center justify-center shadow-sm group-hover:bg-sf-5742ff group-hover:text-white group-hover:border-solid">
                 +
               </span>
             </div>
@@ -247,7 +247,7 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
               style={{ ...HANDLE_STYLE(q.x, q.y), zIndex: 1001 }}
               className="nodrag nopan group w-[22px] h-[22px] flex items-center justify-center cursor-move"
             >
-              <span className="w-3.5 h-3.5 rounded-full bg-white border-2 border-[#5742FF] shadow group-hover:bg-[#5742FF]" />
+              <span className="w-3.5 h-3.5 rounded-full bg-surface border-2 border-ln-5742ff shadow group-hover:bg-sf-5742ff" />
             </div>
           ))}
           <div
@@ -257,14 +257,14 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
               pointerEvents: "all",
               zIndex: 1002,
             }}
-            className="nodrag nopan flex items-center gap-0.5 p-0.5 rounded-full bg-white border border-indigo-100 shadow-[0_6px_18px_rgba(87,66,255,0.18)]"
+            className="nodrag nopan flex items-center gap-0.5 p-0.5 rounded-full bg-surface border border-indigo-100 shadow-[0_6px_18px_rgba(87,66,255,0.18)]"
           >
             {([["curve", "Curved", "M2 12 C 6 2, 10 2, 14 12"], ["straight", "Straight", "M2 12 L 14 4"], ["step", "Step", "M2 12 H 8 V 4 H 14"]] as const).map(([s, label, d]) => (
               <button
                 key={s}
                 onClick={(e) => { e.stopPropagation(); updateEdgeData(id, { shape: s }); }}
                 title={`${label} line`}
-                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${shape === s ? "bg-[#5742FF] text-white" : "text-gray-500 hover:bg-indigo-50 hover:text-[#5742FF]"}`}
+                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${shape === s ? "bg-sf-5742ff text-white" : "text-gray-500 hover:bg-indigo-50 hover:text-fg-5742ff"}`}
               >
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
               </button>
@@ -273,7 +273,7 @@ function SimEdge({ id, source, sourceX, sourceY, targetX, targetY, sourcePositio
               <button
                 onClick={(e) => { e.stopPropagation(); updateEdgeData(id, { points: [], bend: undefined }); }}
                 title="Remove all bend points"
-                className="h-6 px-2 rounded-full text-[10.5px] font-bold text-gray-500 hover:bg-indigo-50 hover:text-[#5742FF]"
+                className="h-6 px-2 rounded-full text-[10.5px] font-bold text-gray-500 hover:bg-indigo-50 hover:text-fg-5742ff"
               >
                 Reset
               </button>
@@ -485,7 +485,7 @@ const itemMotion = { hidden: { opacity: 0, x: -3 }, show: { opacity: 1, x: 0, tr
 function PointRow({ icon: Icon, label, value, color, warn }: Point & { color: string }) {
   return (
     <motion.li variants={itemMotion} className="flex items-center gap-2 py-[3px] text-[11px]">
-      <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: warn ? "#fef3c7" : `color-mix(in srgb, ${color} 12%, white)`, color: warn ? "#d97706" : color }}>
+      <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: warn ? "var(--color-sf-fef3c7)" : `color-mix(in srgb, ${color} 12%, var(--color-surface))`, color: warn ? "var(--color-fg-d97706)" : color }}>
         <Icon size={11} strokeWidth={2.4} />
       </span>
       <span className="text-gray-500 shrink-0">{label}</span>
@@ -521,7 +521,7 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
   const health = live ? liveHealth(nodeType, live) : null;
   const isCounter = nodeType === "resource" || nodeType === "priority_resource";
   const isLine = nodeType === "queue" || nodeType === "store";
-  const status = health ?? (disconnected ? { label: "Not connected", color: "#d97706" } : { label: "Ready", color: "var(--color-success)" });
+  const status = health ?? (disconnected ? { label: "Not connected", color: "var(--color-fg-d97706)" } : { label: "Ready", color: "var(--color-success)" });
   const typeName = (NODE_LABELS as Record<string, string>)[nodeType] || nodeType.replace(/_/g, " ");
   const names = (list: string[]) => (list.length <= 1 ? list[0] : `${list[0]} +${list.length - 1}`);
 
@@ -553,7 +553,7 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
       style={{ transformOrigin: "50% 100%" }}
       className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-[9999] pointer-events-none w-[240px] text-left"
     >
-      <div className="relative rounded-[14px] bg-white border border-gray-200/90 shadow-[0_16px_36px_-14px_rgba(16,24,40,0.30),0_2px_6px_-2px_rgba(16,24,40,0.06)]">
+      <div className="relative rounded-[14px] bg-surface border border-gray-200/90 shadow-[0_16px_36px_-14px_rgba(16,24,40,0.30),0_2px_6px_-2px_rgba(16,24,40,0.06)] dark:border-white/10 dark:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.75),0_2px_6px_-2px_rgba(0,0,0,0.4)]">
         <span aria-hidden className="absolute left-3 right-3 top-0 h-[2px] rounded-b-full" style={{ background: color }} />
 
         {/* Header */}
@@ -565,7 +565,7 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
             <div className="text-[12.5px] font-semibold text-gray-900 truncate">{data.label}</div>
             <div className="mt-1 text-[10px] font-medium truncate" style={{ color }}>{typeName}</div>
           </div>
-          <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-[3px] text-[9.5px] font-semibold" style={{ color: status.color, background: `color-mix(in srgb, ${status.color} 12%, white)` }}>
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-1.5 py-[3px] text-[9.5px] font-semibold" style={{ color: status.color, background: `color-mix(in srgb, ${status.color} 12%, var(--color-surface))` }}>
             <span className={`w-1.5 h-1.5 rounded-full ${health ? "animate-pulse" : ""}`} style={{ background: status.color }} />
             {status.label}
           </span>
@@ -582,7 +582,7 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
                 const pct = pr === undefined ? null : Math.round(Number(pr) * 100);
                 return (
                   <motion.li key={tid} variants={itemMotion} className="flex items-center gap-2 py-[3px] text-[11px]">
-                    <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${color} 12%, white)`, color }}>
+                    <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${color} 12%, var(--color-surface))`, color }}>
                       <GitFork size={11} strokeWidth={2.4} />
                     </span>
                     <span className="min-w-0 truncate text-gray-500">{nameOf(tid)}</span>
@@ -599,12 +599,12 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
 
         {/* Live pointers */}
         {live && (
-          <div className="mx-2 mb-2 rounded-[10px] px-1.5 pt-1 pb-1.5" style={{ background: `color-mix(in srgb, ${health!.color} 7%, white)`, border: `1px solid color-mix(in srgb, ${health!.color} 20%, white)` }}>
+          <div className="mx-2 mb-2 rounded-[10px] px-1.5 pt-1 pb-1.5" style={{ background: `color-mix(in srgb, ${health!.color} 7%, var(--color-surface))`, border: `1px solid color-mix(in srgb, ${health!.color} 20%, var(--color-surface))` }}>
             <div className="px-1 pt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: health!.color }}>Live</div>
             <ul>{liveRows.map((pt) => <PointRow key={pt.label} {...pt} color={health!.color} />)}</ul>
             {isCounter && (
               <motion.div variants={itemMotion} className="mt-1 px-1 flex items-center gap-2 text-[10px]">
-                <span className="flex-1 h-1 rounded-full bg-white overflow-hidden">
+                <span className="flex-1 h-1 rounded-full bg-surface overflow-hidden">
                   <motion.span
                     className="block h-full rounded-full origin-left"
                     style={{ background: health!.color }}
@@ -627,7 +627,7 @@ function NodeHoverCard({ id, data, nodeType, color, Icon, liveStats, isRunning, 
         )}
 
         {/* Pointer notch */}
-        <span aria-hidden className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white border-r border-b border-gray-200/90" />
+        <span aria-hidden className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-surface border-r border-b border-gray-200/90 dark:border-white/10" />
       </div>
     </motion.div>
   );
@@ -655,7 +655,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
   const isRemoteEditing = selectingUsers.some((u) => u.editingNodeId === id);
 
   const remoteShadow = isRemoteEditing
-    ? `0 0 0 2px #fff, 0 0 0 4px ${primaryRemoteUser.color}`
+    ? `0 0 0 2px var(--color-surface), 0 0 0 4px ${primaryRemoteUser.color}`
     : primaryRemoteUser
     ? `0 0 0 2px ${primaryRemoteUser.color}`
     : undefined;
@@ -727,10 +727,10 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         e.stopPropagation();
         setShowDeleteBtn((prev) => !prev);
       }}
-      className={`relative w-[175px] bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 p-3 flex gap-3 items-center transition-all select-none cursor-pointer ${
+      className={`relative w-[175px] bg-surface rounded-2xl shadow-sm border border-gray-200 dark:border-white/[0.08] dark:shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)] border-l-4 p-3 flex gap-3 items-center transition-all select-none cursor-pointer ${
         isHovered ? "z-[9999]" : "z-10"
       } ${
-        selected ? "scale-105 shadow-lg border-gray-300 ring-2 ring-indigo-500/20" : "hover:shadow-md"
+        selected ? "scale-105 shadow-lg border-gray-300 dark:border-white/15 ring-2 ring-indigo-500/20 dark:ring-indigo-400/40" : "hover:shadow-md"
       }`}
       style={{
         borderLeftColor: baseColor,
@@ -778,7 +778,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
             setNodes((nds) => nds.filter((n) => n.id !== id));
             setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
           }}
-          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-115 active:scale-95 transition-all z-50 cursor-pointer border-2 border-white nodrag nopan"
+          className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-rose-500 hover:bg-sf-e11d48 active:bg-sf-be123c text-white flex items-center justify-center shadow-[0_2px_10px_rgba(244,63,94,0.4)] hover:scale-115 active:scale-95 transition-all z-50 cursor-pointer border-2 border-surface nodrag nopan"
           title="Delete block"
         >
           <X size={12} strokeWidth={3} />
@@ -812,7 +812,7 @@ function SimNode({ data, selected, id }: { data: any; selected: boolean; id: str
         </div>
       )}
 
-      <div style={{ color: statusColor, opacity: isDimmed ? 0.5 : 1 }}>
+      <div style={{ color: statusColor, opacity: isDimmed ? "var(--jc-icon-dim, 0.5)" : 1 }}>
         {(() => {
           const IconComponent = icon as any;
           return IconComponent ? <IconComponent size={18} strokeWidth={2} /> : null;
@@ -1109,7 +1109,10 @@ function NodeCanvasInner({
       try {
         const { toPng } = await import("html-to-image");
         return await toPng(reactFlowWrapper.current, {
-          backgroundColor: "#F9F8FD",
+          // Dark mode: match the dark canvas so dark node cards don't land on a light page.
+          backgroundColor: document.documentElement.classList.contains("dark")
+            ? getComputedStyle(reactFlowWrapper.current).backgroundColor
+            : "#F9F8FD",
           quality: 0.95,
         });
       } catch (err) {
@@ -1268,13 +1271,13 @@ function NodeCanvasInner({
           // Ctrl/⌘/Shift + click adds or removes a block from the selection.
           multiSelectionKeyCode={["Control", "Meta", "Shift"]}
         >
-          <Background variant={BackgroundVariant.Dots} size={1.5} color="#d6d6de" gap={24} />
+          <Background variant={BackgroundVariant.Dots} size={1.5} color="var(--color-ln-d6d6de)" gap={24} />
           <Controls className="jc-controls" />
           {!hideMiniMap && (
             <MiniMap
               nodeColor={getMiniMapNodeColor}
               nodeBorderRadius={6}
-              maskColor="rgba(245, 243, 255, 0.72)"
+              maskColor="color-mix(in oklab, var(--color-sf-f5f3ff) 72%, transparent)"
               className="jc-minimap"
               // Drag the viewport box or click anywhere on the map to jump there.
               pannable

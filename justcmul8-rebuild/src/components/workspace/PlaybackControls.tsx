@@ -26,9 +26,9 @@ export default function PlaybackControls({
   const speedOptions = [0.5, 1, 2, 5, 10];
 
   return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/95 backdrop-blur-md border border-indigo-100 shadow-[0_12px_36px_rgba(87,66,255,0.18)] pointer-events-auto">
+    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-surface/95 backdrop-blur-md border border-indigo-100 shadow-[0_12px_36px_rgba(87,66,255,0.18)] pointer-events-auto">
       {/* Live Badge */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-100 text-[#5742FF] text-[11px] font-black uppercase tracking-wider">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-100 text-fg-5742ff text-[11px] font-black uppercase tracking-wider">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         <span>Digital Twin</span>
       </div>
@@ -38,7 +38,7 @@ export default function PlaybackControls({
       {/* Play / Pause */}
       <button
         onClick={onTogglePlay}
-        className="w-8 h-8 rounded-xl bg-[#5742FF] border border-[#8d80ff] hover:bg-[#4531E5] text-white flex items-center justify-center transition-all shadow-xs"
+        className="w-8 h-8 rounded-xl bg-sf-5742ff border border-ln-8d80ff hover:bg-sf-4531e5 text-white flex items-center justify-center transition-all shadow-xs"
         title={playing ? "Pause animation layer" : "Resume animation layer"}
       >
         {playing ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
@@ -62,7 +62,7 @@ export default function PlaybackControls({
             onClick={() => onSpeedChange(s)}
             className={`px-2 py-0.5 rounded-lg text-[11px] font-black transition-all ${
               speed === s
-                ? "bg-white text-[#5742FF] shadow-xs"
+                ? "bg-surface text-fg-5742ff shadow-xs"
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
@@ -75,7 +75,7 @@ export default function PlaybackControls({
         <div className="flex flex-col gap-1 w-28" title="Playback position through the recorded run">
           <div className="h-1.5 rounded-full bg-indigo-100 overflow-hidden">
             <div
-              className="h-full bg-[#5742FF] rounded-full"
+              className="h-full bg-sf-5742ff rounded-full"
               style={{ width: `${progress.total > 0 ? Math.min(100, (progress.index / progress.total) * 100) : 0}%` }}
             />
           </div>

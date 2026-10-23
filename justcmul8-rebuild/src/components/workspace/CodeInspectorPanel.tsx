@@ -67,9 +67,9 @@ export function CodeInspectorPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl h-[88vh] flex flex-col rounded-2xl bg-[#0c0d12] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-5xl h-[88vh] flex flex-col rounded-2xl bg-sf-0c0d12 border border-white/10 shadow-2xl overflow-hidden">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#12141c]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-sf-12141c">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Code2 className="w-5 h-5" />
@@ -95,7 +95,7 @@ export function CodeInspectorPanel({
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 copied
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
-                  : "bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10"
+                  : "bg-white/5 hover:bg-white/10 text-fg-e2e8f0 border border-white/10"
               }`}
               title="Copy raw Python code"
             >
@@ -114,7 +114,7 @@ export function CodeInspectorPanel({
 
             <button
               onClick={handleDownloadNotebook}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/30 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-fg-fcd34d border border-amber-500/30 transition-all shadow-sm"
               title="Export as standalone Jupyter Notebook (.ipynb)"
             >
               <Download className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export function CodeInspectorPanel({
         </div>
 
         {/* Metadata Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-2.5 bg-[#0f1017] border-b border-white/5 text-xs text-slate-400 font-mono">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-2.5 bg-sf-0f1017 border-b border-white/5 text-xs text-slate-400 font-mono">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
@@ -157,7 +157,7 @@ export function CodeInspectorPanel({
         </div>
 
         {/* Code View Area */}
-        <div className="flex-1 overflow-auto bg-[#0a0b0e] p-4 font-mono text-[13px] leading-relaxed custom-scrollbar">
+        <div className="flex-1 overflow-auto bg-sf-0a0b0e p-4 font-mono text-[13px] leading-relaxed custom-scrollbar">
           <SyntaxHighlighter
             language="python"
             style={oneDark}
@@ -181,7 +181,7 @@ export function CodeInspectorPanel({
         </div>
 
         {/* Bottom Quick Help Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-white/10 bg-[#12141c] text-xs">
+        <div className="flex items-center justify-between px-6 py-3 border-t border-white/10 bg-sf-12141c text-xs">
           <div className="flex items-center gap-2 text-slate-400">
             <FileCode2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
             <span>

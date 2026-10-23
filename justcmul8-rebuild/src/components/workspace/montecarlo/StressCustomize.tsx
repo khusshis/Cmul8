@@ -15,9 +15,9 @@ function Section({ icon: Icon, title, help, children, action }: { icon: React.El
   return (
     <section className={`${cardCls} p-4 sm:p-5`} aria-label={title}>
       <header className="mb-4 flex items-start gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F3F1FF] text-[#5742FF]"><Icon size={16} aria-hidden /></span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sf-f3f1ff text-fg-5742ff"><Icon size={16} aria-hidden /></span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-extrabold text-[#161622]">{title}</h3>
+          <h3 className="text-[14px] font-extrabold text-fg-161622">{title}</h3>
           <p className="text-[12px] text-slate-600">{help}</p>
         </div>
         {action}
@@ -36,7 +36,7 @@ export function ConditionsEditor({ value, onChange, sources, disabled, compact }
         <SliderField label="Demand multiplier" value={value.demand} min={0.25} max={3} step={0.05} onChange={(demand) => set({ demand })} format={x} disabled={disabled} />
       </Field>
       {sources.length > 1 && (
-        <details className="rounded-xl border border-gray-100 bg-[#FAFAFE] px-3 py-2">
+        <details className="rounded-xl border border-gray-100 bg-sf-fafafe px-3 py-2">
           <summary className={`cursor-pointer text-[11.5px] font-extrabold text-gray-700 ${focusRing}`}>Set demand per Start Point</summary>
           <ul className="mt-2 space-y-2">
             {sources.map((s) => (
@@ -99,7 +99,7 @@ export default function StressCustomize({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Section icon={FlaskConical} title="Test setup" help="How many runs, how long each one is, and how strict the statistics are.">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F8F7FF] px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-sf-f8f7ff px-3 py-2.5">
           <div>
             <p className="text-[12.5px] font-extrabold text-gray-800">Run until precise</p>
             <p className="text-[11.5px] text-gray-600">Keep adding runs until the average is pinned down, then stop.</p>
@@ -128,7 +128,7 @@ export default function StressCustomize({
         <Field label="Simulated time per run" help={`How much time each run simulates. By default it matches the canvas setting (${formatDuration(canvasSeconds)}).`}>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-[12px] font-bold text-gray-700">
-              <input type="checkbox" checked={settings.duration.override} onChange={(e) => update({ duration: { ...settings.duration, override: e.target.checked } })} className="h-4 w-4 accent-[#5742FF]" />
+              <input type="checkbox" checked={settings.duration.override} onChange={(e) => update({ duration: { ...settings.duration, override: e.target.checked } })} className="h-4 w-4 accent-fg-5742ff" />
               Override
             </label>
             <NumberField label="Simulated duration" value={settings.duration.value} min={1} max={100000} width="w-20" disabled={!settings.duration.override} onCommit={(value) => update({ duration: { ...settings.duration, value } })} />
@@ -174,7 +174,7 @@ export default function StressCustomize({
               return (
                 <li key={t.metric} className="flex flex-wrap items-center gap-3">
                   <label className="flex min-w-[160px] flex-1 items-center gap-2 text-[12.5px] font-bold text-gray-800">
-                    <input type="checkbox" checked={t.enabled} onChange={(e) => set({ enabled: e.target.checked })} className="h-4 w-4 accent-[#5742FF]" />
+                    <input type="checkbox" checked={t.enabled} onChange={(e) => set({ enabled: e.target.checked })} className="h-4 w-4 accent-fg-5742ff" />
                     {m.label}
                   </label>
                   <span className="w-5 text-center text-[13px] font-black text-gray-500" aria-hidden>{t.op === "max" ? "≤" : "≥"}</span>
@@ -206,7 +206,7 @@ export default function StressCustomize({
             {metricOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F8F7FF] px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-sf-f8f7ff px-3 py-2.5">
           <p className={`text-[12px] font-bold ${overCap ? "text-rose-700" : "text-gray-700"}`}>
             {steps.length} steps × {sw.runsPerStep} runs = <span className="tabular-nums">{sweepRuns}</span> runs
             {overCap ? ` (over the ${MAX_SWEEP_RUNS}-run limit)` : ` · about ${formatDuration(sweepRuns * secondsPerRun).replace(" s", " sec")} of computing`}

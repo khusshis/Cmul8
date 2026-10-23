@@ -21,7 +21,7 @@ export default function ChartTooltip({ active, payload, label, valueFormatter, l
   if (!active || !payload || payload.length === 0) return null;
   const heading = label === undefined || label === "" ? null : labelFormatter ? labelFormatter(label) : String(label);
   return (
-    <div className="pointer-events-none min-w-[160px] max-w-[260px] rounded-xl border border-white/10 bg-[#161622]/95 px-3 py-2.5 text-white shadow-[0_14px_36px_-10px_rgba(16,24,40,.55)] backdrop-blur">
+    <div className="pointer-events-none min-w-[160px] max-w-[260px] rounded-xl border border-white/10 bg-sf-161622/95 px-3 py-2.5 text-white shadow-[0_14px_36px_-10px_rgba(16,24,40,.55)] backdrop-blur">
       {heading && <div className="mb-1.5 border-b border-white/10 pb-1.5 text-[11px] font-bold text-white/70">{heading}</div>}
       <div className="space-y-1">
         {payload.map((item, i) => {

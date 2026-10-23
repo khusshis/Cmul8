@@ -81,9 +81,9 @@ export default function LogsTab({ result }: { result: SimResult }) {
   const shown = filteredLogs.slice(0, MAX_ROWS);
 
   return (
-    <section aria-label="Activity log" className="flex h-[580px] flex-col overflow-hidden rounded-[22px] border border-[#ECEBF7] bg-white shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
+    <section aria-label="Activity log" className="flex h-[580px] flex-col overflow-hidden rounded-[22px] border border-ln-ecebf7 bg-surface shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
       {/* ── Toolbar ── */}
-      <div className="flex flex-col gap-3 border-b border-[#F1F0FA] bg-[#FAF9FF] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-ln-f1f0fa bg-sf-faf9ff p-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative block w-full sm:max-w-sm">
           <span className="sr-only">Search events</span>
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
@@ -91,7 +91,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by ID, station or event…"
-            className="h-10 w-full rounded-xl border border-[#E7E5F6] bg-white pl-10 pr-9 text-[13px] text-[#161622] outline-none placeholder:text-slate-500 focus:border-[#C4B5FD] focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
+            className="h-10 w-full rounded-xl border border-ln-e7e5f6 bg-surface pl-10 pr-9 text-[13px] text-fg-161622 outline-none placeholder:text-slate-500 focus:border-ln-c4b5fd focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
           />
           {search && (
             <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100">
@@ -104,7 +104,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
           <button
             onClick={copyLogs}
             disabled={filteredLogs.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-xl border border-[#E7E5F6] bg-white px-3 text-[12.5px] font-bold text-slate-700 transition-colors hover:border-[#D9D3FB] hover:text-[#4331E0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-e7e5f6 bg-surface px-3 text-[12.5px] font-bold text-slate-700 transition-colors hover:border-ln-d9d3fb hover:text-fg-4331e0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 disabled:opacity-50"
           >
             {copied ? <Check size={14} className="text-emerald-600" aria-hidden /> : <Copy size={14} aria-hidden />}
             <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
@@ -112,7 +112,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
           <button
             onClick={downloadCsv}
             disabled={filteredLogs.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-3 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             <Download size={14} aria-hidden />
             Export CSV
@@ -121,14 +121,14 @@ export default function LogsTab({ result }: { result: SimResult }) {
       </div>
 
       {/* ── Filter chips ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-[#F1F0FA] bg-white px-4 py-2.5 no-scrollbar" role="group" aria-label="Filter by event type">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-ln-f1f0fa bg-surface px-4 py-2.5 no-scrollbar" role="group" aria-label="Filter by event type">
         {EVENT_PILLS.map((pill) => (
           <button
             key={pill.id}
             aria-pressed={selectedFilter === pill.id}
             onClick={() => setSelectedFilter(pill.id)}
-            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
-              selectedFilter === pill.id ? "bg-[#5742FF] text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${
+              selectedFilter === pill.id ? "bg-sf-5742ff text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
             {pill.label}
@@ -137,7 +137,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
       </div>
 
       {/* ── List ── */}
-      <div className="custom-scrollbar flex-1 overflow-y-auto bg-[#FBFAFF] p-2 sm:p-3">
+      <div className="custom-scrollbar flex-1 overflow-y-auto bg-sf-fbfaff p-2 sm:p-3">
         {filteredLogs.length === 0 ? (
           <EmptyState
             icon={ScrollText}
@@ -151,11 +151,11 @@ export default function LogsTab({ result }: { result: SimResult }) {
               return (
                 <li
                   key={i}
-                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-[#F1F0FA] bg-white px-3 py-2 transition-colors hover:border-[#E7E3FF]"
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-ln-f1f0fa bg-surface px-3 py-2 transition-colors hover:border-ln-e7e3ff"
                 >
                   <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="w-14 shrink-0 font-mono text-[11.5px] font-bold tabular-nums text-slate-500">{log.simTime.toFixed(2)}s</span>
-                    <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 font-mono text-[11.5px] font-bold text-[#161622]">#{log.entityId}</span>
+                    <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 font-mono text-[11.5px] font-bold text-fg-161622">#{log.entityId}</span>
                     <span className="min-w-0 truncate text-[13px] font-semibold text-slate-700">{log.nodeLabel}</span>
                   </span>
                   <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10.5px] font-black uppercase ${pillStyle}`}>{log.event.replace(/_/g, " ")}</span>
@@ -167,7 +167,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#F1F0FA] bg-white px-4 py-2.5 text-[12px] font-medium text-slate-600">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ln-f1f0fa bg-surface px-4 py-2.5 text-[12px] font-medium text-slate-600">
         <span aria-live="polite">
           {filteredLogs.length > MAX_ROWS
             ? `Showing first ${MAX_ROWS.toLocaleString()} of ${filteredLogs.length.toLocaleString()} matching (export includes all)`

@@ -11,6 +11,7 @@ import type { SimTypeId } from "@/lib/simulation/types";
 import { describeConditions, isNeutral, type StressConditions } from "@/lib/simulation/stressTransforms";
 import { diffGraphs, KEY_PARAMS, sanitizeParam, type Change } from "@/lib/simulation/scenarioDiff";
 import { ConditionsEditor } from "./StressCustomize";
+import { themeColor } from "@/components/ui/chartTheme";
 import { Chips, HelpTip, LetterSwatch, NumberField, SCENARIO_COLORS, focusRing, inputCls } from "./shared";
 
 export interface LabScenario {
@@ -112,11 +113,11 @@ export default function ScenarioPane({
     { id: "stress" as const, label: isNeutral(scenario.stress) ? "Stress" : "Stress •" },
     ...(!isBaseline ? [{ id: "changes" as const, label: `Changes (${changes.length + stressChips.length})` }] : []),
   ];
-  const iconBtn = `flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-[#F4F2FF] hover:text-[#4331E0] disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
+  const iconBtn = `flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-surface text-gray-600 hover:bg-sf-f4f2ff hover:text-fg-4331e0 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
 
   return (
-    <section aria-label={`Scenario ${letter}: ${scenario.name}`} className="flex min-w-0 flex-col overflow-hidden rounded-[20px] border bg-white shadow-[0_4px_20px_-6px_rgba(87,66,255,0.10)]" style={{ borderColor: `${scenario.color}55` }}>
-      <div className="h-1 w-full" style={{ background: scenario.color }} aria-hidden />
+    <section aria-label={`Scenario ${letter}: ${scenario.name}`} className="flex min-w-0 flex-col overflow-hidden rounded-[20px] border bg-surface shadow-[0_4px_20px_-6px_rgba(87,66,255,0.10)]" style={{ borderColor: `color-mix(in oklab, ${themeColor(scenario.color)} 33%, transparent)` }}>
+      <div className="h-1 w-full" style={{ background: themeColor(scenario.color) }} aria-hidden />
       <header className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-3 py-2.5 sm:px-4">
         <LetterSwatch color={scenario.color} letter={letter} size={22} />
         <input
@@ -130,18 +131,18 @@ export default function ScenarioPane({
           <summary className={`${iconBtn} list-none [&::-webkit-details-marker]:hidden`} aria-label={`Colour of scenario ${letter}`} title="Colour">
             <Palette size={14} />
           </summary>
-          <div role="radiogroup" aria-label="Scenario colour" className="absolute left-0 top-full z-40 mt-1 flex gap-1.5 rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
+          <div role="radiogroup" aria-label="Scenario colour" className="absolute left-0 top-full z-40 mt-1 flex gap-1.5 rounded-xl border border-gray-100 bg-surface p-2 shadow-xl">
             {SCENARIO_COLORS.map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={scenario.color === c} aria-label={`Colour ${c}`} onClick={() => onChange((s) => ({ ...s, color: c }))} className={`h-6 w-6 rounded-full ring-offset-2 ${scenario.color === c ? "ring-2 ring-gray-900" : ""} ${focusRing}`} style={{ background: c }} />
+              <button key={c} type="button" role="radio" aria-checked={scenario.color === c} aria-label={`Colour ${c}`} onClick={() => onChange((s) => ({ ...s, color: c }))} className={`h-6 w-6 rounded-full ring-offset-2 ring-offset-surface ${scenario.color === c ? "ring-2 ring-gray-900" : ""} ${focusRing}`} style={{ background: themeColor(c) }} />
             ))}
           </div>
         </details>
         {isBaseline ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2.5 py-0.5 text-[10.5px] font-black uppercase tracking-wider text-white">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 px-2.5 py-0.5 dark:bg-sf-5742ff text-[10.5px] font-black uppercase tracking-wider text-white">
             <Crown size={11} aria-hidden /> Baseline
           </span>
         ) : (
-          <button type="button" onClick={onSetBaseline} className={`h-8 rounded-lg border border-gray-200 px-2.5 text-[11px] font-extrabold text-gray-700 hover:bg-[#F4F2FF] ${focusRing}`} title="Compare every other scenario against this one">
+          <button type="button" onClick={onSetBaseline} className={`h-8 rounded-lg border border-gray-200 px-2.5 text-[11px] font-extrabold text-gray-700 hover:bg-sf-f4f2ff ${focusRing}`} title="Compare every other scenario against this one">
             Make baseline
           </button>
         )}
@@ -175,7 +176,7 @@ export default function ScenarioPane({
 
       <div {...tabPanelProps(`pane-${scenario.id}`, view)} className={`m-3 mt-2.5 rounded-xl sm:m-4 sm:mt-2.5 ${focusRing}`}>
         {view === "canvas" && (
-          <div className="relative h-[300px] overflow-hidden rounded-xl border border-gray-100 bg-[#F9F8FD] sm:h-[320px]">
+          <div className="relative h-[300px] overflow-hidden rounded-xl border border-gray-100 bg-sf-f9f8fd sm:h-[320px]">
             <NodeCanvas
               ref={canvasRef}
               nodes={scenario.nodes}
@@ -200,8 +201,8 @@ export default function ScenarioPane({
               </select>
             )}
             {selectedNode && (
-              <div className="absolute right-0 top-0 z-30 flex h-full w-[300px] max-w-[85%] flex-col border-l border-indigo-100 bg-[#FAF9FF] shadow-[-8px_0_24px_rgba(0,0,0,0.06)]">
-                <button type="button" onClick={() => setSelectedId(null)} aria-label="Close block settings" className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 ${focusRing}`}>
+              <div className="absolute right-0 top-0 z-30 flex h-full w-[300px] max-w-[85%] flex-col border-l border-indigo-100 bg-sf-faf9ff shadow-[-8px_0_24px_rgba(0,0,0,0.06)]">
+                <button type="button" onClick={() => setSelectedId(null)} aria-label="Close block settings" className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-surface text-gray-500 hover:bg-gray-100 ${focusRing}`}>
                   <X size={13} />
                 </button>
                 <div className="min-h-0 flex-1 overflow-y-auto">

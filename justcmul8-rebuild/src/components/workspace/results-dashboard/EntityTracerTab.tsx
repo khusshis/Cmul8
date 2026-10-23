@@ -63,7 +63,7 @@ export default function EntityTracerTab({
 
   if (allJourneys.length === 0) {
     return (
-      <div className="rounded-[22px] border border-[#ECEBF7] bg-white">
+      <div className="rounded-[22px] border border-ln-ecebf7 bg-surface">
         <EmptyState icon={User} title="No individual journeys recorded" hint="Run the simulation with tracking on to follow each person or item through the stations." />
       </div>
     );
@@ -80,8 +80,8 @@ export default function EntityTracerTab({
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
       {/* ── Picker ── */}
-      <section aria-label={`${entity} list`} className="flex h-[420px] flex-col overflow-hidden rounded-[22px] border border-[#ECEBF7] bg-white shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] lg:col-span-4 lg:h-[600px]">
-        <div className="space-y-3 border-b border-[#F1F0FA] p-4">
+      <section aria-label={`${entity} list`} className="flex h-[420px] flex-col overflow-hidden rounded-[22px] border border-ln-ecebf7 bg-surface shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] lg:col-span-4 lg:h-[600px]">
+        <div className="space-y-3 border-b border-ln-f1f0fa p-4">
           <label className="relative block">
             <span className="sr-only">Search by ID</span>
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
@@ -89,7 +89,7 @@ export default function EntityTracerTab({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search ${entity.toLowerCase()} #ID…`}
-              className="h-10 w-full rounded-xl border border-[#E7E5F6] bg-[#FAFAFF] pl-10 pr-9 text-[13px] text-[#161622] outline-none placeholder:text-slate-500 focus:border-[#C4B5FD] focus:bg-white focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
+              className="h-10 w-full rounded-xl border border-ln-e7e5f6 bg-sf-fafaff pl-10 pr-9 text-[13px] text-fg-161622 outline-none placeholder:text-slate-500 focus:border-ln-c4b5fd focus:bg-surface focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} aria-label="Clear search" className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100">
@@ -103,8 +103,8 @@ export default function EntityTracerTab({
                 key={mode.id}
                 aria-pressed={filterMode === mode.id}
                 onClick={() => setFilterMode(mode.id)}
-                className={`rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
-                  filterMode === mode.id ? "bg-[#5742FF] text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                className={`rounded-lg px-3 py-1.5 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${
+                  filterMode === mode.id ? "bg-sf-5742ff text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 {mode.label}
@@ -126,21 +126,21 @@ export default function EntityTracerTab({
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => setSelectedEntityId(journey.entityId)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
-                    isSelected ? "border-[#5742FF]/40 bg-[#F6F4FF] shadow-sm" : "border-transparent hover:border-[#F1F0FA] hover:bg-[#FBFAFF]"
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${
+                    isSelected ? "border-ln-5742ff/40 bg-sf-f6f4ff shadow-sm" : "border-transparent hover:border-ln-f1f0fa hover:bg-sf-fbfaff"
                   }`}
                 >
                   <span className="flex min-w-0 items-center gap-2.5">
-                    <span className={`flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-1.5 text-[11.5px] font-black tabular-nums ${isSelected ? "bg-[#5742FF] text-white" : "bg-slate-100 text-slate-700"}`}>
+                    <span className={`flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-1.5 text-[11.5px] font-black tabular-nums ${isSelected ? "bg-sf-5742ff text-white" : "bg-slate-100 text-slate-700"}`}>
                       #{journey.entityId}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-bold text-[#161622]">{entity} #{journey.entityId}</span>
+                      <span className="block truncate text-[13px] font-bold text-fg-161622">{entity} #{journey.entityId}</span>
                       <span className="block text-[11.5px] text-slate-500">Arrived at {fmtSeconds(journey.arrivalTime)}</span>
                     </span>
                   </span>
                   <span className="shrink-0 text-right">
-                    <span className="block text-[13px] font-extrabold tabular-nums text-[#161622]">{fmtSeconds(journey.totalCycleTime)}</span>
+                    <span className="block text-[13px] font-extrabold tabular-nums text-fg-161622">{fmtSeconds(journey.totalCycleTime)}</span>
                     <span className="inline-block rounded px-1.5 py-0.5 text-[10.5px] font-bold" style={{ background: st.tone.tint, color: st.tone.text }}>{st.label}</span>
                   </span>
                 </button>
@@ -149,18 +149,18 @@ export default function EntityTracerTab({
           )}
         </div>
         {allJourneys.length > 50 && (
-          <p className="border-t border-[#F1F0FA] px-4 py-2 text-[11.5px] text-slate-500">Showing up to 50. Search by ID to find others.</p>
+          <p className="border-t border-ln-f1f0fa px-4 py-2 text-[11.5px] text-slate-500">Showing up to 50. Search by ID to find others.</p>
         )}
       </section>
 
       {/* ── Journey ── */}
-      <section aria-label="Journey details" className="flex min-w-0 flex-col rounded-[22px] border border-[#ECEBF7] bg-white p-4 shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-6 lg:col-span-8">
+      <section aria-label="Journey details" className="flex min-w-0 flex-col rounded-[22px] border border-ln-ecebf7 bg-surface p-4 shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-6 lg:col-span-8">
         {selectedJourney ? (
           <>
-            <div className="mb-5 flex flex-col gap-3 border-b border-[#F1F0FA] pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-5 flex flex-col gap-3 border-b border-ln-f1f0fa pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-[20px] font-black tracking-tight text-[#161622]">{entity} #{selectedJourney.entityId}</h3>
+                  <h3 className="text-[20px] font-black tracking-tight text-fg-161622">{entity} #{selectedJourney.entityId}</h3>
                   <span className="rounded-full px-2.5 py-0.5 text-[11.5px] font-bold" style={{ background: statusOf(selectedJourney.status).tone.tint, color: statusOf(selectedJourney.status).tone.text }}>
                     {statusOf(selectedJourney.status).label}
                   </span>
@@ -176,7 +176,7 @@ export default function EntityTracerTab({
                 </div>
                 <div>
                   <dt className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">Being served</dt>
-                  <dd className="text-[17px] font-black tabular-nums text-[#4331E0]">{fmtSeconds(selectedJourney.totalServiceTime)}</dd>
+                  <dd className="text-[17px] font-black tabular-nums text-fg-4331e0">{fmtSeconds(selectedJourney.totalServiceTime)}</dd>
                 </div>
               </dl>
             </div>
@@ -185,7 +185,7 @@ export default function EntityTracerTab({
             {selectedJourney.steps.length === 0 ? (
               <EmptyState compact title="No stations visited yet" />
             ) : (
-              <ol className="relative space-y-2.5 before:absolute before:bottom-4 before:left-[13px] before:top-4 before:w-px before:bg-[#E7E3FF]">
+              <ol className="relative space-y-2.5 before:absolute before:bottom-4 before:left-[13px] before:top-4 before:w-px before:bg-sf-e7e3ff">
                 {selectedJourney.steps.map((step, idx) => {
                   const span = step.waitTime + step.serviceTime;
                   return (
@@ -196,12 +196,12 @@ export default function EntityTracerTab({
                       transition={{ delay: Math.min(idx * 0.05, 0.5) }}
                       className="relative flex items-start gap-3.5"
                     >
-                      <span className="relative z-10 mt-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[#5742FF] text-[11.5px] font-black text-white shadow-[0_0_0_3px_#EFEDFF]">
+                      <span className="relative z-10 mt-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-surface bg-sf-5742ff text-[11.5px] font-black text-white shadow-[0_0_0_3px_var(--color-sf-efedff)]">
                         {idx + 1}
                       </span>
-                      <div className="min-w-0 flex-1 rounded-2xl border border-[#F1F0FA] bg-[#FBFAFF] p-3.5 transition-colors hover:border-[#E7E3FF]">
+                      <div className="min-w-0 flex-1 rounded-2xl border border-ln-f1f0fa bg-sf-fbfaff p-3.5 transition-colors hover:border-ln-e7e3ff">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                          <span className="min-w-0 break-words text-[14px] font-extrabold text-[#161622]">{step.nodeLabel}</span>
+                          <span className="min-w-0 break-words text-[14px] font-extrabold text-fg-161622">{step.nodeLabel}</span>
                           <span className="text-[11.5px] font-semibold tabular-nums text-slate-500">
                             {fmtSeconds(step.enteredAt)} → {fmtSeconds(step.exitedAt)}
                           </span>
@@ -210,7 +210,7 @@ export default function EntityTracerTab({
                         {span > 0 && (
                           <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100" style={{ width: `${Math.max(8, (span / maxStep) * 100)}%` }} aria-hidden>
                             <span className="h-full" style={{ width: `${(step.waitTime / span) * 100}%`, background: TONES.warn.solid }} />
-                            <span className="h-full flex-1" style={{ background: "#5742FF" }} />
+                            <span className="h-full flex-1" style={{ background: "var(--color-sf-5742ff)" }} />
                           </div>
                         )}
                         <div className="mt-2 flex flex-wrap gap-1.5 text-[11.5px]">
@@ -218,7 +218,7 @@ export default function EntityTracerTab({
                             <span className="rounded-md px-2 py-0.5 font-semibold" style={{ background: TONES.warn.tint, color: TONES.warn.text }}>Waited {fmtSeconds(step.waitTime)}</span>
                           )}
                           {step.serviceTime > 0 && (
-                            <span className="rounded-md bg-[#EFEDFF] px-2 py-0.5 font-semibold text-[#4331E0]">Served {fmtSeconds(step.serviceTime)}</span>
+                            <span className="rounded-md bg-sf-efedff px-2 py-0.5 font-semibold text-fg-4331e0">Served {fmtSeconds(step.serviceTime)}</span>
                           )}
                           {step.status === "reneged" && (
                             <span className="rounded-md bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">Gave up waiting here</span>
@@ -232,15 +232,15 @@ export default function EntityTracerTab({
             )}
 
             {split && (
-              <div className="mt-6 border-t border-[#F1F0FA] pt-4">
+              <div className="mt-6 border-t border-ln-f1f0fa pt-4">
                 <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">Where the time went</span>
                 <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${Math.round(split.wait)}% waiting, ${Math.round(split.service)}% being served`}>
                   <motion.div initial={{ width: 0 }} animate={{ width: `${split.wait}%` }} transition={{ duration: 0.7 }} className="h-full" style={{ background: TONES.warn.solid }} />
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${split.service}%` }} transition={{ duration: 0.7, delay: 0.1 }} className="h-full bg-[#5742FF]" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${split.service}%` }} transition={{ duration: 0.7, delay: 0.1 }} className="h-full bg-sf-5742ff" />
                 </div>
                 <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[12px] font-semibold text-slate-600">
                   <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: TONES.warn.solid }} aria-hidden /> Waiting in line {Math.round(split.wait)}%</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5742FF]" aria-hidden /> Being served {Math.round(split.service)}%</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-sf-5742ff" aria-hidden /> Being served {Math.round(split.service)}%</span>
                 </div>
               </div>
             )}

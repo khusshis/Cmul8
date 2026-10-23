@@ -18,14 +18,14 @@ export function HelpTip({ text, label = "What does this mean?", align = "end" }:
         type="button"
         aria-label={label}
         aria-describedby={id}
-        className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#5742FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+        className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-fg-5742ff focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50"
       >
         <Info size={13} strokeWidth={2.4} />
       </button>
       <span
         role="tooltip"
         id={id}
-        className={`pointer-events-none absolute top-full z-40 mt-1.5 ${x} w-60 rounded-xl border border-white/10 bg-[#161622] px-3 py-2 text-left text-[12px] font-medium normal-case leading-snug tracking-normal text-white/90 opacity-0 shadow-[0_14px_36px_-10px_rgba(16,24,40,.5)] transition-opacity duration-150 group-hover/help:opacity-100 group-focus-within/help:opacity-100 motion-reduce:transition-none`}
+        className={`pointer-events-none absolute top-full z-40 mt-1.5 ${x} w-60 rounded-xl border border-white/10 bg-sf-161622 px-3 py-2 text-left text-[12px] font-medium normal-case leading-snug tracking-normal text-white/90 opacity-0 shadow-[0_14px_36px_-10px_rgba(16,24,40,.5)] transition-opacity duration-150 group-hover/help:opacity-100 group-focus-within/help:opacity-100 motion-reduce:transition-none`}
       >
         {text}
       </span>
@@ -57,7 +57,7 @@ export function Sparkline({ data, color, height = 32, label }: { data: number[];
       </defs>
       <path d={`${line} L${w},${height} L0,${height} Z`} fill={`url(#spark-${id})`} />
       <path d={line} fill="none" stroke={color} strokeWidth={1.8} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={last[0]} cy={last[1]} r={2.6} fill="#fff" stroke={color} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
+      <circle cx={last[0]} cy={last[1]} r={2.6} fill="var(--color-sf-ffffff)" stroke={color} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -85,7 +85,7 @@ export function RangeBar({ range, color }: { range: RangeSpec; color: string }) 
       <div className="relative h-2 rounded-full bg-slate-100">
         <motion.div
           className="absolute inset-y-0 left-0 rounded-full"
-          style={{ background: `linear-gradient(90deg, ${color}99, ${color})` }}
+          style={{ background: `linear-gradient(90deg, color-mix(in oklab, ${color} 60%, transparent), ${color})` }}
           initial={{ width: 0 }}
           animate={{ width: `${pct(range.value)}%` }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
@@ -217,15 +217,15 @@ export default function MetricCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={`group/metric relative flex min-w-0 flex-col rounded-[20px] border border-[#ECEBF7] bg-white ${sm ? "p-3.5" : "p-4 sm:p-5"} shadow-[0_1px_2px_rgba(16,24,40,.04),0_10px_30px_-18px_rgba(87,66,255,.25)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[color:var(--ring)] hover:shadow-[0_18px_40px_-20px_var(--ring)] focus-within:border-[color:var(--ring)] motion-reduce:transform-none ${className}`}
+      className={`group/metric relative flex min-w-0 flex-col rounded-[20px] border border-ln-ecebf7 bg-surface ${sm ? "p-3.5" : "p-4 sm:p-5"} shadow-[0_1px_2px_rgba(16,24,40,.04),0_10px_30px_-18px_rgba(87,66,255,.25)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[color:var(--ring)] hover:shadow-[0_18px_40px_-20px_var(--ring)] focus-within:border-[color:var(--ring)] motion-reduce:transform-none ${className}`}
       style={{ ["--ring" as string]: t.ring }}
     >
       {/* Decoration lives in its own clipped layer so the help tooltip isn't cut off. */}
       <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-        <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${t.solid}, ${t.solid}00 85%)` }} />
+        <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${t.solid}, transparent 85%)` }} />
         <span
-          className="absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-60 blur-2xl transition-opacity duration-300 group-hover/metric:opacity-100"
-          style={{ background: t.tint }}
+          className="absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-60 blur-2xl transition-opacity duration-300 group-hover/metric:opacity-100 dark:opacity-[.14] dark:![background:var(--solid)] dark:group-hover/metric:opacity-25"
+          style={{ background: t.tint, ["--solid" as string]: t.solid }}
         />
       </span>
 
@@ -244,7 +244,7 @@ export default function MetricCard({
           {label}
         </div>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
-          <span className={`font-black tracking-tight text-[#161622] tabular-nums leading-none ${sm ? "text-[20px]" : "text-[28px]"} ${!numeric && !missing ? "break-words" : ""}`}>
+          <span className={`font-black tracking-tight text-fg-161622 tabular-nums leading-none ${sm ? "text-[20px]" : "text-[28px]"} ${!numeric && !missing ? "break-words" : ""}`}>
             {missing ? (
               <span className="text-slate-500">—</span>
             ) : (
@@ -268,7 +268,7 @@ export default function MetricCard({
             <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: `linear-gradient(90deg, ${t.solid}aa, ${t.solid})` }}
+                style={{ background: `linear-gradient(90deg, color-mix(in oklab, ${t.solid} 67%, transparent), ${t.solid})` }}
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                 transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay }}

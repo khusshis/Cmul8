@@ -9,6 +9,7 @@ import {
   Plus, RadioTower, Router, Server, Star, Truck, UserCheck, Users, Warehouse, Waves, type LucideIcon,
 } from "lucide-react";
 import { Backdrop, Reveal, ScrollCue, SectionHeader, spring } from "@/components/landing/motionKit";
+import { useIsDark } from "@/components/ui/ThemeToggle";
 
 type Token = "person" | "car" | "drop" | "box" | "parcel" | "packet";
 type Station = { icon: LucideIcon; label: string };
@@ -46,6 +47,18 @@ export const TYPES: SimType[] = [
 ];
 
 const CYCLE_MS = 6000;
+
+// Dark mode: the pale tint becomes the accent sunk into the dark surface (hex, so framer can still tween it).
+const DARK_SURFACE = "#1d1d25";
+const sink = (hex: string, a: number) =>
+  "#" + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * a + parseInt(DARK_SURFACE.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, "0")).join("");
+export const tintFor = (t: SimType, dark: boolean) => (dark ? sink(t.color, 0.22) : t.tint);
+
+// Neutral scene colours (roofs, platform, walkway, road) as CSS vars so the diorama turns into a night scene in dark mode.
+const TOP = "var(--st-top)";
+const SCENE_VARS =
+  "[--st-top:#fff] [--st-plat:#ffffff] [--st-slab1:#e4e1f3] [--st-slab2:#d3cfe8] [--st-edge:#fff] [--st-walk:#fff] [--st-walk2:#e7e3f6] [--st-curb:#e2e8f0] [--st-road:#475569] [--st-pad:#fff] " +
+  "dark:[--st-top:#c9c4e3] dark:[--st-plat:#2a2938] dark:[--st-slab1:#26243a] dark:[--st-slab2:#1e1c2e] dark:[--st-edge:#77729c] dark:[--st-walk:#4a4766] dark:[--st-walk2:#35324b] dark:[--st-curb:#3f4656] dark:[--st-road:#1a1d26] dark:[--st-pad:#1d1d25]";
 
 /* ---------- Isometric world ----------
    World units on a 10×6 platform, projected 30° isometric into a 640×420 viewBox.
@@ -158,7 +171,7 @@ function Building({ x, y, h, c, tint, w = 1.5, d = 1.5, roofUnit = true, glass =
   return (
     <g>
       <polygon points={pts([x - hw, y + hd, 0], [x + hw + 0.3, y + hd + 0.2, 0], [x + hw + 0.3, y - hd + 0.2, 0], [x + hw, y - hd, 0])} fill="#1e1b4b" opacity={0.1} />
-      <Block x={x} y={y} w={w} d={d} h={h} color={c} top="#fff" />
+      <Block x={x} y={y} w={w} d={d} h={h} color={c} top={TOP} />
       <polygon points={pts([x - hw + 0.15, y - hd + 0.15, h], [x + hw - 0.15, y - hd + 0.15, h], [x + hw - 0.15, y + hd - 0.15, h], [x - hw + 0.15, y + hd - 0.15, h])} fill={tint} />
       {glass ? (
         // Full glass front
@@ -185,16 +198,16 @@ function Ground({ kind, c, live }: { kind: string; c: string; live: boolean }) {
     case "walk": // paved walkway: pale stones
       return (
         <g>
-          <path d={ROAD_D} fill="none" stroke="#fff" strokeWidth={26} strokeLinejoin="round" />
-          <path d={ROAD_D} fill="none" stroke="#e7e3f6" strokeWidth={22} strokeLinejoin="round" strokeDasharray="10 2" />
+          <path d={ROAD_D} fill="none" stroke="var(--st-walk)" strokeWidth={26} strokeLinejoin="round" />
+          <path d={ROAD_D} fill="none" stroke="var(--st-walk2)" strokeWidth={22} strokeLinejoin="round" strokeDasharray="10 2" />
           <path d={ROAD_D} fill="none" stroke={c} strokeOpacity={0.14} strokeWidth={22} strokeLinejoin="round" />
         </g>
       );
     case "asphalt": // road with curbs and lane markings
       return (
         <g>
-          <path d={ROAD_D} fill="none" stroke="#e2e8f0" strokeWidth={28} strokeLinejoin="round" />
-          <path d={ROAD_D} fill="none" stroke="#475569" strokeWidth={23} strokeLinejoin="round" />
+          <path d={ROAD_D} fill="none" stroke="var(--st-curb)" strokeWidth={28} strokeLinejoin="round" />
+          <path d={ROAD_D} fill="none" stroke="var(--st-road)" strokeWidth={23} strokeLinejoin="round" />
           <path d={ROAD_D} fill="none" stroke="#fff" strokeOpacity={0.85} strokeWidth={1.6} strokeDasharray="7 7" className={live ? "lp-dash" : undefined} />
         </g>
       );
@@ -232,7 +245,7 @@ function Ground({ kind, c, live }: { kind: string; c: string; live: boolean }) {
           <path d={ROAD_D} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="4 18" className={live ? "lp-dash" : undefined} />
           {corners.map(([x, y], i) => (
             <g key={i}>
-              <circle cx={x} cy={y} r={7} fill="#fff" stroke={c} strokeWidth={2} />
+              <circle cx={x} cy={y} r={7} fill="var(--st-pad)" stroke={c} strokeWidth={2} />
               <circle cx={x} cy={y} r={2.5} fill={c} />
             </g>
           ))}
@@ -268,9 +281,9 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
       return [
         <g key="a">
           {/* Toll booth + boom barrier that lifts */}
-          <Block x={A.x} y={A.y} w={0.7} d={0.7} h={ha} color={c} top="#fff" />
+          <Block x={A.x} y={A.y} w={0.7} d={0.7} h={ha} color={c} top={TOP} />
           <polygon points={pts([A.x - 0.3, A.y + 0.35, ha * 0.45], [A.x + 0.3, A.y + 0.35, ha * 0.45], [A.x + 0.3, A.y + 0.35, ha * 0.85], [A.x - 0.3, A.y + 0.35, ha * 0.85])} fill="#fff" opacity={0.7} />
-          <Block x={A.x} y={A.y} w={0.9} d={0.9} h={0.08} z={ha} color={c} top="#fff" />
+          <Block x={A.x} y={A.y} w={0.9} d={0.9} h={0.08} z={ha} color={c} top={TOP} />
           <Pole x={A.x + 0.25} y={1.95} h={0.45} color="#64748b" w={3} />
           <g>
             <line x1={pivot[0]} y1={pivot[1]} x2={iso(A.x + 0.25, 3.3, 0.45)[0]} y2={iso(A.x + 0.25, 3.3, 0.45)[1]} stroke="#ef4444" strokeWidth={3.5} strokeLinecap="round" />
@@ -285,11 +298,11 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
           ))}
           {[-0.32, 0.32].map((dx, k) => (
             <g key={k}>
-              <Block x={B.x + dx} y={B.y + 0.1} w={0.24} d={0.34} h={0.5} color="#e2e8f0" top="#fff" />
+              <Block x={B.x + dx} y={B.y + 0.1} w={0.24} d={0.34} h={0.5} color="#e2e8f0" top={TOP} />
               <polygon points={pts([B.x + dx - 0.12, B.y + 0.27, 0.32], [B.x + dx + 0.12, B.y + 0.27, 0.32], [B.x + dx + 0.12, B.y + 0.27, 0.44], [B.x + dx - 0.12, B.y + 0.27, 0.44])} fill={c} />
             </g>
           ))}
-          <Block x={B.x} y={B.y} w={1.7} d={1.7} h={0.16} z={hb} color={c} top="#fff" />
+          <Block x={B.x} y={B.y} w={1.7} d={1.7} h={0.16} z={hb} color={c} top={TOP} />
           <polygon points={pts([B.x - 0.85, B.y + 0.85, hb + 0.02], [B.x + 0.85, B.y + 0.85, hb + 0.02], [B.x + 0.85, B.y + 0.85, hb + 0.13], [B.x - 0.85, B.y + 0.85, hb + 0.13])} fill="#fff" opacity={0.5} />
         </g>,
         <g key="c">
@@ -333,7 +346,7 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
         </g>,
         <g key="c">
           {/* Treatment basin with ripples */}
-          <Block x={C.x} y={C.y} w={1.8} d={1.4} h={hc} color={c} top="#fff" />
+          <Block x={C.x} y={C.y} w={1.8} d={1.4} h={hc} color={c} top={TOP} />
           <polygon points={pts([C.x - 0.75, C.y - 0.55, hc], [C.x + 0.75, C.y - 0.55, hc], [C.x + 0.75, C.y + 0.55, hc], [C.x - 0.75, C.y + 0.55, hc])} fill={c} opacity={0.45} />
           {live &&
             [0, 1].map((k) => (
@@ -353,7 +366,7 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
           <Block x={A.x} y={A.y} w={1.5} d={1.0} h={ha} color="#94a3b8" top="#e2e8f0" />
           {[0.05, 0.37, 0.69].map((z, r) =>
             [-0.45, 0.0, 0.45].map((dx, k) => (
-              <Block key={`${r}-${k}`} x={A.x + dx} y={A.y + 0.62} w={0.3} d={0.22} h={0.22} z={z} color={(r + k) % 2 ? c : "#f59e0b"} top="#fff" />
+              <Block key={`${r}-${k}`} x={A.x + dx} y={A.y + 0.62} w={0.3} d={0.22} h={0.22} z={z} color={(r + k) % 2 ? c : "#f59e0b"} top={TOP} />
             )),
           )}
         </g>,
@@ -384,7 +397,7 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
       return [
         <g key="a">
           {/* Warehouse with roll-up doors */}
-          <Block x={A.x} y={A.y} w={1.8} d={1.4} h={ha} color={c} top="#fff" />
+          <Block x={A.x} y={A.y} w={1.8} d={1.4} h={ha} color={c} top={TOP} />
           <polygon points={pts([A.x - 0.75, A.y - 0.55, ha], [A.x + 0.75, A.y - 0.55, ha], [A.x + 0.75, A.y + 0.55, ha], [A.x - 0.75, A.y + 0.55, ha])} fill={tint} />
           {[-0.45, 0.35].map((dx, k) => (
             <g key={k}>
@@ -399,10 +412,10 @@ function Stations({ id, ctx }: { id: string; ctx: Ctx }) {
         <g key="c">
           <Building x={C.x} y={C.y} h={hc} c={c} tint={tint} roofUnit={false} />
           {/* Parked truck: trailer + cab + wheels */}
-          <Block x={6.9} y={3.1} w={0.46} d={1.05} h={0.55} z={0.12} color="#f8fafc" top="#fff" shade={0.12} />
+          <Block x={6.9} y={3.1} w={0.46} d={1.05} h={0.55} z={0.12} color="#f8fafc" top={TOP} shade={0.12} />
           <polygon points={pts([6.67, 2.75, 0.3], [6.67, 3.5, 0.3], [6.67, 3.5, 0.42], [6.67, 2.75, 0.42])} fill={c} />
           <polygon points={pts([7.13, 2.6, 0.3], [7.13, 3.6, 0.3], [7.13, 3.6, 0.42], [7.13, 2.6, 0.42])} fill={c} />
-          <Block x={6.9} y={3.86} w={0.44} d={0.36} h={0.42} z={0.12} color={c} top="#fff" />
+          <Block x={6.9} y={3.86} w={0.44} d={0.36} h={0.42} z={0.12} color={c} top={TOP} />
           <polygon points={pts([6.72, 4.04, 0.36], [7.08, 4.04, 0.36], [7.08, 4.04, 0.5], [6.72, 4.04, 0.5])} fill="#1e293b" opacity={0.75} />
           {[2.75, 3.4, 3.9].map((wy) => (
             <ellipse key={wy} cx={iso(7.13, wy, 0.06)[0]} cy={iso(7.13, wy, 0.06)[1]} rx={4} ry={4.5} fill="#1e293b" />
@@ -537,9 +550,9 @@ function Props({ id, ctx }: { id: string; ctx: Ctx }) {
           {[[1.5, 4.3], [2.4, 4.95]].map(([x, y], k) => (
             <g key={k}>
               <Block x={x} y={y} w={0.7} d={0.7} h={0.08} color="#a16207" top="#ca8a04" />
-              <Block x={x - 0.15} y={y - 0.15} w={0.3} d={0.3} h={0.28} z={0.08} color={c} top="#fff" />
-              <Block x={x + 0.17} y={y + 0.1} w={0.3} d={0.3} h={0.28} z={0.08} color="#f59e0b" top="#fff" />
-              {k === 0 && <Block x={x - 0.15} y={y - 0.15} w={0.3} d={0.3} h={0.28} z={0.36} color="#f59e0b" top="#fff" />}
+              <Block x={x - 0.15} y={y - 0.15} w={0.3} d={0.3} h={0.28} z={0.08} color={c} top={TOP} />
+              <Block x={x + 0.17} y={y + 0.1} w={0.3} d={0.3} h={0.28} z={0.08} color="#f59e0b" top={TOP} />
+              {k === 0 && <Block x={x - 0.15} y={y - 0.15} w={0.3} d={0.3} h={0.28} z={0.36} color="#f59e0b" top={TOP} />}
             </g>
           ))}
         </g>
@@ -554,7 +567,7 @@ function Props({ id, ctx }: { id: string; ctx: Ctx }) {
             { x: 6.9, y: 1.2, z: 0.46, col: "#f59e0b" },
           ].map((k, i) => (
             <g key={i}>
-              <Block x={k.x} y={k.y} w={1.25} d={0.48} h={0.46} z={k.z} color={k.col} top="#fff" />
+              <Block x={k.x} y={k.y} w={1.25} d={0.48} h={0.46} z={k.z} color={k.col} top={TOP} />
               {[-0.45, -0.25, -0.05, 0.15, 0.35, 0.55].map((dx) => (
                 <Run key={dx} p={[[k.x + dx, k.y + 0.24, k.z + 0.04], [k.x + dx, k.y + 0.24, k.z + 0.42]]} color="#000" w={1} opacity={0.18} />
               ))}
@@ -701,15 +714,16 @@ export function Diorama({ t, live }: { t: SimType; live: boolean }) {
   const N = 10;
   const DUR = 11;
   const slab = -0.55;
-  const ctx: Ctx = { c: t.color, tint: t.tint, live };
+  const tint = tintFor(t, useIsDark());
+  const ctx: Ctx = { c: t.color, tint, live };
   const H = HEIGHTS[t.id];
   return (
-    <div className="absolute inset-0">
+    <div className={`absolute inset-0 ${SCENE_VARS}`}>
       <svg viewBox={`0 0 ${VB.w} ${VB.h}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="st-top" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor={t.tint} />
+            <stop offset="0%" stopColor="var(--st-plat)" />
+            <stop offset="100%" stopColor={tint} />
           </linearGradient>
           <linearGradient id="cyl-shade" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#fff" stopOpacity={0.3} />
@@ -725,17 +739,17 @@ export function Diorama({ t, live }: { t: SimType; live: boolean }) {
         <ellipse cx={iso(5, 3, 0)[0]} cy={iso(5, 3, 0)[1] + 60} rx={250} ry={62} fill={t.color} opacity={0.12} />
 
         {/* Platform slab: light sides tinted with the accent */}
-        <polygon points={pts([0, 6, slab], [10, 6, slab], [10, 6, 0], [0, 6, 0])} fill="#e4e1f3" />
-        <polygon points={pts([10, 0, slab], [10, 6, slab], [10, 6, 0], [10, 0, 0])} fill="#d3cfe8" />
+        <polygon points={pts([0, 6, slab], [10, 6, slab], [10, 6, 0], [0, 6, 0])} fill="var(--st-slab1)" />
+        <polygon points={pts([10, 0, slab], [10, 6, slab], [10, 6, 0], [10, 0, 0])} fill="var(--st-slab2)" />
         <polygon points={pts([0, 6, slab], [10, 6, slab], [10, 6, 0], [0, 6, 0])} fill={t.color} opacity={0.28} />
         <polygon points={pts([10, 0, slab], [10, 6, slab], [10, 6, 0], [10, 0, 0])} fill={t.color} opacity={0.4} />
-        <polyline points={pts([0, 6, -0.2], [10, 6, -0.2], [10, 0, -0.2])} fill="none" stroke="#fff" strokeOpacity={0.6} strokeWidth={1} />
+        <polyline points={pts([0, 6, -0.2], [10, 6, -0.2], [10, 0, -0.2])} fill="none" stroke="var(--st-edge)" strokeOpacity={0.6} strokeWidth={1} />
         <polygon points={pts([0, 0, 0], [10, 0, 0], [10, 6, 0], [0, 6, 0])} fill="url(#st-top)" />
         <g stroke={t.color} strokeOpacity={0.12} strokeWidth={1}>
           {Array.from({ length: 9 }, (_, i) => <line key={`x${i}`} x1={iso(i + 1, 0)[0]} y1={iso(i + 1, 0)[1]} x2={iso(i + 1, 6)[0]} y2={iso(i + 1, 6)[1]} />)}
           {Array.from({ length: 5 }, (_, i) => <line key={`y${i}`} x1={iso(0, i + 1)[0]} y1={iso(0, i + 1)[1]} x2={iso(10, i + 1)[0]} y2={iso(10, i + 1)[1]} />)}
         </g>
-        <polyline points={pts([0, 6, 0], [10, 6, 0], [10, 0, 0])} fill="none" stroke="#fff" strokeOpacity={0.9} strokeWidth={1.5} />
+        <polyline points={pts([0, 6, 0], [10, 6, 0], [10, 0, 0])} fill="none" stroke="var(--st-edge)" strokeOpacity={0.9} strokeWidth={1.5} />
 
         {/* The domain's ground, trees, lamps and props */}
         <Ground kind={GROUND[t.id]} c={t.color} live={live} />
@@ -782,11 +796,11 @@ export function Diorama({ t, live }: { t: SimType; live: boolean }) {
             transition={spring(13, 0.7, 0.35 + i * 0.1)}
           >
             <div className={i === 1 ? "lp-float" : "lp-float-slow"}>
-              <div className="flex items-center gap-1.5 rounded-full bg-white/95 pl-1 pr-2.5 py-1 shadow-[0_8px_20px_-8px_rgba(0,0,0,.45)]">
+              <div className="flex items-center gap-1.5 rounded-full bg-surface/95 pl-1 pr-2.5 py-1 shadow-[0_8px_20px_-8px_rgba(0,0,0,.45)]">
                 <span className="flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-white" style={{ background: t.color }}>
                   <Icon size={12} strokeWidth={2.4} />
                 </span>
-                <span className="text-[9px] sm:text-[11px] font-bold text-[#161622] whitespace-nowrap">{st.label}</span>
+                <span className="text-[9px] sm:text-[11px] font-bold text-fg-161622 whitespace-nowrap">{st.label}</span>
                 {i === 1 && (
                   <span className="hidden sm:flex items-end gap-[2px] h-3 ml-0.5">
                     {[0, 1, 2].map((b) => (
@@ -842,6 +856,7 @@ export default function SimTypesSection() {
   const stageRef = useRef<HTMLDivElement>(null);
   const onScreen = useInView(stageRef, { amount: 0.3 });
   const lenis = useLenis();
+  const dark = useIsDark();
   const t = TYPES[active];
 
   // Pinned: scrolling through the tall track steps through the industries.
@@ -870,7 +885,7 @@ export default function SimTypesSection() {
 
   return (
     // overflow-x-clip (not hidden) so the sticky stage keeps working
-    <section id="simulations" className="relative pt-20 md:pt-32 pb-20 md:pb-24 px-4 bg-[#fcfcff] font-sans overflow-x-clip border-t border-[#f1f0fa]">
+    <section id="simulations" className="relative pt-20 md:pt-32 pb-20 md:pb-24 px-4 bg-sf-fcfcff font-sans overflow-x-clip border-t border-ln-f1f0fa">
       <Backdrop tone="b" />
       <div className="relative z-10 max-w-[1240px] mx-auto">
         <SectionHeader
@@ -895,7 +910,7 @@ export default function SimTypesSection() {
             <div className="relative">
             {/* Scroll progress rail beside the tabs */}
             {pinned && (
-              <div aria-hidden className="absolute -left-4 top-2 bottom-2 w-[3px] rounded-full bg-[#ecebf7] overflow-hidden">
+              <div aria-hidden className="absolute -left-4 top-2 bottom-2 w-[3px] rounded-full bg-sf-ecebf7 overflow-hidden">
                 <motion.div className="h-full w-full origin-top rounded-full" style={{ scaleY: scrollYProgress, background: t.color, transition: "background-color .6s" }} />
               </div>
             )}
@@ -914,7 +929,7 @@ export default function SimTypesSection() {
                     {on && (
                       <motion.span
                         layoutId="simtype-pill"
-                        className="absolute inset-0 rounded-2xl bg-white border border-[#ecebf7] shadow-[0_1px_2px_rgba(16,24,40,.05),0_10px_24px_-14px_rgba(16,24,40,.22)] overflow-hidden"
+                        className="absolute inset-0 rounded-2xl bg-surface border border-ln-ecebf7 shadow-[0_1px_2px_rgba(16,24,40,.05),0_10px_24px_-14px_rgba(16,24,40,.22)] overflow-hidden"
                         transition={spring(18, 0.85)}
                       >
                         {!pinned && onScreen && !paused && (
@@ -931,14 +946,14 @@ export default function SimTypesSection() {
                     )}
                     <motion.span
                       className="relative flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
-                      animate={{ backgroundColor: on ? ty.color : ty.tint, color: on ? "#ffffff" : ty.color, rotate: on ? -6 : 0 }}
+                      animate={{ backgroundColor: on ? ty.color : tintFor(ty, dark), color: on ? "#ffffff" : ty.color, rotate: on ? -6 : 0 }}
                       transition={spring(16, 0.7)}
                     >
                       <Icon size={19} strokeWidth={2.2} />
                     </motion.span>
                     <span className="relative">
-                      <span className={`block text-[14px] font-bold whitespace-nowrap transition-colors ${on ? "text-[#161622]" : "text-[#475569]"}`}>{ty.name}</span>
-                      <span className="hidden lg:block text-[12px] text-[#94a3b8]">{ty.desc}</span>
+                      <span className={`block text-[14px] font-bold whitespace-nowrap transition-colors ${on ? "text-fg-161622" : "text-fg-475569"}`}>{ty.name}</span>
+                      <span className="hidden lg:block text-[12px] text-fg-94a3b8">{ty.desc}</span>
                     </span>
                   </button>
                 );
@@ -953,21 +968,21 @@ export default function SimTypesSection() {
           {/* Stage: bright studio, lit diorama. Pinned: width capped so the whole stage fits the screen height. */}
           <Reveal delay={0.1} y={30}>
             <div
-              className="relative mx-auto w-full rounded-[2rem] overflow-hidden border border-[#ecebf7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_30px_60px_-30px_rgba(16,24,40,.22)]"
+              className="relative mx-auto w-full rounded-[2rem] overflow-hidden border border-ln-ecebf7 bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_30px_60px_-30px_rgba(16,24,40,.22)]"
               style={pinned ? { maxWidth: "calc((100vh - 16rem) * 1.52)" } : undefined}
             >
               {/* Studio backdrop: white fading into the industry tint, accent light pooling under the platform */}
               <motion.div
                 aria-hidden
                 className="absolute inset-0"
-                animate={{ background: `radial-gradient(ellipse 60% 50% at 50% 68%, ${t.color}2e, transparent 70%), linear-gradient(180deg, #ffffff 0%, ${t.tint} 100%)` }}
+                animate={{ background: `radial-gradient(ellipse 60% 50% at 50% 68%, ${t.color}2e, transparent 70%), linear-gradient(180deg, ${dark ? DARK_SURFACE : "#ffffff"} 0%, ${tintFor(t, dark)} 100%)` }}
                 transition={{ duration: 0.8 }}
               />
               <div
                 aria-hidden
                 className="absolute inset-0"
                 style={{
-                  backgroundImage: "radial-gradient(rgba(22,22,34,.09) 1.1px, transparent 1.6px)",
+                  backgroundImage: `radial-gradient(${dark ? "rgba(255,255,255,.06)" : "rgba(22,22,34,.09)"} 1.1px, transparent 1.6px)`,
                   backgroundSize: "24px 24px",
                   maskImage: "radial-gradient(ellipse 75% 70% at 50% 40%, #000 20%, transparent 85%)",
                   WebkitMaskImage: "radial-gradient(ellipse 75% 70% at 50% 40%, #000 20%, transparent 85%)",
@@ -979,28 +994,28 @@ export default function SimTypesSection() {
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={t.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
                     <div className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: t.color }}>Live preview</div>
-                    <div className="font-space font-bold text-[22px] sm:text-[28px] tracking-[-0.03em] text-[#161622]">{t.name}</div>
+                    <div className="font-space font-bold text-[22px] sm:text-[28px] tracking-[-0.03em] text-fg-161622">{t.name}</div>
                   </motion.div>
                 </AnimatePresence>
-                <span className="flex items-center gap-2 h-8 px-3 rounded-full bg-white border border-[#ecebf7] text-[11px] font-bold text-[#12a150] shrink-0 shadow-[0_4px_12px_-6px_rgba(16,24,40,.2)]">
+                <span className="flex items-center gap-2 h-8 px-3 rounded-full bg-surface border border-ln-ecebf7 text-[11px] font-bold text-fg-12a150 shrink-0 shadow-[0_4px_12px_-6px_rgba(16,24,40,.2)]">
                   <span className="relative flex w-2 h-2">
-                    <span className="absolute inset-0 rounded-full bg-[#12a150] animate-ping opacity-60" />
-                    <span className="relative w-2 h-2 rounded-full bg-[#12a150]" />
+                    <span className="absolute inset-0 rounded-full bg-sf-12a150 animate-ping opacity-60" />
+                    <span className="relative w-2 h-2 rounded-full bg-sf-12a150" />
                   </span>
                   Running
                 </span>
               </div>
 
               {/* Live meters (illustrative, no figures) */}
-              <div className="hidden md:block absolute right-6 top-20 z-10 w-44 rounded-2xl bg-white/85 border border-white p-3 shadow-[0_12px_28px_-14px_rgba(16,24,40,.3)]">
+              <div className="hidden md:block absolute right-6 top-20 z-10 w-44 rounded-2xl bg-surface/85 border border-surface dark:border-white/[0.06] p-3 shadow-[0_12px_28px_-14px_rgba(16,24,40,.3)]">
                 {[
                   { k: "Throughput", d: "2.8s" },
                   { k: "Utilization", d: "3.6s" },
                   { k: "Queue length", d: "2.2s" },
                 ].map((m, i) => (
                   <div key={m.k} className={i ? "mt-2.5" : ""}>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">{m.k}</div>
-                    <div className="mt-1 h-1.5 rounded-full bg-[#f1f0fa] overflow-hidden">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-fg-94a3b8">{m.k}</div>
+                    <div className="mt-1 h-1.5 rounded-full bg-sf-f1f0fa overflow-hidden">
                       <div className="lp-meter h-full w-full rounded-full origin-left" style={{ background: t.color, animationDuration: m.d, transition: "background-color .6s" }} />
                     </div>
                   </div>
@@ -1025,7 +1040,7 @@ export default function SimTypesSection() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={spring(16, 0.8, 0.2 + i * 0.06)}
-                      className="h-8 inline-flex items-center px-3 rounded-full bg-white border border-[#ecebf7] text-[12px] font-semibold text-[#334155] shadow-[0_4px_12px_-8px_rgba(16,24,40,.25)]"
+                      className="h-8 inline-flex items-center px-3 rounded-full bg-surface border border-ln-ecebf7 text-[12px] font-semibold text-fg-334155 shadow-[0_4px_12px_-8px_rgba(16,24,40,.25)]"
                     >
                       {ex}
                     </motion.span>

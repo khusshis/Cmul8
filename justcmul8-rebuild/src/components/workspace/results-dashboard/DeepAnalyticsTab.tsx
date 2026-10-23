@@ -55,14 +55,14 @@ export default function DeepAnalyticsTab({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         aria-labelledby="flow-balance-title"
-        className="rounded-[24px] border border-[#ECEBF7] bg-white p-4 shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-6"
+        className="rounded-[24px] border border-ln-ecebf7 bg-surface p-4 shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-6"
       >
-        <div className="flex flex-col gap-3 border-b border-[#F1F0FA] pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-ln-f1f0fa pb-4 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 items-start gap-2.5">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F3F1FF] text-[#5742FF]"><Scale size={16} aria-hidden /></span>
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sf-f3f1ff text-fg-5742ff"><Scale size={16} aria-hidden /></span>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <h3 id="flow-balance-title" className="text-[15px] font-extrabold tracking-tight text-[#161622]">Flow & balance check</h3>
+                <h3 id="flow-balance-title" className="text-[15px] font-extrabold tracking-tight text-fg-161622">Flow & balance check</h3>
                 <HelpTip
                   align="start"
                   label="About the balance check"
@@ -78,7 +78,7 @@ export default function DeepAnalyticsTab({
               style={{
                 background: stable ? TONES.good.tint : TONES.warn.tint,
                 color: stable ? TONES.good.text : TONES.warn.text,
-                borderColor: stable ? "#BDEBD6" : "#FCD9A0",
+                borderColor: stable ? "var(--color-ln-bdebd6)" : "var(--color-ln-fcd9a0)",
               }}
             >
               {stable ? <CheckCircle2 size={15} aria-hidden /> : <AlertCircle size={15} aria-hidden />}
@@ -145,14 +145,14 @@ export default function DeepAnalyticsTab({
           title="Wait time: typical vs unlucky"
           description={
             waitPercentiles
-              ? <>A typical visit waits <b className="text-[#161622]">{fmtSeconds(waitPercentiles.p50)}</b>; the unluckiest 1% wait <b className="text-[#161622]">{fmtSeconds(waitPercentiles.p99)}</b>. Read left to right: each step is a slower slice of visits.</>
+              ? <>A typical visit waits <b className="text-fg-161622">{fmtSeconds(waitPercentiles.p50)}</b>; the unluckiest 1% wait <b className="text-fg-161622">{fmtSeconds(waitPercentiles.p99)}</b>. Read left to right: each step is a slower slice of visits.</>
               : "How long visits take, from typical to worst case."
           }
           help="Averages hide bad days. Each point shows how long a slice of visits took: 'Slow 10%' means 1 in 10 visits took at least this long."
           legend={[
-            { label: "Total time (door to door)", color: "#5742FF" },
-            { label: "Time spent waiting in line", color: "#E69F00", dashed: true },
-            ...(isNum(waitPercentiles?.mean) ? [{ label: "Average wait", color: "#475569", dashed: true }] : []),
+            { label: "Total time (door to door)", color: "var(--color-sf-5742ff)" },
+            { label: "Time spent waiting in line", color: "var(--color-sf-e69f00)", dashed: true },
+            ...(isNum(waitPercentiles?.mean) ? [{ label: "Average wait", color: "var(--color-ln-475569)", dashed: true }] : []),
           ]}
           empty={!waitPercentiles && !cyclePercentiles}
           emptyTitle="No wait times recorded"
@@ -172,26 +172,26 @@ export default function DeepAnalyticsTab({
             <AreaChart data={percentileChartData} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
               <defs>
                 <linearGradient id="deep-total-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#5742FF" stopOpacity={0.32} />
-                  <stop offset="100%" stopColor="#5742FF" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--color-sf-5742ff)" stopOpacity={0.32} />
+                  <stop offset="100%" stopColor="var(--color-sf-5742ff)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="deep-wait-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#E69F00" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="#E69F00" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--color-sf-e69f00)" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--color-sf-e69f00)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="name" {...AXIS} interval={0} tick={{ ...AXIS.tick, fontSize: 10.5 }} />
               <YAxis {...AXIS} domain={[0, niceMaxFloat]} tickFormatter={fmtSeconds} width={56} label={axisLabel("Time")} />
               <Tooltip
-                cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }}
+                cursor={{ stroke: "var(--color-sf-5742ff)", strokeWidth: 1, strokeDasharray: "4 4" }}
                 content={<ChartTooltip valueFormatter={(v) => fmtSeconds(v)} labelFormatter={longLabel} />}
               />
               {isNum(waitPercentiles?.mean) && waitPercentiles!.mean > 0 && (
-                <ReferenceLine y={waitPercentiles!.mean} stroke="#475569" strokeDasharray="5 4" ifOverflow="extendDomain" label={{ value: `avg wait ${fmtSeconds(waitPercentiles!.mean)}`, position: "insideTopLeft", fill: "#475569", fontSize: 10.5, fontWeight: 700 }} />
+                <ReferenceLine y={waitPercentiles!.mean} stroke="var(--color-ln-475569)" strokeDasharray="5 4" ifOverflow="extendDomain" label={{ value: `avg wait ${fmtSeconds(waitPercentiles!.mean)}`, position: "insideTopLeft", fill: "var(--color-fg-475569)", fontSize: 10.5, fontWeight: 700 }} />
               )}
-              <Area type="monotone" dataKey="total" name="Total time" stroke="#5742FF" strokeWidth={2.5} fill="url(#deep-total-grad)" activeDot={{ r: 5, fill: "#5742FF", stroke: "#fff", strokeWidth: 2 }} />
-              <Area type="monotone" dataKey="wait" name="Waiting in line" stroke="#E69F00" strokeWidth={2} strokeDasharray="5 4" fill="url(#deep-wait-grad)" activeDot={{ r: 4, fill: "#E69F00", stroke: "#fff", strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="total" name="Total time" stroke="var(--color-sf-5742ff)" strokeWidth={2.5} fill="url(#deep-total-grad)" activeDot={{ r: 5, fill: "var(--color-sf-5742ff)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="wait" name="Waiting in line" stroke="var(--color-sf-e69f00)" strokeWidth={2} strokeDasharray="5 4" fill="url(#deep-wait-grad)" activeDot={{ r: 4, fill: "var(--color-sf-e69f00)", stroke: "var(--color-sf-ffffff)", strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -212,18 +212,18 @@ export default function DeepAnalyticsTab({
           emptyHint="Add a Resource or Service block to see how its time was spent."
           delay={0.12}
           footer={
-            <p className="flex items-start gap-2 rounded-xl bg-[#F6F4FF] p-3 text-[12px] leading-relaxed text-[#2E2470]">
-              <Lightbulb size={14} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+            <p className="flex items-start gap-2 rounded-xl bg-sf-f6f4ff p-3 text-[12px] leading-relaxed text-fg-2e2470">
+              <Lightbulb size={14} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
               <span>If a station sits idle more than 40% of the time while lines are long elsewhere, the step before it is too slow and is starving it of work.</span>
             </p>
           }
         >
           <ul className="custom-scrollbar max-h-[340px] space-y-2.5 overflow-y-auto pr-1">
             {resourceStateData.map((res, i) => (
-              <li key={i} className="rounded-2xl border border-[#F1F0FA] bg-[#FBFAFF] p-3">
-                <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px] font-bold text-[#161622]">
+              <li key={i} className="rounded-2xl border border-ln-f1f0fa bg-sf-fbfaff p-3">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px] font-bold text-fg-161622">
                   <span className="min-w-0 truncate" title={res.name}>{res.name}</span>
-                  <span className="shrink-0 tabular-nums text-[#4331E0]">{res.busyPct}% working</span>
+                  <span className="shrink-0 tabular-nums text-fg-4331e0">{res.busyPct}% working</span>
                 </div>
                 <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${res.name}: working ${res.busyPct}%, idle ${res.starvedPct}%, frozen ${res.blockedPct}%`}>
                   <motion.div initial={{ width: 0 }} animate={{ width: `${res.busyPct}%` }} transition={{ duration: 0.7, delay: 0.1 + i * 0.04 }} style={{ backgroundColor: STATE_COLORS.busy }} className="h-full" />

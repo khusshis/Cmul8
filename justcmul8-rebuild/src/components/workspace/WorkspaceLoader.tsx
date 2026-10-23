@@ -34,7 +34,7 @@ export default function WorkspaceLoader() {
       role="status"
       aria-live="polite"
       aria-label="Preparing workspace"
-      className="fixed inset-0 z-[90] flex flex-col items-center justify-center overflow-hidden bg-[#F8F9FE]"
+      className="fixed inset-0 z-[90] flex flex-col items-center justify-center overflow-hidden bg-sf-f8f9fe"
       // No fade-in: dashboard click → loading.tsx → page each mount this in turn, and it must
       // read as one continuous screen (and appear instantly).
       initial={false}
@@ -75,7 +75,7 @@ export default function WorkspaceLoader() {
               y1={22}
               x2={22 + TRACK}
               y2={22}
-              stroke="#d9d4fb"
+              style={{ stroke: "var(--color-ln-d9d4fb)" }}
               strokeWidth={2.5}
               strokeLinecap="round"
               initial={{ pathLength: 0 }}
@@ -100,7 +100,7 @@ export default function WorkspaceLoader() {
           {PIPE.map(({ icon: Icon, color }, i) => (
             <motion.div
               key={i}
-              className="absolute top-0 w-11 h-11 rounded-[13px] bg-white border border-[#ebe8fb] shadow-[0_8px_20px_-10px_rgba(60,50,160,.35)] flex items-center justify-center"
+              className="absolute top-0 w-11 h-11 rounded-[13px] bg-surface border border-ln-ebe8fb shadow-[0_8px_20px_-10px_rgba(60,50,160,.35)] dark:shadow-[0_8px_20px_-10px_rgba(0,0,0,.6)] flex items-center justify-center"
               style={{ left: i * GAP }}
               initial={{ scale: 0, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -111,7 +111,7 @@ export default function WorkspaceLoader() {
           ))}
         </div>
 
-        <h3 className="text-[#111827] font-extrabold tracking-tight text-xl mb-2">Preparing workspace</h3>
+        <h3 className="text-fg-111827 font-extrabold tracking-tight text-xl mb-2">Preparing workspace</h3>
 
         {/* Rolling status line */}
         <div className="relative h-5 w-72 overflow-hidden text-center">
@@ -130,7 +130,7 @@ export default function WorkspaceLoader() {
         </div>
 
         {/* Progress: eases towards the end but never claims to finish before data arrives */}
-        <div className="mt-5 w-44 h-[3px] rounded-full bg-[#ebe8fb] overflow-hidden">
+        <div className="mt-5 w-44 h-[3px] rounded-full bg-sf-ebe8fb overflow-hidden">
           <motion.div
             className="h-full rounded-full origin-left"
             style={{ background: "linear-gradient(90deg, #8b5cf6, #5742FF)" }}

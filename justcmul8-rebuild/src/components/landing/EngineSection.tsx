@@ -54,7 +54,7 @@ const Card1Code = () => {
   const s = (time % 60).toString().padStart(2, "0");
 
   return (
-    <div ref={ref} className="bg-[#f8fafc] rounded-2xl p-4 border border-gray-100 flex gap-3 h-[180px]">
+    <div ref={ref} className="bg-sf-f8fafc rounded-2xl p-4 border border-gray-100 flex gap-3 h-[180px]">
       <div className="flex-1 min-w-0 font-mono text-[10px] leading-[1.75] overflow-hidden">
         {CODE.map((line, i) => (
           <motion.div
@@ -73,7 +73,7 @@ const Card1Code = () => {
         initial={{ opacity: 0, x: 12 }}
         animate={inView ? { opacity: 1, x: 0 } : {}}
         transition={spring(12, 0.8, 0.3 + CODE.length * 0.22)}
-        className="w-[100px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col gap-3"
+        className="w-[100px] shrink-0 bg-surface rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col gap-3"
       >
         <div className="flex items-center gap-1.5">
           <span className="relative flex w-1.5 h-1.5">
@@ -115,20 +115,20 @@ const Card2Kpi = () => {
   }, [inView]);
 
   return (
-    <div ref={ref} className="bg-[#f8fafc] rounded-2xl p-4 border border-gray-100 flex flex-col gap-3 h-[180px]">
+    <div ref={ref} className="bg-sf-f8fafc rounded-2xl p-4 border border-gray-100 flex flex-col gap-3 h-[180px]">
       <div className="flex gap-2">
         {[
           { k: "Throughput", v: `${tp} / min` },
           { k: "Utilization", v: `${util}%` },
           { k: "Avg. Wait", v: `${wait} min` },
         ].map((c) => (
-          <div key={c.k} className="flex-1 min-w-0 bg-white rounded-lg border border-gray-100 p-2">
+          <div key={c.k} className="flex-1 min-w-0 bg-surface rounded-lg border border-gray-100 p-2">
             <div className="text-[8px] text-gray-400 mb-0.5 truncate">{c.k}</div>
             <Swap value={c.v} className="text-[11px] font-bold text-gray-900" />
           </div>
         ))}
       </div>
-      <div className="flex-1 bg-white rounded-lg border border-gray-100 p-3 flex flex-col relative overflow-hidden">
+      <div className="flex-1 bg-surface rounded-lg border border-gray-100 p-3 flex flex-col relative overflow-hidden">
         <div className="text-[9px] font-bold text-gray-700 mb-1 flex justify-between">
           Throughput Over Time
           <div className="flex gap-0.5 items-end h-3">
@@ -138,7 +138,7 @@ const Card2Kpi = () => {
           </div>
         </div>
         <div className="flex-1 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[7px] text-gray-400 z-10 bg-white/90 pr-1">
+          <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[7px] text-gray-400 z-10 bg-surface/90 pr-1">
             <span>60</span><span>40</span><span>20</span><span>0</span>
           </div>
           {/* The path is two identical periods; sliding one period left loops seamlessly */}
@@ -164,12 +164,12 @@ const Card3Nodes = () => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const [nodes, setNodes] = useState({
-    src: { x: 0, y: 120, title: "Source", icon: Play, col: "text-indigo-500", border: "border-l-indigo-500", bg: "bg-white", l1: "" },
-    queue: { x: 180, y: 120, title: "Queue", icon: List, col: "text-gray-500", border: "border-l-gray-400", bg: "bg-white", l1: "" },
-    m1: { x: 360, y: 30, title: "Machine 1", l1: "Util: 65%", icon: Cpu, col: "text-green-600", border: "border-l-green-500", bg: "bg-white" },
+    src: { x: 0, y: 120, title: "Source", icon: Play, col: "text-indigo-500", border: "border-l-indigo-500", bg: "bg-surface", l1: "" },
+    queue: { x: 180, y: 120, title: "Queue", icon: List, col: "text-gray-500", border: "border-l-gray-400", bg: "bg-surface", l1: "" },
+    m1: { x: 360, y: 30, title: "Machine 1", l1: "Util: 65%", icon: Cpu, col: "text-green-600", border: "border-l-green-500", bg: "bg-surface" },
     m2: { x: 360, y: 120, title: "Machine 2", l1: "Util: 98% (Slow)", icon: AlertTriangle, col: "text-red-600", border: "border-l-red-500", bg: "bg-red-50" },
-    m3: { x: 360, y: 210, title: "Machine 3", l1: "Util: 62%", icon: Cpu, col: "text-green-600", border: "border-l-green-500", bg: "bg-white" },
-    sink: { x: 540, y: 120, title: "Sink", icon: Flag, col: "text-gray-500", border: "border-l-gray-400", bg: "bg-white", l1: "" },
+    m3: { x: 360, y: 210, title: "Machine 3", l1: "Util: 62%", icon: Cpu, col: "text-green-600", border: "border-l-green-500", bg: "bg-surface" },
+    sink: { x: 540, y: 120, title: "Sink", icon: Flag, col: "text-gray-500", border: "border-l-gray-400", bg: "bg-surface", l1: "" },
   });
   type K = keyof typeof nodes;
   const scale = 0.35;
@@ -193,7 +193,7 @@ const Card3Nodes = () => {
   return (
     <div
       ref={ref}
-      className="bg-[#f8fafc] rounded-2xl border border-gray-100 h-[180px] relative overflow-hidden touch-none"
+      className="bg-sf-f8fafc rounded-2xl border border-gray-100 h-[180px] relative overflow-hidden touch-none"
       onPointerMove={(e) => {
         if (!dragged) return;
         const dx = (e.clientX - lastPos.current.x) / scale;
@@ -282,13 +282,13 @@ const Card4Speed = () => {
   }, [speed, paused, visible]);
 
   return (
-    <div ref={ref} className="bg-[#f8fafc] rounded-2xl p-5 border border-gray-100 h-[180px] flex flex-col justify-between">
+    <div ref={ref} className="bg-sf-f8fafc rounded-2xl p-5 border border-gray-100 h-[180px] flex flex-col justify-between">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold text-gray-700">Speed</span>
-        <div className="flex bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
+        <div className="flex bg-surface rounded-lg border border-gray-200 p-1 shadow-sm">
           {SPEEDS.map((s) => (
-            <button key={s.label} onClick={() => setSpeed(s.mult)} className={`relative px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${speed === s.mult ? "text-[#4531E5]" : "text-gray-500 hover:text-gray-900"}`}>
-              {speed === s.mult && <motion.span layoutId="engine-speed-pill" className="absolute inset-0 rounded-md bg-[#ede9fe]" transition={spring(20, 0.8)} />}
+            <button key={s.label} onClick={() => setSpeed(s.mult)} className={`relative px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${speed === s.mult ? "text-fg-4531e5" : "text-gray-500 hover:text-gray-900"}`}>
+              {speed === s.mult && <motion.span layoutId="engine-speed-pill" className="absolute inset-0 rounded-md bg-sf-ede9fe" transition={spring(20, 0.8)} />}
               <span className="relative">{s.label}</span>
             </button>
           ))}
@@ -301,17 +301,17 @@ const Card4Speed = () => {
         </div>
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
-            className="h-full w-full bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] rounded-full origin-left"
+            className="h-full w-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left"
             animate={{ scaleX: progress / 100 }}
             transition={progress === 0 ? { duration: 0 } : spring(20, 1)}
           />
         </div>
       </div>
       <div className="flex gap-3 mt-4">
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => setPaused(!paused)} className={`flex-1 border rounded-xl py-2 flex items-center justify-center gap-2 shadow-sm text-[11px] font-bold transition-colors ${paused ? "bg-red-50 text-red-600 border-red-100" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => setPaused(!paused)} className={`flex-1 border rounded-xl py-2 flex items-center justify-center gap-2 shadow-sm text-[11px] font-bold transition-colors ${paused ? "bg-red-50 text-red-600 border-red-100" : "bg-surface text-gray-700 border-gray-200 hover:bg-gray-50"}`}>
           {paused ? <Play size={12} fill="currentColor" /> : <Pause size={12} fill="currentColor" />} {paused ? "Resume" : "Pause"}
         </motion.button>
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => setProgress((p) => Math.min(p + 10, 100))} className="flex-1 bg-white border border-gray-200 rounded-xl py-2 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-50 text-[11px] font-bold text-gray-700">
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => setProgress((p) => Math.min(p + 10, 100))} className="flex-1 bg-surface border border-gray-200 rounded-xl py-2 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-50 text-[11px] font-bold text-gray-700">
           Step <StepForward size={12} fill="currentColor" />
         </motion.button>
       </div>
@@ -328,7 +328,7 @@ const CARDS = [
 
 export default function EngineSection() {
   return (
-    <section id="engine" className="relative py-20 md:py-32 px-4 bg-white font-sans overflow-hidden">
+    <section id="engine" className="relative py-20 md:py-32 px-4 bg-surface dark:bg-sf-fcfcff font-sans overflow-hidden">
       <Backdrop tone="a" />
       <div className="relative z-10 max-w-[1300px] mx-auto">
         <SectionHeader
@@ -343,7 +343,7 @@ export default function EngineSection() {
                 <motion.div
                   whileHover="hover"
                   initial="rest"
-                  className="h-full bg-white rounded-[2rem] border border-[#ecebf7] shadow-[0_20px_50px_-30px_rgba(16,24,40,0.12)] hover:shadow-[0_30px_60px_-30px_rgba(16,24,40,0.16)] transition-shadow p-6 md:p-7 flex flex-col"
+                  className="h-full bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_20px_50px_-30px_rgba(16,24,40,0.12)] hover:shadow-[0_30px_60px_-30px_rgba(16,24,40,0.16)] transition-shadow p-6 md:p-7 flex flex-col"
                 >
                   <motion.div
                     variants={{ rest: { rotate: 0, scale: 1 }, hover: { rotate: -8, scale: 1.08 } }}

@@ -3,7 +3,7 @@
 import React from "react";
 import { AlertTriangle, ChevronDown, Info, Loader2, RotateCcw, X, CheckCircle2, Clock, Gauge, HeartPulse, Wallet } from "lucide-react";
 import { HelpTip } from "@/components/ui/MetricCard";
-import { SERIES } from "@/components/ui/chartTheme";
+import { SERIES, themeColor } from "@/components/ui/chartTheme";
 import type { MetricKey, RunStatistic } from "@/lib/simulation/monteCarlo";
 
 export { HelpTip };
@@ -11,11 +11,11 @@ export { HelpTip };
 // ─── Palette ─────────────────────────────────────────────────────────────────
 // Scenario colours = the app's Okabe-Ito SERIES (validated: all pairs pass the normal-vision
 // floor; two pairs sit in the 6–8 CVD band, so every lane also carries its letter and name).
-export const BRAND = "#5742FF";
+export const BRAND = "var(--color-sf-5742ff)";
 export const SCENARIO_COLORS = SERIES.slice(0, 6);
 export const SLOT_LETTERS = ["A", "B", "C", "D"] as const;
-export const PASS_COLOR = "#047857";
-export const FAIL_COLOR = "#BE123C";
+export const PASS_COLOR = "var(--color-fg-047857)";
+export const FAIL_COLOR = "var(--color-fg-be123c)";
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
@@ -122,11 +122,11 @@ export const fmtP = (p: number) => (!Number.isFinite(p) ? "p = n/a" : p < 0.001 
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
 
-export const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF] focus-visible:ring-offset-2";
-export const cardCls = "rounded-[20px] border border-[#ECEBF7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)]";
-export const inputCls = `h-9 rounded-lg border border-gray-200 bg-white px-2.5 text-[12.5px] font-bold text-gray-800 tabular-nums outline-none focus:border-[#5742FF] ${focusRing}`;
-export const btnGhost = `inline-flex h-9 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 text-[12px] font-extrabold text-gray-700 transition-colors hover:border-indigo-200 hover:bg-[#F4F2FF] hover:text-[#4331E0] disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
-export const btnPrimary = `inline-flex items-center justify-center gap-2 rounded-xl bg-[#5742FF] px-5 py-2.5 text-[13px] font-black text-white shadow-[0_8px_20px_-6px_rgba(87,66,255,0.6)] transition-all hover:bg-[#4531E5] disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+export const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff focus-visible:ring-offset-2";
+export const cardCls = "rounded-[20px] border border-ln-ecebf7 bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_14px_36px_-24px_rgba(87,66,255,.3)]";
+export const inputCls = `h-9 rounded-lg border border-gray-200 bg-surface px-2.5 text-[12.5px] font-bold text-gray-800 tabular-nums outline-none focus:border-ln-5742ff ${focusRing}`;
+export const btnGhost = `inline-flex h-9 items-center gap-1.5 rounded-xl border border-gray-200 bg-surface px-3 text-[12px] font-extrabold text-gray-700 transition-colors hover:border-indigo-200 hover:bg-sf-f4f2ff hover:text-fg-4331e0 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+export const btnPrimary = `inline-flex items-center justify-center gap-2 rounded-xl bg-sf-5742ff px-5 py-2.5 text-[13px] font-black text-white shadow-[0_8px_20px_-6px_rgba(87,66,255,0.6)] transition-all hover:bg-sf-4531e5 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
 
 /** Label + (i) help, wrapping a control. */
 export function Field({ label, help, children, className = "" }: { label: string; help: string; children: React.ReactNode; className?: string }) {
@@ -144,7 +144,7 @@ export function Field({ label, help, children, className = "" }: { label: string
 /** Radio-group segmented control. */
 export function Segmented<T extends string | number>({ label, value, options, onChange, disabled }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; disabled?: boolean }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-xl border border-indigo-100 bg-[#F4F2FF] p-1">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-xl border border-indigo-100 bg-sf-f4f2ff p-1">
       {options.map((o) => (
         <button
           key={String(o.value)}
@@ -154,7 +154,7 @@ export function Segmented<T extends string | number>({ label, value, options, on
           disabled={disabled}
           onClick={() => onChange(o.value)}
           className={`rounded-lg px-3 py-1 text-[12px] font-black tabular-nums transition-all disabled:cursor-not-allowed ${focusRing} ${
-            value === o.value ? "bg-[#5742FF] text-white shadow-[0_2px_8px_rgba(87,66,255,0.35)]" : "text-gray-600 hover:bg-white hover:text-gray-900"
+            value === o.value ? "bg-sf-5742ff text-white shadow-[0_2px_8px_rgba(87,66,255,0.35)]" : "text-gray-600 hover:bg-surface hover:text-gray-900"
           }`}
         >
           {o.label}
@@ -219,9 +219,9 @@ export function SliderField({ label, value, min, max, step, onChange, format, di
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full min-w-[120px] cursor-pointer accent-[#5742FF] disabled:cursor-not-allowed"
+        className="h-2 w-full min-w-[120px] cursor-pointer accent-fg-5742ff disabled:cursor-not-allowed"
       />
-      <span className="w-14 shrink-0 text-right text-[12.5px] font-black tabular-nums text-[#4331E0]">{format(value)}</span>
+      <span className="w-14 shrink-0 text-right text-[12.5px] font-black tabular-nums text-fg-4331e0">{format(value)}</span>
     </span>
   );
 }
@@ -231,7 +231,7 @@ export function Chips({ items, tone = "brand" }: { items: string[]; tone?: "bran
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label="Active stress conditions">
       {items.map((c) => (
-        <li key={c} className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${tone === "light" ? "bg-white/15 text-white ring-1 ring-white/25" : "bg-[#EFEDFF] text-[#4331E0] ring-1 ring-indigo-100"}`}>
+        <li key={c} className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${tone === "light" ? "bg-white/15 text-white ring-1 ring-white/25" : "bg-sf-efedff text-fg-4331e0 ring-1 ring-indigo-100"}`}>
           {c}
         </li>
       ))}
@@ -241,7 +241,7 @@ export function Chips({ items, tone = "brand" }: { items: string[]; tone?: "bran
 
 export function LetterSwatch({ color, letter, size = 16 }: { color: string; letter: string; size?: number }) {
   return (
-    <span className="flex shrink-0 items-center justify-center rounded-full font-black text-white" style={{ background: color, width: size, height: size, fontSize: size * 0.56 }} aria-hidden>
+    <span className="flex shrink-0 items-center justify-center rounded-full font-black text-white" style={{ background: themeColor(color), width: size, height: size, fontSize: size * 0.56 }} aria-hidden>
       {letter}
     </span>
   );
@@ -256,13 +256,14 @@ export function RangeBar({ stat, color = BRAND, domain, target }: { stat: RunSta
   const span = hi - lo || 1;
   const pos = (v: number) => `${Math.min(100, Math.max(0, ((v - lo) / span) * 100))}%`;
   const width = (a: number, b: number) => `calc(${pos(b)} - ${pos(a)})`;
+  color = themeColor(color);
   return (
     <div className="relative h-3" aria-hidden>
       <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gray-100" />
       <div className="absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full opacity-25" style={{ left: pos(stat.bandLo), width: width(stat.bandLo, stat.bandHi), background: color }} />
       <div className="absolute top-1/2 h-[6px] -translate-y-1/2 rounded-full" style={{ left: pos(stat.ciLower), width: `max(2px, ${width(stat.ciLower, stat.ciUpper)})`, background: color }} />
       {target !== undefined && <div className="absolute top-0 h-3 w-[2px] rounded-full bg-gray-800" style={{ left: pos(target) }} />}
-      <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow" style={{ left: pos(stat.mean), background: color }} />
+      <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface shadow" style={{ left: pos(stat.mean), background: color }} />
     </div>
   );
 }
@@ -270,9 +271,9 @@ export function RangeBar({ stat, color = BRAND, domain, target }: { stat: RunSta
 /** Native <details> section, styled. */
 export function Explainer({ title, children, defaultOpen, icon: Icon = Info }: { title: string; children: React.ReactNode; defaultOpen?: boolean; icon?: React.ElementType }) {
   return (
-    <details open={defaultOpen} className="group rounded-[20px] border border-indigo-100/80 bg-gradient-to-br from-white to-[#F4F2FF] shadow-[0_4px_20px_-6px_rgba(87,66,255,0.08)]">
+    <details open={defaultOpen} className="group rounded-[20px] border border-indigo-100/80 bg-gradient-to-br from-surface to-sf-f4f2ff shadow-[0_4px_20px_-6px_rgba(87,66,255,0.08)]">
       <summary className={`flex cursor-pointer list-none items-center gap-2.5 rounded-[20px] px-5 py-3.5 text-[13px] font-extrabold text-gray-900 [&::-webkit-details-marker]:hidden ${focusRing}`}>
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#5742FF]/10 text-[#5742FF]">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-5742ff/10 text-fg-5742ff">
           <Icon size={15} />
         </span>
         {title}
@@ -295,11 +296,11 @@ export function ErrorCard({ title, message, onRetry, onDismiss }: { title: strin
       </div>
       <div className="flex shrink-0 gap-2">
         {onRetry && (
-          <button type="button" onClick={onRetry} className={`flex h-9 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-[12.5px] font-extrabold text-white hover:bg-rose-700 ${focusRing}`}>
+          <button type="button" onClick={onRetry} className={`flex h-9 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 text-[12.5px] font-extrabold text-white hover:bg-rose-700 dark:bg-sf-be123c dark:hover:bg-sf-e11d48 ${focusRing}`}>
             <RotateCcw size={14} /> Try again
           </button>
         )}
-        <button type="button" onClick={onDismiss} aria-label="Dismiss error" className={`flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-700 hover:bg-rose-100 ${focusRing}`}>
+        <button type="button" onClick={onDismiss} aria-label="Dismiss error" className={`flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-surface text-rose-700 hover:bg-rose-100 ${focusRing}`}>
           <X size={15} />
         </button>
       </div>
@@ -325,20 +326,20 @@ export function WarningCard({ message, onDismiss }: { message: string; onDismiss
 export function ProgressCard({ title, status, completed, total, onCancel }: { title: string; status: string; completed: number; total: number; onCancel: () => void }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   return (
-    <div className="rounded-[20px] border border-indigo-100 bg-white p-4 shadow-[0_4px_20px_-6px_rgba(87,66,255,0.10)] sm:p-5">
+    <div className="rounded-[20px] border border-indigo-100 bg-surface p-4 shadow-[0_4px_20px_-6px_rgba(87,66,255,0.10)] sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <Loader2 size={18} className="shrink-0 animate-spin text-[#5742FF] motion-reduce:animate-none" aria-hidden />
+        <Loader2 size={18} className="shrink-0 animate-spin text-fg-5742ff motion-reduce:animate-none" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-black text-gray-900">{title}</p>
           <p className="text-[11.5px] font-medium text-gray-500" aria-live="polite">{status}</p>
         </div>
-        <span className="text-[13px] font-black tabular-nums text-[#5742FF]">{completed}/{total}</span>
-        <button type="button" onClick={onCancel} className={`h-8 rounded-lg border border-gray-200 bg-white px-3 text-[12px] font-extrabold text-gray-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${focusRing}`}>
+        <span className="text-[13px] font-black tabular-nums text-fg-5742ff">{completed}/{total}</span>
+        <button type="button" onClick={onCancel} className={`h-8 rounded-lg border border-gray-200 bg-surface px-3 text-[12px] font-extrabold text-gray-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${focusRing}`}>
           Cancel
         </button>
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-indigo-50" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed} aria-label={title}>
-        <div className="h-full rounded-full bg-gradient-to-r from-[#5742FF] to-[#9B8CFF] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-sf-5742ff to-sf-9b8cff transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -386,7 +387,9 @@ export function downloadFile(name: string, content: string | Blob, type = "text/
 
 export async function downloadPng(node: HTMLElement, name: string) {
   const { toPng } = await import("html-to-image");
-  const url = await toPng(node, { backgroundColor: "#ffffff", pixelRatio: 2, cacheBust: true });
+  // Card colour of the current theme, so a dark-mode export isn't light text on white.
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--color-sf-ffffff").trim() || "#ffffff";
+  const url = await toPng(node, { backgroundColor: bg, pixelRatio: 2, cacheBust: true });
   const a = document.createElement("a");
   a.href = url;
   a.download = name;

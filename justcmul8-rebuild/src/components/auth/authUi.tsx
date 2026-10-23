@@ -43,8 +43,8 @@ export function Item({ children, className = "" }: { children: React.ReactNode; 
 export function FormTitle({ title, sub }: { title: string; sub: string }) {
   return (
     <Item className="mb-6">
-      <h2 className="font-space font-bold text-[26px] leading-tight tracking-[-0.03em] text-[#161622]">{title}</h2>
-      <p className="mt-1.5 text-[13.5px] text-[#64748b] leading-relaxed">{sub}</p>
+      <h2 className="font-space font-bold text-[26px] leading-tight tracking-[-0.03em] text-fg-161622">{title}</h2>
+      <p className="mt-1.5 text-[13.5px] text-fg-64748b leading-relaxed">{sub}</p>
     </Item>
   );
 }
@@ -58,7 +58,7 @@ export function SubmitButton({ loading, children }: { loading: boolean; children
       whileHover={loading ? undefined : { y: -1 }}
       whileTap={loading ? undefined : { scale: 0.98 }}
       transition={spring(22, 0.7)}
-      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-gradient-to-r from-[#8b5cf6] to-[#5742FF] border border-[#8d80ff] shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
+      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
     >
       <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/45 to-transparent translate-x-0 group-hover:translate-x-[520%] transition-transform duration-700 ease-out" />
       <AnimatePresence mode="wait" initial={false}>
@@ -67,7 +67,7 @@ export function SubmitButton({ loading, children }: { loading: boolean; children
             {[0, 1, 2].map((i) => (
               <motion.span
                 key={i}
-                className="w-1.5 h-1.5 rounded-full bg-white"
+                className="w-1.5 h-1.5 rounded-full bg-surface dark:bg-white"
                 animate={{ y: [0, -5, 0], opacity: [0.6, 1, 0.6] }}
                 transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
               />
@@ -108,9 +108,9 @@ export function FormError({ message }: { message: string }) {
 export function Divider({ label = "or continue with" }: { label?: string }) {
   return (
     <Item className="flex items-center gap-4 my-5">
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[#e7e5f6]" />
-      <span className="text-[12px] font-medium text-[#94a3b8]">{label}</span>
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#e7e5f6]" />
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent to-sf-e7e5f6" />
+      <span className="text-[12px] font-medium text-fg-94a3b8">{label}</span>
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent to-sf-e7e5f6" />
     </Item>
   );
 }
@@ -140,7 +140,7 @@ export function OAuthButtons({ onClick }: { onClick: (p: "google" | "github") =>
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.97 }}
           transition={spring(22, 0.7)}
-          className="flex items-center justify-center gap-2.5 h-[48px] rounded-2xl border border-[#e7e5f6] bg-white text-[13.5px] font-bold text-[#161622] hover:border-[#c4b5fd] hover:bg-[#faf8ff] hover:shadow-[0_8px_20px_-10px_rgba(139,92,246,.45)] transition-[border-color,background-color,box-shadow] duration-200"
+          className="flex items-center justify-center gap-2.5 h-[48px] rounded-2xl border border-ln-e7e5f6 bg-surface text-[13.5px] font-bold text-fg-161622 hover:border-ln-c4b5fd hover:bg-sf-faf8ff hover:shadow-[0_8px_20px_-10px_rgba(139,92,246,.45)] transition-[border-color,background-color,box-shadow] duration-200"
         >
           {icon} {label}
         </motion.button>
@@ -154,13 +154,13 @@ export function SuccessState({ title, children, action }: { title: string; child
   return (
     <div className="flex flex-col items-center text-center py-2">
       <motion.div
-        className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#5742FF] flex items-center justify-center shadow-[0_18px_40px_-12px_rgba(87,66,255,.6)] mb-6"
+        className="relative w-20 h-20 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center shadow-[0_18px_40px_-12px_rgba(87,66,255,.6)] mb-6"
         initial={{ scale: 0, rotate: -30 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={spring(12, 0.55)}
       >
         <motion.span
-          className="absolute inset-0 rounded-full border-2 border-[#8b5cf6]"
+          className="absolute inset-0 rounded-full border-2 border-ln-8b5cf6"
           initial={{ scale: 1, opacity: 0.7 }}
           animate={{ scale: 1.7, opacity: 0 }}
           transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.25 }}
@@ -170,8 +170,8 @@ export function SuccessState({ title, children, action }: { title: string; child
         </svg>
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.35 }}>
-        <h2 className="font-space font-bold text-[26px] tracking-[-0.03em] text-[#161622]">{title}</h2>
-        <div className="mt-2 text-[13.5px] text-[#64748b] leading-relaxed">{children}</div>
+        <h2 className="font-space font-bold text-[26px] tracking-[-0.03em] text-fg-161622">{title}</h2>
+        <div className="mt-2 text-[13.5px] text-fg-64748b leading-relaxed">{children}</div>
         {action && <div className="mt-6">{action}</div>}
       </motion.div>
     </div>
@@ -207,7 +207,7 @@ export function StrengthMeter({ password }: { password: string }) {
           <div className="flex items-center gap-3 pt-2.5 px-1">
             <div className="flex-1 grid grid-cols-4 gap-1.5">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-1.5 rounded-full bg-[#eeedf7] overflow-hidden">
+                <div key={i} className="h-1.5 rounded-full bg-sf-eeedf7 overflow-hidden">
                   <motion.div
                     className="h-full rounded-full origin-left"
                     style={{ background: level.color }}

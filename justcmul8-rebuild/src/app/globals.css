@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "./theme-tokens.css";
+
+/* `dark:` follows the .dark class on <html> (set by ThemeToggle / the no-flash script in layout.tsx). */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --color-bg: #f7f7fa;
@@ -37,6 +41,54 @@
   --color-node-interrupter: #dc2626;
 
   --shadow-card: 0 1px 3px rgba(20, 20, 30, 0.08), 0 1px 2px rgba(20, 20, 30, 0.04);
+  --color-ink: #000; /* faint washes: black on light, white on dark (bg-ink/[0.04]) */
+}
+
+/* Semantic tokens for dark mode. Hard-coded colours are handled by theme-tokens.css. */
+.dark {
+  color-scheme: dark;
+  --color-bg: oklch(18.5% 0.012 285);
+  --color-surface: oklch(23.5% 0.014 285);
+  --color-surface-sunken: oklch(19.5% 0.012 285);
+  --color-border: oklch(31% 0.016 285);
+  --color-text-primary: oklch(95% 0.006 285);
+  --color-text-secondary: oklch(72% 0.016 285);
+  --color-accent-soft: oklch(30% 0.06 30);
+  --color-ink: #fff;
+  /* Node-type colours: lifted so borders, icons and the minimap read on dark. */
+  --color-node-source: var(--color-fg-2f6fed);
+  --color-node-queue: var(--color-fg-8b5cf6);
+  --color-node-resource: var(--color-fg-12a150);
+  --color-node-service: var(--color-fg-0ea5a5);
+  --color-node-decision: var(--color-fg-d9a400);
+  --color-node-sink: var(--color-fg-6b6b7b);
+  --color-node-container: var(--color-fg-2563eb);
+  --color-node-store: var(--color-fg-7c3aed);
+  --color-node-event-trigger: var(--color-fg-db2777);
+  --color-node-priority-resource: var(--color-fg-059669);
+  --color-node-channel: var(--color-fg-0891b2);
+  --color-node-broadcaster: var(--color-fg-ea580c);
+  --color-node-any-of: var(--color-fg-ca8a04);
+  --color-node-all-of: var(--color-fg-b45309);
+  --color-node-interrupter: var(--color-fg-dc2626);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Theme switch: a circular reveal from the toggle (View Transitions), crossfade where unsupported. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: theme-reveal 560ms cubic-bezier(.32, .72, 0, 1);
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 0%)); }
+  to { clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 0%)); }
+}
+html.theme-fade, html.theme-fade * {
+  transition: background-color 400ms ease, border-color 400ms ease, color 400ms ease, fill 400ms ease, stroke 400ms ease !important;
 }
 
 @layer base {
@@ -107,20 +159,20 @@ input[type="password"]::-ms-clear {
   height: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f0fb;
+  background: var(--color-sf-f1f0fb);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c7c5e8;
+  background: var(--color-ln-c7c5e8);
   border-radius: 9999px;
-  border: 2px solid #f1f0fb;
+  border: 2px solid var(--color-sf-f1f0fb);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #8b5cf6;
 }
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #c7c5e8 #f1f0fb;
+  scrollbar-color: var(--color-ln-c7c5e8) var(--color-sf-f1f0fb);
 }
 
 /* Native page scrollbar hidden: <PageScrollbar /> draws the only one
@@ -187,8 +239,8 @@ html::-webkit-scrollbar {
 @media (prefers-reduced-motion: reduce) { .group:hover .wf-flow, .wf-flow-always { animation: none; } }
 /* ── Canvas controls & minimap: same pill/card language as the dashboard ── */
 .react-flow__controls.jc-controls {
-  background: #fff;
-  border: 1px solid #ecebf7;
+  background: var(--color-surface);
+  border: 1px solid var(--color-ln-ecebf7);
   border-radius: 16px;
   padding: 4px;
   gap: 2px;
@@ -202,7 +254,7 @@ html::-webkit-scrollbar {
   border: none;
   border-radius: 11px;
   background: transparent;
-  color: #64748b;
+  color: var(--color-fg-64748b);
   transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 .jc-controls .react-flow__controls-button svg {
@@ -213,8 +265,8 @@ html::-webkit-scrollbar {
   fill: currentColor;
 }
 .jc-controls .react-flow__controls-button:hover {
-  background: #f5f3ff;
-  color: #5742ff;
+  background: var(--color-sf-f5f3ff);
+  color: var(--color-fg-5742ff);
 }
 .jc-controls .react-flow__controls-button:active {
   transform: scale(0.92);
@@ -222,11 +274,11 @@ html::-webkit-scrollbar {
 .jc-controls .react-flow__controls-button:disabled {
   opacity: 0.35;
   background: transparent;
-  color: #64748b;
+  color: var(--color-fg-64748b);
 }
 .react-flow__minimap.jc-minimap {
-  background: #fff;
-  border: 1px solid #ecebf7;
+  background: var(--color-surface);
+  border: 1px solid var(--color-ln-ecebf7);
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 10px 28px -12px rgba(16, 24, 40, 0.22), 0 1px 2px rgba(16, 24, 40, 0.04);
@@ -241,4 +293,17 @@ html::-webkit-scrollbar {
 .workspace-canvas .react-flow__handle:hover,
 .workspace-canvas .react-flow__handle.connectingto {
   box-shadow: 0 0 0 5px rgba(87, 66, 255, 0.18);
+}
+/* Dark: React Flow's own light defaults (attribution chip) and deeper floating shadows. */
+.dark .workspace-canvas {
+  --xy-attribution-background-color: transparent;
+  --jc-edge-opacity: 0.85;
+  --jc-icon-dim: 0.8;
+}
+.dark .react-flow__controls.jc-controls,
+.dark .react-flow__minimap.jc-minimap {
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.7), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.dark .workspace-canvas .react-flow__attribution a {
+  color: var(--color-text-secondary);
 }

@@ -49,21 +49,21 @@ export default function TickerSection() {
   const items = tickerItems.map((it) => (
     <span
       key={it.k}
-      className="mr-3 inline-flex h-10 items-center gap-2.5 rounded-full border border-[#ecebf7] bg-white pl-3 pr-4 shadow-[0_1px_2px_rgba(16,24,40,.04)]"
+      className="mr-3 inline-flex h-10 items-center gap-2.5 rounded-full border border-ln-ecebf7 bg-surface pl-3 pr-4 shadow-[0_1px_2px_rgba(16,24,40,.04)]"
     >
       <span className="relative flex h-2 w-2">
         <span className="absolute inset-0 rounded-full opacity-50 animate-ping" style={{ background: it.dot, animationDuration: "2.4s" }} />
         <span className="relative h-2 w-2 rounded-full" style={{ background: it.dot }} />
       </span>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">{it.k}</span>
-      <span className="font-mono text-[12.5px] font-medium text-[#334155]">{it.v}</span>
+      <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-fg-94a3b8">{it.k}</span>
+      <span className="font-mono text-[12.5px] font-medium text-fg-334155">{it.v}</span>
     </span>
   ));
 
   return (
     <div
       aria-hidden="true"
-      className="relative overflow-hidden border-y border-[#ecebf7] bg-gradient-to-b from-[#f7f6fe] to-white py-3.5"
+      className="relative overflow-hidden border-y border-ln-ecebf7 bg-gradient-to-b from-sf-f7f6fe to-surface py-3.5"
       style={{
         WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
         maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",

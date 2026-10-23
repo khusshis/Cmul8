@@ -13,6 +13,8 @@ import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, PRO_YEARLY_TOTAL, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
 import PageScrollbar from "@/components/PageScrollbar";
+import ThemeToggle, { useIsDark } from "@/components/ui/ThemeToggle";
+import { tintFor } from "@/components/landing/SimTypesSection";
 import {
   CreditsScene, FlowField, LaunchOverlay, LineInput, PillChoice, ProfileScene, ROLES, RouteProgress, Stage, TEAM_SIZES, Ticker, WorldScene, sceneFor, usePointer,
 } from "@/components/onboarding/OnboardingStage";
@@ -32,13 +34,14 @@ const COPY = [
 const STAGE_LABELS = ["your-profile", "your-world", "your-plan"];
 const STAGE_STATUS = ["Building your profile", "Loading your domains", "Charging your credits"];
 
-const label = "text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]";
+const label = "text-[11px] font-bold uppercase tracking-[0.14em] text-fg-94a3b8";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function OnboardingPage() {
   const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
   const pointer = usePointer();
+  const dark = useIsDark();
   const headingRef = React.useRef<HTMLHeadingElement>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [userId, setUserId] = React.useState("");
@@ -173,7 +176,7 @@ export default function OnboardingPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative flex min-h-screen flex-col overflow-x-clip bg-[#fafaff] lg:h-screen lg:min-h-[720px]">
+      <div className="relative flex min-h-screen flex-col overflow-x-clip bg-sf-fafaff lg:h-screen lg:min-h-[720px]">
         <Backdrop tone="a" />
         <FlowField pointer={pointer} />
 
@@ -182,13 +185,14 @@ export default function OnboardingPage() {
           <div className="flex items-center gap-2.5">
             <CubeMark mode="assemble" delay={0.1} className="w-8" />
             <motion.img
-              src={TEXT_SRC} alt="JustCmul8" className="h-7 w-auto" style={{ aspectRatio: TEXT_RATIO }}
+              src={TEXT_SRC} alt="JustCmul8" className="h-7 w-auto dark:invert dark:hue-rotate-180" style={{ aspectRatio: TEXT_RATIO }}
               initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.5 }}
             />
           </div>
-          <div className="flex items-center gap-3 text-[12.5px] font-semibold text-[#64748b]">
+          <div className="flex items-center gap-3 text-[12.5px] font-semibold text-fg-64748b">
             <span className="hidden max-w-[220px] truncate sm:inline">{email}</span>
-            <button type="button" onClick={signOut} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 hover:bg-black/[0.04] hover:text-[#161622]">
+            <ThemeToggle />
+            <button type="button" onClick={signOut} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 hover:bg-ink/[0.04] hover:text-fg-161622">
               <LogOut size={14} /> Sign out
             </button>
           </div>
@@ -227,17 +231,17 @@ export default function OnboardingPage() {
                     transition={{ ...spring(13, 0.85), opacity: { duration: 0.25 } }}
                   >
                     <motion.span
-                      className="inline-flex items-center gap-2 rounded-full border border-[#e7e3ff] bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#5742FF]"
+                      className="inline-flex items-center gap-2 rounded-full border border-ln-e7e3ff bg-surface/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-fg-5742ff"
                       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
                     >
                       <span className="font-mono">{String(Math.min(step, questionCount - 1) + 1).padStart(2, "0")}</span>
-                      <span className="h-3 w-px bg-[#d9d3fb]" />
+                      <span className="h-3 w-px bg-sf-d9d3fb" />
                       {copy.eyebrow}
                     </motion.span>
-                    <h1 ref={headingRef} tabIndex={-1} className="mt-3 font-space text-[2.1rem] font-bold leading-[1.04] tracking-[-0.035em] text-[#161622] outline-none sm:text-[2.6rem]">
+                    <h1 ref={headingRef} tabIndex={-1} className="mt-3 font-space text-[2.1rem] font-bold leading-[1.04] tracking-[-0.035em] text-fg-161622 outline-none sm:text-[2.6rem]">
                       <SplitWords key={copy.title} text={copy.title} accent={copy.accent} animateNow delay={0.05} />
                     </h1>
-                    <motion.p className="mt-2.5 max-w-[480px] text-[14.5px] leading-relaxed text-[#64748b]" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }}>
+                    <motion.p className="mt-2.5 max-w-[480px] text-[14.5px] leading-relaxed text-fg-64748b" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }}>
                       {copy.sub}
                     </motion.p>
 
@@ -287,20 +291,20 @@ export default function OnboardingPage() {
                                   whileHover={{ y: -3 }}
                                   whileTap={{ scale: 0.97 }}
                                   transition={{ ...spring(14, 0.75, 0.35 + i * 0.04), opacity: { duration: 0.3, delay: 0.35 + i * 0.04 } }}
-                                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border bg-white/90 p-3 text-left"
-                                  style={{ borderColor: on ? s.color : "#ecebf7", boxShadow: on ? `0 0 0 3px ${s.color}22, 0 14px 30px -18px ${s.color}` : undefined }}
+                                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border bg-surface/90 p-3 text-left"
+                                  style={{ borderColor: on ? s.color : "var(--color-ln-ecebf7)", boxShadow: on ? `0 0 0 3px ${s.color}22, 0 14px 30px -18px ${s.color}` : undefined }}
                                 >
                                   <motion.span
                                     className="absolute inset-0 origin-left"
-                                    style={{ background: `linear-gradient(90deg, ${s.tint}, transparent 80%)` }}
+                                    style={{ background: `linear-gradient(90deg, ${tintFor(s, dark)}, transparent 80%)` }}
                                     initial={false} animate={{ scaleX: on ? 1 : 0 }} transition={spring(14, 0.9)}
                                   />
-                                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-[-6deg]" style={{ background: on ? s.color : s.tint, color: on ? "#fff" : s.color }}>
+                                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-[-6deg]" style={{ background: on ? s.color : tintFor(s, dark), color: on ? "#fff" : s.color }}>
                                     <s.icon size={20} strokeWidth={2.2} />
                                   </span>
                                   <span className="relative min-w-0">
-                                    <span className="block truncate text-[14px] font-bold text-[#161622]">{cfg.label}</span>
-                                    <span className="block truncate text-[12px] text-[#64748b]">{s.examples.join(" · ")}</span>
+                                    <span className="block truncate text-[14px] font-bold text-fg-161622">{cfg.label}</span>
+                                    <span className="block truncate text-[12px] text-fg-64748b">{s.examples.join(" · ")}</span>
                                   </span>
                                   <AnimatePresence>
                                     {on && (
@@ -331,11 +335,11 @@ export default function OnboardingPage() {
                       {step === 2 && (
                         <div>
                           <LayoutGroup id="billing">
-                            <div className="inline-flex rounded-full bg-black/[0.04] p-1 text-[13px] font-bold shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
+                            <div className="inline-flex rounded-full bg-ink/[0.04] p-1 text-[13px] font-bold shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]">
                               {(["monthly", "yearly"] as const).map((b) => (
                                 <button key={b} type="button" onClick={() => setBillingInterval(b)} className="relative rounded-full px-4 py-2">
-                                  {interval === b && <motion.span layoutId="bill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18)]" transition={spring(20, 0.85)} />}
-                                  <span className={`relative ${interval === b ? "text-[#161622]" : "text-[#64748b]"}`}>
+                                  {interval === b && <motion.span layoutId="bill" className="absolute inset-0 rounded-full bg-surface shadow-[0_2px_8px_-2px_rgba(16,24,40,.18)]" transition={spring(20, 0.85)} />}
+                                  <span className={`relative ${interval === b ? "text-fg-161622" : "text-fg-64748b"}`}>
                                     {b === "monthly" ? "Monthly" : <>Yearly <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">−{YEARLY_SAVING_PCT}%</span></>}
                                   </span>
                                 </button>
@@ -348,14 +352,14 @@ export default function OnboardingPage() {
                             <motion.button
                               type="button" role="radio" aria-checked={plan === "free"} onClick={() => setPlan("free")}
                               whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} transition={spring(16, 0.75)}
-                              className={`relative rounded-[26px] border bg-white p-5 text-left transition-shadow ${plan === "free" ? "border-[#5742FF] shadow-[0_0_0_3px_rgba(87,66,255,.15),0_24px_50px_-28px_rgba(87,66,255,.5)]" : "border-[#ecebf7]"}`}
+                              className={`relative rounded-[26px] border bg-surface p-5 text-left transition-shadow ${plan === "free" ? "border-ln-5742ff shadow-[0_0_0_3px_rgba(87,66,255,.15),0_24px_50px_-28px_rgba(87,66,255,.5)]" : "border-ln-ecebf7"}`}
                             >
                               <div className="flex items-center justify-between">
-                                <p className="font-space text-[19px] font-bold text-[#161622]">Free</p>
+                                <p className="font-space text-[19px] font-bold text-fg-161622">Free</p>
                                 <SelectDot on={plan === "free"} />
                               </div>
-                              <p className="mt-2"><span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em] text-[#161622]">₹0</span></p>
-                              <p className="mt-1 text-[12px] font-medium text-[#94a3b8]">Free forever, no card</p>
+                              <p className="mt-2"><span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em] text-fg-161622">₹0</span></p>
+                              <p className="mt-1 text-[12px] font-medium text-fg-94a3b8">Free forever, no card</p>
                               <Perks items={[`${PLAN_CREDITS.free} credits every month`, "Visual builder & live results", "Monte Carlo & JSON export"]} />
                             </motion.button>
 
@@ -363,12 +367,12 @@ export default function OnboardingPage() {
                             <motion.button
                               type="button" role="radio" aria-checked={plan === "pro"} onClick={() => setPlan("pro")}
                               whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} transition={spring(16, 0.75)}
-                              className={`relative overflow-hidden rounded-[26px] bg-gradient-to-b from-[#7a67ff] via-[#5742FF] to-[#4a36e6] p-5 text-left text-white ${plan === "pro" ? "shadow-[0_0_0_3px_rgba(87,66,255,.3),0_30px_60px_-24px_rgba(87,66,255,.75)]" : "opacity-90"}`}
+                              className={`relative overflow-hidden rounded-[26px] bg-gradient-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-5 text-left text-white ${plan === "pro" ? "shadow-[0_0_0_3px_rgba(87,66,255,.3),0_30px_60px_-24px_rgba(87,66,255,.75)]" : "opacity-90"}`}
                             >
                               <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
                               <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 60%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 60%)" }} />
                               <div className="relative flex items-center justify-between">
-                                <p className="flex items-center gap-2 font-space text-[19px] font-bold">Pro <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-[#5742FF]">{TRIAL_DAYS} DAYS FREE</span></p>
+                                <p className="flex items-center gap-2 font-space text-[19px] font-bold">Pro <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold text-fg-5742ff">{TRIAL_DAYS} DAYS FREE</span></p>
                                 <SelectDot on={plan === "pro"} light />
                               </div>
                               <p className="relative mt-2 flex items-end gap-1">
@@ -385,13 +389,13 @@ export default function OnboardingPage() {
                             </motion.button>
                           </div>
 
-                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-[#64748b]">
+                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-fg-64748b">
                             <span>
                               {plan === "pro"
                                 ? "Razorpay verifies your card now. No charge until the trial ends; cancel any time in Settings."
                                 : `Credits: new simulation ${CREDIT_COSTS.create_simulation} · AI optimize ${CREDIT_COSTS.ai_optimize} · AI chat ${CREDIT_COSTS.ai_chat}`}
                             </span>
-                            <a href="mailto:hello@justcmul8.com?subject=Enterprise%20plan" className="inline-flex items-center gap-1.5 font-semibold text-[#5742FF] hover:underline">
+                            <a href="mailto:hello@justcmul8.com?subject=Enterprise%20plan" className="inline-flex items-center gap-1.5 font-semibold text-fg-5742ff hover:underline">
                               <Building2 size={14} /> Teams & SSO? Talk to sales
                             </a>
                           </div>
@@ -418,15 +422,15 @@ export default function OnboardingPage() {
             </div>
 
             {/* Footer actions */}
-            <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex max-w-[592px] shrink-0 items-center justify-between gap-3 border-t border-[#ecebf7] bg-[#fafaff]/90 px-4 py-4 backdrop-blur lg:static lg:mx-0 lg:max-w-[560px] lg:bg-transparent lg:px-0 lg:pb-0 lg:backdrop-blur-none">
+            <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex max-w-[592px] shrink-0 items-center justify-between gap-3 border-t border-ln-ecebf7 bg-sf-fafaff/90 px-4 py-4 backdrop-blur lg:static lg:mx-0 lg:max-w-[560px] lg:bg-transparent lg:px-0 lg:pb-0 lg:backdrop-blur-none">
               {step > 0 ? (
-                <button type="button" onClick={() => go(step - 1)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold text-[#64748b] hover:bg-black/[0.04] hover:text-[#161622]">
+                <button type="button" onClick={() => go(step - 1)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold text-fg-64748b hover:bg-ink/[0.04] hover:text-fg-161622">
                   <ArrowLeft size={15} /> Back
                 </button>
-              ) : <span className="hidden text-[12px] font-medium text-[#94a3b8] sm:inline">Press <kbd className="rounded-md border border-[#e7e5f6] bg-white px-1.5 py-0.5 font-mono text-[11px]">Enter ↵</kbd> to continue</span>}
+              ) : <span className="hidden text-[12px] font-medium text-fg-94a3b8 sm:inline">Press <kbd className="rounded-md border border-ln-e7e5f6 bg-surface px-1.5 py-0.5 font-mono text-[11px]">Enter ↵</kbd> to continue</span>}
               <div className="ml-auto flex items-center gap-3">
                 {last && !invited && plan === "pro" && (
-                  <button type="button" onClick={() => finish("free")} disabled={busy} className="text-[13.5px] font-semibold text-[#64748b] hover:text-[#161622]">
+                  <button type="button" onClick={() => finish("free")} disabled={busy} className="text-[13.5px] font-semibold text-fg-64748b hover:text-fg-161622">
                     Continue on Free
                   </button>
                 )}
@@ -435,7 +439,7 @@ export default function OnboardingPage() {
                   disabled={!canContinue || busy || !userId}
                   whileHover={canContinue ? { scale: 1.03 } : undefined}
                   whileTap={canContinue ? { scale: 0.97 } : undefined}
-                  className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
+                  className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
                 >
                   {canContinue && <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />}
                   {busy && <Loader2 size={16} className="animate-spin" />}
@@ -456,10 +460,10 @@ export default function OnboardingPage() {
 
 function SelectDot({ on, light }: { on: boolean; light?: boolean }) {
   return (
-    <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${light ? "border-white/60" : on ? "border-[#5742FF]" : "border-[#d9d3fb]"}`}>
+    <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${light ? "border-white/60" : on ? "border-ln-5742ff" : "border-ln-d9d3fb"}`}>
       <AnimatePresence>
         {on && (
-          <motion.span className={`flex h-4 w-4 items-center justify-center rounded-full ${light ? "bg-white text-[#5742FF]" : "bg-[#5742FF] text-white"}`} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={spring(20, 0.55)}>
+          <motion.span className={`flex h-4 w-4 items-center justify-center rounded-full ${light ? "bg-surface text-fg-5742ff" : "bg-sf-5742ff text-white"}`} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={spring(20, 0.55)}>
             <Check size={10} strokeWidth={4} />
           </motion.span>
         )}
@@ -472,9 +476,9 @@ function Perks({ items, light }: { items: string[]; light?: boolean }) {
   return (
     <ul className="relative mt-4 space-y-2">
       {items.map((p, i) => (
-        <motion.li key={p} className={`flex items-start gap-2 text-[13px] ${light ? "text-white" : "text-[#334155]"}`} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.4 + i * 0.05 }}>
-          <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${light ? "bg-white/20" : "bg-[#f1eeff]"}`}>
-            <Check size={10} strokeWidth={3.5} className={light ? "text-white" : "text-[#5742FF]"} />
+        <motion.li key={p} className={`flex items-start gap-2 text-[13px] ${light ? "text-white" : "text-fg-334155"}`} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.4 + i * 0.05 }}>
+          <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${light ? "bg-white/20" : "bg-sf-f1eeff"}`}>
+            <Check size={10} strokeWidth={3.5} className={light ? "text-white" : "text-fg-5742ff"} />
           </span>
           {p}
         </motion.li>

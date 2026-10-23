@@ -68,14 +68,14 @@ export default function TabStrip<T extends string>({
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-1 ${
-              on ? "text-white" : "text-slate-600 hover:bg-[#F1EFFF] hover:text-[#161622]"
+            className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-1 ${
+              on ? "text-white" : "text-slate-600 hover:bg-sf-f1efff hover:text-fg-161622"
             }`}
           >
             {on && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.3)]"
+                className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.3)]"
                 transition={{ type: "spring", stiffness: 450, damping: 34 }}
               />
             )}
