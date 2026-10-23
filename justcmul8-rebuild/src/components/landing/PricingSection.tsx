@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Building2, Check, Gift, Minus, Rocket, Sparkles } from "lucide-react";
 import { Reveal, SectionHeader, Stagger, StaggerItem, spring } from "@/components/landing/motionKit";
 import FaqSection from "@/components/landing/FaqSection";
+import { PRO_PRICE, PRO_YEARLY_TOTAL, YEARLY_SAVING_PCT, inr } from "@/lib/billing/plans";
 
 type Billing = "monthly" | "yearly";
 type Plan = {
@@ -30,7 +31,7 @@ const PLANS: Plan[] = [
   },
   {
     id: "pro", name: "Pro", tagline: "For serious builders and professionals.", icon: Rocket,
-    price: { monthly: 29, yearly: 23 }, inherits: "Free",
+    price: PRO_PRICE, inherits: "Free",
     features: ["500 credits / month", "Invite collaborators", "Share links", "CSV exports", "14-day free trial"],
     cta: "Start 14-day free trial", href: "/signup?plan=pro", featured: true,
   },
@@ -115,7 +116,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         ) : (
           <>
             <span className={`font-space text-[52px] font-bold leading-none tracking-[-0.04em] ${f ? "text-white" : "text-[#161622]"}`}>
-              $<RollingPrice value={String(price)} />
+              ₹<RollingPrice value={price.toLocaleString("en-IN")} />
             </span>
             <span className={`mb-1.5 text-[14px] font-medium ${f ? "text-white/70" : "text-[#94a3b8]"}`}>/ month</span>
           </>
@@ -124,7 +125,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       <div className={`relative mt-2 h-5 text-[12.5px] font-medium ${f ? "text-white/70" : "text-[#94a3b8]"}`}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.span key={`${billing}-${plan.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className="block">
-            {price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : billing === "yearly" ? `Billed $${price * 12} yearly` : "Billed monthly"}
+            {price === null ? "Tailored to your organisation" : price === 0 ? "Free forever" : billing === "yearly" ? `Billed ${inr(plan.id === "pro" ? PRO_YEARLY_TOTAL : price * 12)} yearly` : "Billed monthly"}
           </motion.span>
         </AnimatePresence>
       </div>
@@ -176,7 +177,7 @@ export default function PricingSection() {
               {billing === b && <motion.span layoutId="billing-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />}
               <span className={`relative flex items-center gap-2 transition-colors ${billing === b ? "text-[#161622]" : "text-[#64748b]"}`}>
                 {b === "monthly" ? "Monthly" : "Yearly"}
-                {b === "yearly" && <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10.5px] font-bold text-[#15803d]">Save 20%</span>}
+                {b === "yearly" && <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10.5px] font-bold text-[#15803d]">Save {YEARLY_SAVING_PCT}%</span>}
               </span>
             </button>
           ))}

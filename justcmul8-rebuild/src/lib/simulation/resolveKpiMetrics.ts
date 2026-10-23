@@ -37,7 +37,8 @@ export function resolveKpiMetrics(
       let val = result.totalCompleted ?? 0;
       let displayValue = val.toLocaleString();
 
-      if (m.unit.includes("/hr") || m.unit.includes("/hour")) {
+      // "Vehicles / hour" carries the rate in its label (unit "veh"), so check both.
+      if (/\/\s*h(ou)?r/i.test(`${m.label} ${m.unit}`)) {
         const hourly = durationHours > 0 ? (val / durationHours) : val;
         displayValue = `${Math.round(hourly).toLocaleString()} ${m.unit}`;
         val = hourly;

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requirePaid } from "@/lib/billing/server";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const notFound = () => NextResponse.json({ error: "Project not found" }, { status: 404 });
 
 async function getRole(supabase: Supabase, id: string) {
   const { data } = await supabase.rpc("project_role", { pid: id });
@@ -27,9 +31,12 @@ function linkJson(row: { share_token: string; link_access: string; link_role: st
 // lazily as "Restricted", like Google Drive: the URL exists but only invited people get in.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!UUID_RE.test(id)) return notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await rateLimit(`share:${user.id}`, 60, 60);
+  if (limited) return limited;
 
   const role = await getRole(supabase, id);
   if (!role) return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -56,12 +63,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // Owner changes "General access": { access: 'restricted'|'anyone', role: 'viewer'|'editor' }.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!UUID_RE.test(id)) return notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await rateLimit(`share:${user.id}`, 60, 60);
+  if (limited) return limited;
   if ((await getRole(supabase, id)) !== "owner") return NextResponse.json({ error: "Only the owner can change sharing" }, { status: 403 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = (await req.json().catch(() => null)) ?? {};
   const access = body.access;
   const linkRole = body.role;
   if (!["restricted", "anyone"].includes(access) || !["viewer", "editor"].includes(linkRole)) {
@@ -95,9 +105,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // Owner resets the link: old URL stops working and everyone who joined through it loses access.
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!UUID_RE.test(id)) return notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await rateLimit(`share:${user.id}`, 60, 60);
+  if (limited) return limited;
   if ((await getRole(supabase, id)) !== "owner") return NextResponse.json({ error: "Only the owner can reset the link" }, { status: 403 });
 
   const { error } = await supabase

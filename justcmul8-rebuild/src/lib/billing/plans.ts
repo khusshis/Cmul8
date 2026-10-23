@@ -6,8 +6,15 @@ export type Interval = "monthly" | "yearly";
 
 export const PLAN_CREDITS: Record<PlanId, number> = { free: 100, pro: 500, enterprise: 2000 };
 
-// Display prices. The amount actually charged comes from the Razorpay plan ids in env.
-export const PRO_PRICE: Record<Interval, number> = { monthly: 29, yearly: 23 };
+// Display prices in INR. Keep in sync with the Razorpay plans (RAZORPAY_PLAN_PRO_* in env),
+// which decide what is actually charged: ₹2,990 every month, or ₹25,000 every year.
+export const PRO_MONTHLY = 2990;
+export const PRO_YEARLY_TOTAL = 25000;
+/** Per-month price shown for each billing choice. */
+export const PRO_PRICE: Record<Interval, number> = { monthly: PRO_MONTHLY, yearly: Math.round(PRO_YEARLY_TOTAL / 12) };
+export const YEARLY_SAVING_PCT = Math.round((1 - PRO_YEARLY_TOTAL / (PRO_MONTHLY * 12)) * 100);
+/** ₹2,990 style (Indian digit grouping). */
+export const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 export const TRIAL_DAYS = 14;
 
 export const CREDIT_COSTS = {

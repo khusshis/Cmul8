@@ -26,7 +26,7 @@ const CATEGORIES: { id: string; label: string; items: QA[] }[] = [
       { icon: CreditCard, q: "Do I need a credit card to start?", a: "No. The Free plan is free forever and needs only an email or a Google / GitHub sign-in." },
       { icon: Repeat, q: "Can I switch plans later?", a: "Anytime. Upgrades apply immediately; downgrades take effect at the end of your billing period and your projects stay intact." },
       { icon: GraduationCap, q: "Is there a student discount?", a: "Yes. Students and educators get Pro at a reduced price. Reach out from your academic email and we'll set it up." },
-      { icon: BadgePercent, q: "How does yearly billing work?", a: "Pay for 12 months up front and save 20% compared with monthly billing. You can cancel renewal at any time." },
+      { icon: BadgePercent, q: "How does yearly billing work?", a: "Pay for 12 months up front and save about 30% compared with monthly billing. You can cancel renewal at any time." },
     ],
   },
   {

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
 import { AIRouterError, extractJSON, generateJSON } from "@/lib/ai/modelRouter";
-import { buildSystemPrompt } from "@/lib/ai/systemPrompt";
+import { buildSystemPrompt, fenceUntrusted } from "@/lib/ai/systemPrompt";
 import { normalizeAIResponse, summarizeCanvas } from "@/lib/ai/graphOps";
 import { toPlainMarkdown } from "@/lib/ai/textFormat";
 import { analyseFlow } from "@/lib/ai/flowAnalysis";
@@ -16,26 +16,12 @@ const MAX_PROMPT_CHARS = 4_000;
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_HISTORY_CHARS = 1_500;
 const MAX_CANVAS_NODES = 300;
-
-// ─── Best-effort per-user rate limit (per server instance) ────────────────────
-// The route spends a paid API quota, so a runaway client or script must not be
-// able to exhaust it. Serverless instances do not share this map; it bounds abuse
-// per instance rather than enforcing an exact global limit.
-const RATE_WINDOW_MS = 60_000;
-const RATE_MAX = 20;
-const recent = new Map<string, number[]>();
-
-function rateLimited(userId: string): number | null {
-  const now = Date.now();
-  const hits = (recent.get(userId) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (hits.length >= RATE_MAX) {
-    recent.set(userId, hits);
-    return Math.ceil((RATE_WINDOW_MS - (now - hits[0])) / 1000);
-  }
-  hits.push(now);
-  recent.set(userId, hits);
-  return null;
-}
+const MAX_CANVAS_EDGES = 1_000;
+const MAX_REPLY_CHARS = 12_000;
+const MAX_WORKSPACE_CHARS = 250_000;
+const SIM_STATES = ["idle", "running", "paused"];
+// Per-user and global rate limits live in withCredits (Postgres-backed, shared
+// across instances), so they run before any credit is charged.
 
 /**
  * Validates the megaprompt's `simulationInsights` block. Free-text fields are
@@ -124,16 +110,6 @@ async function handle(req: Request) {
     return errorResponse(401, "UNAUTHENTICATED", "Your session has expired. Please sign in again to use the AI assistant.");
   }
 
-  const retryAfter = rateLimited(user.id);
-  if (retryAfter !== null) {
-    return errorResponse(
-      429,
-      "RATE_LIMITED",
-      `You're sending messages faster than the assistant can keep up. Please wait ${retryAfter} seconds.`,
-      { retryable: true, retryAfterSeconds: retryAfter }
-    );
-  }
-
   // ── Input validation
   let body: any;
   try {
@@ -152,12 +128,13 @@ async function handle(req: Request) {
     );
   }
 
-  const simType: SimTypeId = body?.simType in SIM_TYPE_REGISTRY ? body.simType : "human_queue";
+  const simType: SimTypeId =
+    typeof body?.simType === "string" && Object.hasOwn(SIM_TYPE_REGISTRY, body.simType) ? body.simType : "human_queue";
   const domain = SIM_TYPE_REGISTRY[simType];
 
   const rawNodes = Array.isArray(body?.currentGraph?.nodes) ? body.currentGraph.nodes : [];
   const rawEdges = Array.isArray(body?.currentGraph?.edges) ? body.currentGraph.edges : [];
-  if (rawNodes.length > MAX_CANVAS_NODES) {
+  if (rawNodes.length > MAX_CANVAS_NODES || rawEdges.length > MAX_CANVAS_EDGES) {
     return errorResponse(
       400,
       "CANVAS_TOO_LARGE",
@@ -174,8 +151,8 @@ async function handle(req: Request) {
 
   const workspace = {
     domain: simType,
-    selectedBlockId: typeof body?.selectedNodeId === "string" ? body.selectedNodeId : null,
-    simulationState: body?.simState ?? "idle",
+    selectedBlockId: typeof body?.selectedNodeId === "string" ? body.selectedNodeId.slice(0, 128) : null,
+    simulationState: SIM_STATES.includes(body?.simState) ? body.simState : "idle",
     canvas: { blockCount: canvas.nodes.length, linkCount: canvas.edges.length, ...canvas },
     // Computed here so the model never has to do the arithmetic itself. Its prose
     // was not reliably self-consistent (one reply asserted rho = 1.13 where the
@@ -185,11 +162,18 @@ async function handle(req: Request) {
     telemetry: summarizeTelemetry(body?.simResult),
   };
 
+  const workspaceJson = JSON.stringify(workspace);
+  if (workspaceJson.length > MAX_WORKSPACE_CHARS) {
+    return errorResponse(400, "CANVAS_TOO_LARGE", "This model is too large for the assistant to read in one go. Try simplifying block settings.");
+  }
+
+  // Everything but the user's own request is project data that collaborators (or
+  // a pasted model) control, so it is fenced off as untrusted. See systemPrompt.ts.
   const chatPrompt = `CONVERSATION SO FAR:
-${history || "(none)"}
+${fenceUntrusted("conversation_history", history || "(none)")}
 
 CURRENT WORKSPACE (JSON):
-${JSON.stringify(workspace)}
+${fenceUntrusted("workspace_data", workspaceJson)}
 
 USER REQUEST:
 ${prompt}`;
@@ -230,7 +214,7 @@ ${prompt}`;
     }
     return NextResponse.json({
       ok: true,
-      text: toPlainMarkdown(generation.text.trim()),
+      text: toPlainMarkdown(generation.text.trim().slice(0, MAX_REPLY_CHARS)),
       actionType: "NONE",
       ops: null,
       warnings: [],
@@ -241,7 +225,9 @@ ${prompt}`;
     });
   }
 
-  const { ops, warnings } = normalizeAIResponse(parsed, canvas.nodes.length, prompt);
+  const { ops, warnings } = normalizeAIResponse(parsed, canvas.nodes.length, prompt, {
+    confirmBulkDelete: body?.confirmBulkDelete === true,
+  });
 
   const suggestedQuestions = (Array.isArray(parsed.suggestedQuestions) ? parsed.suggestedQuestions : [])
     .filter((q: unknown) => typeof q === "string" && q.trim())
@@ -252,7 +238,7 @@ ${prompt}`;
   // than shown to the user as raw "$rho = 0.75$".
   const text =
     typeof parsed.text === "string" && parsed.text.trim()
-      ? toPlainMarkdown(parsed.text.trim())
+      ? toPlainMarkdown(parsed.text.trim().slice(0, MAX_REPLY_CHARS))
       : ops.actionType === "NONE"
         ? "I didn't have anything to add there — could you rephrase?"
         : "I've updated your model.";
@@ -263,9 +249,9 @@ ${prompt}`;
     actionType: ops.actionType,
     ops,
     warnings,
-    modifiedNodeIds: (Array.isArray(parsed.modifiedNodeIds) ? parsed.modifiedNodeIds : []).filter(
-      (id: unknown) => typeof id === "string"
-    ),
+    modifiedNodeIds: (Array.isArray(parsed.modifiedNodeIds) ? parsed.modifiedNodeIds : [])
+      .filter((id: unknown) => typeof id === "string" && id.length <= 128)
+      .slice(0, 60),
     simulationInsights: sanitizeInsights(parsed.simulationInsights),
     suggestedQuestions,
     model: generation.model,

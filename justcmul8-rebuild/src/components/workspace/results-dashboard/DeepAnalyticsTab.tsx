@@ -2,66 +2,24 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  AreaChart,
-  Area,
-} from "recharts";
-import {
-  Scale,
-  PieChart as PieIcon,
-  BarChart3,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Zap,
-} from "lucide-react";
+import { ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, ReferenceLine } from "recharts";
+import { Scale, PieChart as PieIcon, BarChart3, CheckCircle2, AlertCircle, Users, Gauge, Timer, Activity, Lightbulb } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
+import MetricCard, { HelpTip } from "@/components/ui/MetricCard";
+import ChartCard, { EmptyState, StatRow } from "@/components/ui/ChartCard";
+import ChartTooltip from "@/components/ui/ChartTooltip";
+import { AXIS, GRID, STATE_COLORS, TONES, axisLabel, fmtRate, fmtSeconds, isNum, niceMaxFloat } from "@/components/ui/chartTheme";
 
-import { formatTimeFriendly } from "../SimResultsPanel";
-
-const STATE_COLORS = {
-  busy: "#6366F1",
-  starved: "#F59E0B",
-  blocked: "#EF4444",
-};
-
-function SleekAnalyticsTooltip({ active, payload, label }: any) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="pointer-events-none z-50 bg-[#0F172A]/95 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.4)] text-white text-[12px] space-y-1.5 min-w-[140px]">
-      <div className="font-extrabold text-gray-300 border-b border-white/10 pb-1 text-[10.5px] uppercase tracking-wider flex items-center justify-between">
-        <span>{label}</span>
-        <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6] animate-pulse" />
-      </div>
-      {payload.map((item: any, i: number) => (
-        <div key={i} className="flex items-center justify-between gap-4 text-[11.5px]">
-          <span className="flex items-center gap-1.5 text-gray-400 font-medium">
-            <span
-              className="w-2 h-2 rounded-full shadow-sm"
-              style={{ backgroundColor: item.color || item.fill }}
-            />
-            {item.name}
-          </span>
-          <span className="font-black text-white tabular-nums">
-            {typeof item.value === "number" ? item.value.toFixed(1) : item.value}s
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const PCT_ROWS = [
+  { key: "p50", short: "Typical", long: "Typical visit: half of everyone was faster" },
+  { key: "p75", short: "Slow 25%", long: "The slowest 25% took at least" },
+  { key: "p90", short: "Slow 10%", long: "The slowest 10% took at least" },
+  { key: "p95", short: "Slow 5%", long: "The slowest 5% took at least" },
+  { key: "p99", short: "Slow 1%", long: "The unluckiest 1% took at least" },
+] as const;
 
 export default function DeepAnalyticsTab({
   result,
-  simType,
 }: {
   result: SimResult;
   simType: SimTypeId;
@@ -71,274 +29,215 @@ export default function DeepAnalyticsTab({
   const cyclePercentiles = result.cycleTimePercentiles;
   const resourceStates = result.resourceStates || {};
 
-  // Build percentile chart data with friendly labels
-  const percentileChartData = [
-    { name: "Normal Day", wait: waitPercentiles?.p50 ?? 0, total: cyclePercentiles?.p50 ?? 0 },
-    { name: "Slight Rush", wait: waitPercentiles?.p75 ?? 0, total: cyclePercentiles?.p75 ?? 0 },
-    { name: "Peak Busy", wait: waitPercentiles?.p90 ?? 0, total: cyclePercentiles?.p90 ?? 0 },
-    { name: "Heavy Delay", wait: waitPercentiles?.p95 ?? 0, total: cyclePercentiles?.p95 ?? 0 },
-    { name: "Worst-Case 1%", wait: waitPercentiles?.p99 ?? 0, total: cyclePercentiles?.p99 ?? 0 },
-  ];
+  const percentileChartData = PCT_ROWS.map((r) => ({
+    name: r.short,
+    wait: waitPercentiles?.[r.key] ?? 0,
+    total: cyclePercentiles?.[r.key] ?? 0,
+  }));
+  const longLabel = (short: string | number) => PCT_ROWS.find((r) => r.short === short)?.long ?? String(short);
 
-  // Build resource state breakdown data
-  const resourceStateData = Object.entries(resourceStates).map(([nodeId, state]) => {
-    const nodeLabel = result.nodeStats[nodeId]?.label || nodeId;
-    return {
-      name: nodeLabel.length > 14 ? nodeLabel.substring(0, 14) + "…" : nodeLabel,
-      busyPct: Math.round(state.busyRatio * 100),
-      starvedPct: Math.round(state.starvedRatio * 100),
-      blockedPct: Math.round(state.blockedRatio * 100),
-    };
-  });
+  const resourceStateData = Object.entries(resourceStates).map(([nodeId, state]) => ({
+    name: result.nodeStats[nodeId]?.label || nodeId,
+    busyPct: Math.round((state.busyRatio || 0) * 100),
+    starvedPct: Math.round((state.starvedRatio || 0) * 100),
+    blockedPct: Math.round((state.blockedRatio || 0) * 100),
+  }));
+
+  // Gap between the measured and the expected (λ·W) number inside. Small gap = steady flow.
+  const gap = littlesLaw?.discrepancyPercent;
+  const gapTone = !isNum(gap) ? "neutral" : gap < 10 ? "good" : gap < 25 ? "warn" : "bad";
+  const stable = !!littlesLaw?.isStable;
 
   return (
-    <div className="space-y-6">
-      {/* ── Top Section: Flow & Balance Check Card ── */}
-      <motion.div
+    <div className="space-y-5 sm:space-y-6">
+      {/* ── Flow & balance ── */}
+      <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[24px] bg-white/95 border border-indigo-100/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] p-6 overflow-hidden relative"
+        aria-labelledby="flow-balance-title"
+        className="rounded-[24px] border border-[#ECEBF7] bg-white p-4 shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)] sm:p-6"
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Scale size={18} className="text-[#5742FF]" />
-              <h3 className="text-[16px] font-black text-gray-900 tracking-tight">
-                System Flow & Balance Check
-              </h3>
+        <div className="flex flex-col gap-3 border-b border-[#F1F0FA] pb-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F3F1FF] text-[#5742FF]"><Scale size={16} aria-hidden /></span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                <h3 id="flow-balance-title" className="text-[15px] font-extrabold tracking-tight text-[#161622]">Flow & balance check</h3>
+                <HelpTip
+                  align="start"
+                  label="About the balance check"
+                  text="Based on Little's Law: average number inside = arrival speed × time inside. When the measured number matches that expectation, the system is in a steady state. A big gap means lines are still growing."
+                />
+              </div>
+              <p className="text-[12.5px] text-slate-600">If work arrives faster than stations can finish it, lines grow without end.</p>
             </div>
-            <p className="text-[12.5px] text-gray-500">
-              The Golden Rule of Lines: If people arrive faster than stations can serve them, lines will grow forever.
-            </p>
           </div>
-
-          <div className="flex items-center gap-2">
+          {littlesLaw && (
             <span
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-extrabold flex items-center gap-1.5 ${
-                littlesLaw?.isStable
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : "bg-amber-50 text-amber-700 border border-amber-200"
-              }`}
+              className="inline-flex w-max shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-bold"
+              style={{
+                background: stable ? TONES.good.tint : TONES.warn.tint,
+                color: stable ? TONES.good.text : TONES.warn.text,
+                borderColor: stable ? "#BDEBD6" : "#FCD9A0",
+              }}
             >
-              {littlesLaw?.isStable ? (
-                <>
-                  <CheckCircle2 size={15} /> 🟢 Lines Moving Smoothly (Balanced)
-                </>
-              ) : (
-                <>
-                  <AlertCircle size={15} /> 🔴 Lines Backing Up (Unbalanced)
-                </>
+              {stable ? <CheckCircle2 size={15} aria-hidden /> : <AlertCircle size={15} aria-hidden />}
+              {stable ? "Balanced: lines are steady" : "Unbalanced: lines are growing"}
+            </span>
+          )}
+        </div>
+
+        {littlesLaw ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              size="sm"
+              icon={Users}
+              tone="brand"
+              label="Inside on average"
+              value={littlesLaw.timeWeightedWIP_L}
+              decimals={1}
+              caption="in the system at any moment"
+              help="The average number of people or items inside the whole system, measured over the run."
+            />
+            <MetricCard
+              size="sm"
+              icon={Activity}
+              tone="info"
+              label="Arrival speed"
+              value={fmtRate(littlesLaw.lambdaArrivalRate)}
+              unit="/ s"
+              caption="arrivals per second"
+              help="How fast new work came in, on average."
+              delay={0.04}
+            />
+            <MetricCard
+              size="sm"
+              icon={Timer}
+              tone="warn"
+              label="Door-to-door time"
+              value={littlesLaw.averageCycleTimeW}
+              format={fmtSeconds}
+              caption="from entry to exit"
+              help="The average total time from arriving to leaving, including all waiting and service."
+              delay={0.08}
+            />
+            <MetricCard
+              size="sm"
+              icon={Gauge}
+              tone={gapTone}
+              label="Flow stability"
+              value={gapTone === "good" ? "Steady" : gapTone === "warn" ? "Drifting" : gapTone === "bad" ? "Backing up" : "—"}
+              caption={isNum(gap) ? `Expected vs measured differ by ${gap.toFixed(0)}%` : undefined}
+              help="Compares the number inside we'd expect from arrival speed × time inside with the number actually measured. Under 10% is steady; over 25% means a backlog is forming."
+              delay={0.12}
+            />
+          </div>
+        ) : (
+          <EmptyState compact icon={Scale} title="Balance check not available" hint="This run didn't record enough arrivals and exits to compare. Try a longer run." />
+        )}
+      </motion.section>
+
+      {/* ── Percentiles + workload ── */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
+        <ChartCard
+          className="lg:col-span-7"
+          icon={BarChart3}
+          title="Wait time: typical vs unlucky"
+          description={
+            waitPercentiles
+              ? <>A typical visit waits <b className="text-[#161622]">{fmtSeconds(waitPercentiles.p50)}</b>; the unluckiest 1% wait <b className="text-[#161622]">{fmtSeconds(waitPercentiles.p99)}</b>. Read left to right: each step is a slower slice of visits.</>
+              : "How long visits take, from typical to worst case."
+          }
+          help="Averages hide bad days. Each point shows how long a slice of visits took: 'Slow 10%' means 1 in 10 visits took at least this long."
+          legend={[
+            { label: "Total time (door to door)", color: "#5742FF" },
+            { label: "Time spent waiting in line", color: "#E69F00", dashed: true },
+            ...(isNum(waitPercentiles?.mean) ? [{ label: "Average wait", color: "#475569", dashed: true }] : []),
+          ]}
+          empty={!waitPercentiles && !cyclePercentiles}
+          emptyTitle="No wait times recorded"
+          emptyHint="Nobody finished a visit in this run, so there is nothing to compare yet."
+          delay={0.08}
+          footer={
+            <StatRow
+              items={[
+                { label: "Wait variation", value: `±${fmtSeconds(waitPercentiles?.stdDev)}` },
+                { label: "Middle-half spread", value: fmtSeconds(waitPercentiles?.iqr) },
+                { label: "Longest wait", value: fmtSeconds(waitPercentiles?.max), tone: "bad" },
+              ]}
+            />
+          }
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={percentileChartData} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id="deep-total-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#5742FF" stopOpacity={0.32} />
+                  <stop offset="100%" stopColor="#5742FF" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="deep-wait-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#E69F00" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="#E69F00" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...GRID} />
+              <XAxis dataKey="name" {...AXIS} interval={0} tick={{ ...AXIS.tick, fontSize: 10.5 }} />
+              <YAxis {...AXIS} domain={[0, niceMaxFloat]} tickFormatter={fmtSeconds} width={56} label={axisLabel("Time")} />
+              <Tooltip
+                cursor={{ stroke: "#5742FF", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={<ChartTooltip valueFormatter={(v) => fmtSeconds(v)} labelFormatter={longLabel} />}
+              />
+              {isNum(waitPercentiles?.mean) && waitPercentiles!.mean > 0 && (
+                <ReferenceLine y={waitPercentiles!.mean} stroke="#475569" strokeDasharray="5 4" ifOverflow="extendDomain" label={{ value: `avg wait ${fmtSeconds(waitPercentiles!.mean)}`, position: "insideTopLeft", fill: "#475569", fontSize: 10.5, fontWeight: 700 }} />
               )}
-            </span>
-          </div>
-        </div>
+              <Area type="monotone" dataKey="total" name="Total time" stroke="#5742FF" strokeWidth={2.5} fill="url(#deep-total-grad)" activeDot={{ r: 5, fill: "#5742FF", stroke: "#fff", strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="wait" name="Waiting in line" stroke="#E69F00" strokeWidth={2} strokeDasharray="5 4" fill="url(#deep-wait-grad)" activeDot={{ r: 4, fill: "#E69F00", stroke: "#fff", strokeWidth: 2 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-[#FAF9FF] border border-indigo-50 rounded-2xl p-4 text-center">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-              Active Inside
-            </span>
-            <span className="text-[24px] font-black text-[#5742FF] tabular-nums">
-              {littlesLaw?.timeWeightedWIP_L ?? 0}
-            </span>
-            <span className="text-[11px] text-gray-500 block mt-1">people inside on average</span>
-          </div>
-
-          <div className="bg-[#FAF9FF] border border-indigo-50 rounded-2xl p-4 text-center">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-              Arrival Speed
-            </span>
-            <span className="text-[24px] font-black text-gray-900 tabular-nums">
-              {littlesLaw?.lambdaArrivalRate ?? 0}
-            </span>
-            <span className="text-[11px] text-gray-500 block mt-1">arrivals per second</span>
-          </div>
-
-          <div className="bg-[#FAF9FF] border border-indigo-50 rounded-2xl p-4 text-center">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-              Door-to-Door Time
-            </span>
-            <span className="text-[24px] font-black text-gray-900 tabular-nums">
-              {littlesLaw?.averageCycleTimeW ?? 0}s
-            </span>
-            <span className="text-[11px] text-gray-500 block mt-1">entry to exit time</span>
-          </div>
-
-          <div className="bg-[#FAF9FF] border border-indigo-50 rounded-2xl p-4 text-center">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-              Flow Stability
-            </span>
-            <span
-              className={`text-[24px] font-black tabular-nums ${
-                (littlesLaw?.discrepancyPercent ?? 0) < 10
-                  ? "text-emerald-600"
-                  : (littlesLaw?.discrepancyPercent ?? 0) < 25
-                  ? "text-amber-600"
-                  : "text-red-600"
-              }`}
-            >
-              {(littlesLaw?.discrepancyPercent ?? 0) < 15 ? "100% Balanced" : "Line Buildup"}
-            </span>
-            <span className="text-[11px] text-gray-500 block mt-1">
-              {(littlesLaw?.discrepancyPercent ?? 0) < 15 ? "No traffic jams" : "Arrivals exceed pace"}
-            </span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── Middle Section: Typical vs Worst-Case Wait & Staff Working Time ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Typical vs Worst-Case Delays (7 cols) */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-7 rounded-[24px] bg-white/95 border border-indigo-100/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] p-6"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={18} className="text-[#5742FF]" />
-              <h3 className="text-[15px] font-black text-gray-900 tracking-tight">
-                Wait Times: Normal Customer vs. Unlucky Delays
-              </h3>
-            </div>
-            <span className="text-[11px] font-bold text-gray-400">Seconds</span>
-          </div>
-          <p className="text-[12px] text-gray-500 mb-6">
-            Averages hide bad days! A normal customer only waits {((waitPercentiles?.p50 ?? 0)).toFixed(1)}s, while the unlucky 1% endure {((waitPercentiles?.p99 ?? 0)).toFixed(1)}s during sudden rush spikes.
-          </p>
-
-          <div style={{ height: 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={percentileChartData} margin={{ top: 10, right: 10, left: -5, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="spectrumAreaGrad2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.4} />
-                    <stop offset="60%" stopColor="#A855F7" stopOpacity={0.12} />
-                    <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="4 4" stroke="#F1F0FB" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }} />
-                <YAxis
-                  domain={[0, (dataMax: number) => (dataMax <= 1 ? Math.max(0.1, dataMax) : Math.ceil(dataMax * 1.1))]}
-                  tickFormatter={formatTimeFriendly}
-                  width={46}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                />
-                <Tooltip cursor={{ stroke: "#8B5CF6", strokeWidth: 1.5, strokeDasharray: "4 4" }} content={<SleekAnalyticsTooltip />} />
-                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                <Area
-                  type="natural"
-                  dataKey="total"
-                  name="Total Door-to-Door"
-                  stroke="#8B5CF6"
-                  strokeWidth={3}
-                  fill="url(#spectrumAreaGrad2)"
-                  activeDot={{ r: 6, fill: "#8B5CF6", stroke: "#FFFFFF", strokeWidth: 2.5 }}
-                />
-                <Area
-                  type="natural"
-                  dataKey="wait"
-                  name="Queue Wait"
-                  stroke="#6366F1"
-                  strokeWidth={2}
-                  fill="none"
-                  strokeDasharray="4 4"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100 text-center">
-            <div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Wait Variation</span>
-              <div className="text-[14px] font-extrabold text-gray-900">
-                ±{(waitPercentiles?.stdDev ?? 0).toFixed(1)}s
-              </div>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Typical Spread</span>
-              <div className="text-[14px] font-extrabold text-gray-900">
-                {(waitPercentiles?.iqr ?? 0).toFixed(1)}s
-              </div>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">Longest Single Wait</span>
-              <div className="text-[14px] font-extrabold text-red-600">
-                {(waitPercentiles?.max ?? 0).toFixed(1)}s
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Staff & Machine Busy %: Busy vs Idle vs Blocked (5 cols) */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="lg:col-span-5 rounded-[24px] bg-white/95 border border-indigo-100/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] p-6 flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <PieIcon size={18} className="text-[#5742FF]" />
-              <h3 className="text-[15px] font-black text-gray-900 tracking-tight">
-                Staff & Counter Workload Breakdown
-              </h3>
-            </div>
-            <p className="text-[12px] text-gray-500 mb-4">
-              Where is time spent? Actively serving people, waiting idle for the next person, or frozen because the line ahead is full.
+        <ChartCard
+          className="lg:col-span-5"
+          icon={PieIcon}
+          title="Where staff & machine time went"
+          description="Working, sitting idle waiting for work, or frozen because the next line is full."
+          legend={[
+            { label: "Working", color: STATE_COLORS.busy },
+            { label: "Idle", color: STATE_COLORS.idle },
+            { label: "Frozen (blocked)", color: STATE_COLORS.blocked },
+          ]}
+          height={null}
+          empty={resourceStateData.length === 0}
+          emptyTitle="No staff or machines in this model"
+          emptyHint="Add a Resource or Service block to see how its time was spent."
+          delay={0.12}
+          footer={
+            <p className="flex items-start gap-2 rounded-xl bg-[#F6F4FF] p-3 text-[12px] leading-relaxed text-[#2E2470]">
+              <Lightbulb size={14} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+              <span>If a station sits idle more than 40% of the time while lines are long elsewhere, the step before it is too slow and is starving it of work.</span>
             </p>
-
-            <div className="space-y-3.5 mt-2">
-              {resourceStateData.map((res, i) => (
-                <div key={i} className="p-3 rounded-xl bg-gray-50/80 border border-gray-100">
-                  <div className="flex items-center justify-between text-[12.5px] font-extrabold text-gray-900 mb-1.5">
-                    <span>{res.name}</span>
-                    <span className="text-[#5742FF]">{res.busyPct}% Working</span>
-                  </div>
-
-                  {/* Multi-segment progress bar */}
-                  <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden flex">
-                    <div
-                      style={{ width: `${res.busyPct}%`, backgroundColor: STATE_COLORS.busy }}
-                      title={`Working: ${res.busyPct}%`}
-                      className="h-full transition-all"
-                    />
-                    <div
-                      style={{ width: `${res.starvedPct}%`, backgroundColor: STATE_COLORS.starved }}
-                      title={`Idle (Waiting): ${res.starvedPct}%`}
-                      className="h-full transition-all"
-                    />
-                    <div
-                      style={{ width: `${res.blockedPct}%`, backgroundColor: STATE_COLORS.blocked }}
-                      title={`Frozen (Line Ahead Full): ${res.blockedPct}%`}
-                      className="h-full transition-all"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10.5px] font-bold text-gray-500 mt-1.5">
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-[#6366F1]" /> Working {res.busyPct}%
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Idle {res.starvedPct}%
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-[#EF4444]" /> Frozen {res.blockedPct}%
-                    </span>
-                  </div>
+          }
+        >
+          <ul className="custom-scrollbar max-h-[340px] space-y-2.5 overflow-y-auto pr-1">
+            {resourceStateData.map((res, i) => (
+              <li key={i} className="rounded-2xl border border-[#F1F0FA] bg-[#FBFAFF] p-3">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px] font-bold text-[#161622]">
+                  <span className="min-w-0 truncate" title={res.name}>{res.name}</span>
+                  <span className="shrink-0 tabular-nums text-[#4331E0]">{res.busyPct}% working</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-[11.5px] text-indigo-900 mt-4">
-            💡 <strong>Helpful Insight</strong>: If staff are sitting idle (&gt;40%) but lines are long elsewhere, the earlier station is too slow and starving them of work.
-          </div>
-        </motion.div>
+                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${res.name}: working ${res.busyPct}%, idle ${res.starvedPct}%, frozen ${res.blockedPct}%`}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${res.busyPct}%` }} transition={{ duration: 0.7, delay: 0.1 + i * 0.04 }} style={{ backgroundColor: STATE_COLORS.busy }} className="h-full" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${res.starvedPct}%` }} transition={{ duration: 0.7, delay: 0.15 + i * 0.04 }} style={{ backgroundColor: STATE_COLORS.idle }} className="h-full" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${res.blockedPct}%` }} transition={{ duration: 0.7, delay: 0.2 + i * 0.04 }} style={{ backgroundColor: STATE_COLORS.blocked }} className="h-full" />
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] font-semibold tabular-nums text-slate-600">
+                  <span>Idle {res.starvedPct}%</span>
+                  <span>Frozen {res.blockedPct}%</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
       </div>
     </div>
   );

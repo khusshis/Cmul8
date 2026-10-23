@@ -1,7 +1,40 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function middleware(request: NextRequest) {
+const STATE_CHANGING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+// Authenticated by HMAC signature, not cookies, and called by Razorpay's servers.
+const CSRF_EXEMPT = new Set(["/api/billing/webhook"]);
+
+/**
+ * CSRF: a cookie-authenticated mutation must come from this site. Browsers send
+ * Origin on every POST/PUT/PATCH/DELETE; Referer and Sec-Fetch-Site are fallbacks.
+ * A request with none of them is not from a browser, so it carries no ambient cookies.
+ */
+function isSameOrigin(request: NextRequest) {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const source = request.headers.get("origin") ?? request.headers.get("referer");
+  if (source) {
+    try {
+      return new URL(source).host === host;
+    } catch {
+      return false; // includes Origin: null (sandboxed frames, data: URLs)
+    }
+  }
+  const site = request.headers.get("sec-fetch-site");
+  return !site || site === "same-origin";
+}
+
+export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // API routes do their own getUser() check; here they only get the CSRF gate.
+  if (path.startsWith("/api/")) {
+    if (STATE_CHANGING.has(request.method) && !CSRF_EXEMPT.has(path) && !isSameOrigin(request)) {
+      return NextResponse.json({ error: "Cross-site request blocked" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -23,7 +56,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const redirectTo = (pathname: string, params: Record<string, string> = {}) => {
     const url = request.nextUrl.clone();
     url.pathname = pathname;
@@ -46,6 +78,8 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
+// Pages: everything that needs a session. /share/* stays public (it checks access
+// itself) and /auth/callback must run before a session exists.
 export const config = {
-  matcher: ["/dashboard/:path*", "/settings/:path*", "/onboarding"],
+  matcher: ["/dashboard/:path*", "/settings/:path*", "/onboarding/:path*", "/api/:path*"],
 };

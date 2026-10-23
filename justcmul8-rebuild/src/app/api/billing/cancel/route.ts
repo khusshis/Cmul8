@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { adminClient, getBilling, razorpay, syncSubscription } from "@/lib/billing/server";
+import { adminClient, getBilling, isSubscriptionId, razorpay, syncSubscription } from "@/lib/billing/server";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 
 // Trial: cancel now (no charge, back to Free). Paid: keep Pro until the period ends.
 export async function POST() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await rateLimit(`billing:${user.id}`, 3600, 30);
+  if (limited) return limited;
 
   const billing = await getBilling(supabase);
   const subId = (billing as { razorpay_subscription_id?: string } | null)?.razorpay_subscription_id;
-  if (!billing || billing.plan === "free" || !subId) {
+  if (!billing || billing.plan === "free" || !isSubscriptionId(subId)) {
     return NextResponse.json({ error: "No active subscription to cancel" }, { status: 400 });
   }
 

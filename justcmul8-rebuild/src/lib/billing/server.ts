@@ -1,11 +1,16 @@
+// SERVER ONLY: Razorpay secret + service role. (`server-only` package not installed.)
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient as createAdminClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { adminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 import { CREDIT_COSTS, PLAN_CREDITS, TRIAL_DAYS, creditErrorMessage, razorpayToPlan, type Billing, type CreditAction, type Interval } from "./plans";
 
-export const adminClient = () =>
-  createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+export { adminClient };
+
+/** Razorpay subscription ids (real `sub_XXXX` and mock `sub_mock_hex`). */
+export const isSubscriptionId = (v: unknown): v is string => typeof v === "string" && /^sub_[A-Za-z0-9_]{1,40}$/.test(v);
 
 /** Fake Razorpay for local testing. Never on in a production build (`next start`, deploys). */
 export const MOCK_RAZORPAY = process.env.RAZORPAY_MOCK === "1" && process.env.NODE_ENV !== "production";
@@ -29,6 +34,8 @@ export type RzpSubscription = {
 };
 
 export async function razorpay<T = RzpSubscription>(path: string, body?: Record<string, unknown>): Promise<T> {
+  // Only the subscription calls this app makes; an id can never steer the request elsewhere.
+  if (!/^\/subscriptions(\/sub_[A-Za-z0-9_]{1,40}(\/cancel)?)?$/.test(path)) throw new Error("Unexpected Razorpay path");
   if (MOCK_RAZORPAY) return mockRazorpay(path, body) as T;
   const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString("base64");
   const res = await fetch(`https://api.razorpay.com/v1${path}`, {
@@ -148,6 +155,13 @@ export async function withCredits(action: CreditAction, req: Request, handler: (
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return handler(req); // the handler returns its own 401
+
+  // Limits run before charging, so throttled calls cost nothing. The global key is
+  // a circuit breaker on total Gemini spend across all users and instances.
+  const limited =
+    (await rateLimit(`ai:${user.id}`, 60, 20, "You're sending requests faster than the assistant can keep up. Please wait a minute.")) ??
+    (await rateLimit("gemini:global", 60, Number(process.env.GEMINI_GLOBAL_MAX_PER_MINUTE) || 300, "The AI assistant is very busy right now. Please try again in a minute."));
+  if (limited) return limited;
 
   const cost = CREDIT_COSTS[action];
   const { error } = await supabase.rpc("spend_credits", { amount: cost, reason: action });

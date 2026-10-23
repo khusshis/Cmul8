@@ -41,7 +41,7 @@ export function WorkflowPreview({ graph, accent }: { graph: unknown; accent: str
         {[36, 184].map((x) => (
           <rect key={x} x={x} y={56} width={100} height={38} rx={12} fill="#fff" stroke={accent} strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="5 5" />
         ))}
-        <text x={160} y={128} textAnchor="middle" fontSize={11} fontWeight={600} fill="#94a3b8">Blank canvas</text>
+        <text x={160} y={128} textAnchor="middle" fontSize={11} fontWeight={600} fill="#64748b">Blank canvas</text>
       </svg>
     );
   }

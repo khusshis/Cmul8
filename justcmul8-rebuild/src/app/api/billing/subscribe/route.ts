@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { MOCK_RAZORPAY, adminClient, getBilling, planIdFor, razorpay, trialSeconds } from "@/lib/billing/server";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 
 // Creates a Razorpay subscription for Checkout. First-time subscribers get a trial:
 // the card is authorised now and the first charge happens when the trial ends.
@@ -8,8 +9,11 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Each call creates a real Razorpay subscription, so keep it tight.
+  const limited = await rateLimit(`subscribe:${user.id}`, 3600, 10);
+  if (limited) return limited;
 
-  const { interval } = await req.json().catch(() => ({}));
+  const { interval } = (await req.json().catch(() => null)) ?? {};
   if (interval !== "monthly" && interval !== "yearly") {
     return NextResponse.json({ error: "Choose monthly or yearly billing" }, { status: 400 });
   }

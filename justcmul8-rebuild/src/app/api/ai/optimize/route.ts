@@ -4,25 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { generateJSON, extractJSON, AIRouterError } from "@/lib/ai/modelRouter";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { UNTRUSTED_DATA_RULES, fenceUntrusted } from "@/lib/ai/systemPrompt";
 
 export const maxDuration = 60;
 
-// ─── Best-effort per-user rate limit (per server instance) ────────────────────
-const RATE_WINDOW_MS = 60_000;
-const RATE_MAX = 20;
-const recent = new Map<string, number[]>();
-
-function rateLimited(userId: string): number | null {
-  const now = Date.now();
-  const hits = (recent.get(userId) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (hits.length >= RATE_MAX) {
-    recent.set(userId, hits);
-    return Math.ceil((RATE_WINDOW_MS - (now - hits[0])) / 1000);
-  }
-  hits.push(now);
-  recent.set(userId, hits);
-  return null;
-}
+// Per-user and global rate limits run in withCredits, before credits are charged.
+const MAX_NODES = 300;
+const PATCH_LIMITS: Record<string, [number, number]> = {
+  capacity: [1, 10_000],
+  serviceTimeMean: [0.0001, 1e7],
+  durationMean: [0.0001, 1e7],
+  arrivalRate: [0.0001, 1e6],
+  fillRate: [0.0001, 1e7],
+};
+const clip = (v: unknown, fallback: string, max: number) =>
+  (typeof v === "string" && v.trim() ? v.trim() : fallback).slice(0, max);
 
 export interface OptimizerFix {
   nodeId: string;
@@ -43,23 +39,18 @@ async function handle(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const retryAfter = rateLimited(user.id);
-  if (retryAfter !== null) {
-    return NextResponse.json(
-      { error: `Too many optimization requests. Please wait ${retryAfter}s.` },
-      { status: 429, headers: { "Retry-After": String(retryAfter) } }
-    );
-  }
+  const body = await req.json().catch(() => null);
+  const result: SimResult = body?.result;
+  const simType: SimTypeId = body?.simType;
 
-  const body = await req.json();
-  const result: SimResult = body.result;
-  const simType: SimTypeId = body.simType;
-
-  if (!result || !simType) {
+  if (!result || typeof result !== "object" || typeof simType !== "string") {
     return NextResponse.json({ error: "Missing result or simType" }, { status: 400 });
   }
+  if (!result.nodeStats || typeof result.nodeStats !== "object" || Object.keys(result.nodeStats).length > MAX_NODES) {
+    return NextResponse.json({ error: "Invalid simulation result" }, { status: 400 });
+  }
 
-  const config = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue;
+  const config = Object.hasOwn(SIM_TYPE_REGISTRY, simType) ? SIM_TYPE_REGISTRY[simType] : SIM_TYPE_REGISTRY.human_queue;
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
 
   // Build concise telemetry summary (no heavy log blobs)
@@ -123,12 +114,14 @@ Respond with STRICT JSON matching this schema:
 Rules:
 1. Only attach a "fix" object if you can identify a specific node and valid numeric parameter to optimize.
 2. Valid paramPatch keys: 'capacity' (>=1), 'serviceTimeMean' (>0), 'durationMean' (>0), 'arrivalRate' (>0).
-3. Be direct, precise, and practical for real-world operations.`;
+3. Be direct, precise, and practical for real-world operations.
+
+${UNTRUSTED_DATA_RULES}`;
 
   try {
     const { text } = await generateJSON({
       systemInstruction,
-      prompt: `Simulation Telemetry:\n${JSON.stringify(telemetrySummary, null, 2)}`,
+      prompt: `Simulation Telemetry:\n${fenceUntrusted("simulation_telemetry", JSON.stringify(telemetrySummary, null, 2))}`,
       maxOutputTokens: 1024,
       temperature: 0.25,
     });
@@ -140,18 +133,21 @@ Rules:
 
     // Sanitize recommendations
     const validNodeIds = new Set(Object.keys(result.nodeStats || {}));
-    const sanitizedRecommendations: OptimizerRecommendation[] = parsed.recommendations.map((r: any) => {
+    const sanitizedRecommendations: OptimizerRecommendation[] = parsed.recommendations.slice(0, 3).map((r: any) => {
       let validFix: OptimizerFix | undefined = undefined;
       if (
-        r.fix &&
+        r?.fix &&
         typeof r.fix.nodeId === "string" &&
         validNodeIds.has(r.fix.nodeId) &&
+        r.fix.paramPatch &&
         typeof r.fix.paramPatch === "object"
       ) {
         const patch: Record<string, any> = {};
         for (const [k, v] of Object.entries(r.fix.paramPatch)) {
-          if (["capacity", "serviceTimeMean", "durationMean", "arrivalRate", "fillRate"].includes(k) && typeof v === "number" && !isNaN(v)) {
-            patch[k] = v;
+          const range = Object.hasOwn(PATCH_LIMITS, k) ? PATCH_LIMITS[k] : undefined;
+          if (range && typeof v === "number" && Number.isFinite(v)) {
+            const clamped = Math.min(range[1], Math.max(range[0], v));
+            patch[k] = k === "capacity" ? Math.round(clamped) : clamped;
           }
         }
         if (Object.keys(patch).length > 0) {
@@ -164,10 +160,10 @@ Rules:
       }
 
       return {
-        title: String(r.title || "Flow Optimization").slice(0, 70),
-        action: String(r.action || "Adjust node configuration to balance workflow."),
-        impact: String(r.impact || "Improves overall throughput."),
-        confidence: Math.min(100, Math.max(1, Number(r.confidence) || 90)),
+        title: clip(r?.title, "Flow Optimization", 70),
+        action: clip(r?.action, "Adjust node configuration to balance workflow.", 600),
+        impact: clip(r?.impact, "Improves overall throughput.", 200),
+        confidence: Math.min(100, Math.max(1, Number(r?.confidence) || 90)),
         fix: validFix,
       };
     });

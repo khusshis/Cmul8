@@ -1,4 +1,5 @@
 "use client";
+import { safeRedirect } from "@/lib/safeRedirect";
 import React, { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,12 +12,15 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const rawRedirect = params.get("redirect");
-  const redirect = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
+  const redirect = safeRedirect(rawRedirect);
   const supabase = createClient();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
+  // /auth/callback sends failed or cancelled Google/GitHub sign-ins back here with ?error=auth_failed.
+  const [error, setError] = React.useState(
+    params.get("error") === "auth_failed" ? "That sign-in didn't complete. Please try again, or use your email and password." : ""
+  );
   const delay = useIntroDelay();
 
   async function handleLogin(e: React.FormEvent) {

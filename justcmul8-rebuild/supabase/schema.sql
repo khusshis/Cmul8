@@ -1,5 +1,7 @@
 -- JustCmul8 Unified Database Schema
 -- Run this in your Supabase SQL Editor
+-- After running (or re-running) this file, ALSO run security.sql: it hardens the
+-- share-link policy and functions that this file defines in their original form.
 
 -- 1. Projects table
 CREATE TABLE IF NOT EXISTS public.projects (
@@ -133,7 +135,8 @@ ALTER TABLE public.project_shares ENABLE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can manage their own shares') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'project_shares'
+                   AND policyname IN ('Users can manage their own shares', 'Owners manage project shares')) THEN
         CREATE POLICY "Users can manage their own shares" ON public.project_shares
           FOR ALL USING (auth.uid() = created_by) WITH CHECK (auth.uid() = created_by);
     END IF;

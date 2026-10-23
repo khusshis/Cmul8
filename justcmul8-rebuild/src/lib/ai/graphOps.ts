@@ -25,6 +25,25 @@ export const ACTION_TYPES = [
 ] as const;
 export type AIActionType = (typeof ACTION_TYPES)[number];
 
+// ─── Trust-boundary limits for model output ───────────────────────────────────
+// Model output is untrusted: project content can carry prompt-injection text, so
+// every op is bounded no matter what the model was talked into emitting.
+/** Incremental ops (upserts + links + deletes) accepted from one reply. */
+export const MAX_OPS_PER_RESPONSE = 60;
+/** Deleting more blocks than this at once needs an explicit user confirmation. */
+export const MAX_UNCONFIRMED_DELETES = 5;
+const MAX_GRAPH_NODES = 300;
+const MAX_GRAPH_EDGES = 1000;
+const MAX_ID_CHARS = 128;
+const MAX_LABEL_CHARS = 120;
+const MAX_PARAM_STRING = 200;
+const MAX_PARAM_KEYS = 40;
+const MAX_PARAM_ARRAY = 100;
+const MAX_PARAM_ABS = 1e9;
+const ID_RE = /^[A-Za-z0-9_.:-]+$/;
+/** The user's own words asking for a multi-block delete. */
+const BULK_DELETE_PHRASE = /\b(delete|remove|clear)\b[^.!?]{0,40}\b(all|every|everything|\d+)\b/i;
+
 const DISTRIBUTIONS = ["exponential", "uniform", "normal", "deterministic", "poisson"];
 const PATIENCE_DISTRIBUTIONS = ["none", "uniform", "exponential", "deterministic"];
 const QUEUE_DISCIPLINES = ["FIFO", "LIFO", "PRIORITY"];
@@ -88,6 +107,37 @@ function str(v: unknown): string | undefined {
 
 function isNodeType(v: unknown): v is AINodeType {
   return typeof v === "string" && (NODE_TYPES as readonly string[]).includes(v);
+}
+
+/** Ids from the model: short and from a safe alphabet, or rejected. */
+function safeId(v: unknown, max = MAX_ID_CHARS): string | undefined {
+  const s = str(v);
+  return s && s.length <= max && ID_RE.test(s) ? s : undefined;
+}
+
+/** Labels: control characters flattened, length capped. */
+function safeLabel(v: unknown): string | undefined {
+  const s = str(v);
+  return s ? s.replace(/[\u0000-\u001f\u007f]+/g, " ").slice(0, MAX_LABEL_CHARS) : undefined;
+}
+
+/**
+ * Bounds a param value: numbers clamped and finite, strings and arrays capped,
+ * nesting limited, prototype keys dropped. Returns undefined to drop the value.
+ */
+function boundValue(v: unknown, depth: number): unknown {
+  if (typeof v === "number") return Number.isFinite(v) ? Math.max(-MAX_PARAM_ABS, Math.min(MAX_PARAM_ABS, v)) : undefined;
+  if (typeof v === "string") return v.slice(0, MAX_PARAM_STRING);
+  if (typeof v === "boolean" || v === null) return v;
+  if (depth >= 3 || typeof v !== "object") return undefined;
+  if (Array.isArray(v)) return v.slice(0, MAX_PARAM_ARRAY).map((x) => boundValue(x, depth + 1)).filter((x) => x !== undefined);
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(v).slice(0, MAX_PARAM_KEYS)) {
+    if (k === "__proto__" || k === "constructor" || k === "prototype" || k.length > 64) continue;
+    const b = boundValue(x, depth + 1);
+    if (b !== undefined) out[k] = b;
+  }
+  return out;
 }
 
 /** Accepts both the flat simulation shape and the ReactFlow `{ data: {...} }` shape. */
@@ -230,46 +280,48 @@ export function sanitizeParams(
 
 function toAINode(raw: any, warnings: string[]): AINode | null {
   const r = readNode(raw);
-  if (!r.id) {
-    warnings.push("Skipped a station with no id.");
+  const id = safeId(r.id);
+  if (!id) {
+    warnings.push(r.id ? "Skipped a station with an invalid id." : "Skipped a station with no id.");
     return null;
   }
-  const label = str(r.label) ?? r.id;
+  const label = safeLabel(r.label) ?? id;
   if (!isNodeType(r.nodeType)) {
     // Never guess: silently turning an unknown type into "resource" (the old
     // behaviour) builds a model the user did not ask for.
-    warnings.push(`Skipped "${label}": unknown block type "${String(r.nodeType)}".`);
+    warnings.push(`Skipped "${label}": unknown block type "${String(r.nodeType).slice(0, 40)}".`);
     return null;
   }
   return {
-    id: r.id,
+    id,
     nodeType: r.nodeType,
     label,
-    params: sanitizeParams(r.nodeType, r.params as any, label, warnings),
+    params: sanitizeParams(r.nodeType, boundValue(r.params, 0) as Record<string, unknown>, label, warnings),
     position: r.position,
   };
 }
 
 function toPatch(raw: any, warnings: string[]): AINodePatch | null {
   const r = readNode(raw);
-  if (!r.id) return null;
-  const patch: AINodePatch = { id: r.id };
+  const id = safeId(r.id);
+  if (!id) return null;
+  const patch: AINodePatch = { id };
   if (r.nodeType !== undefined) {
     if (isNodeType(r.nodeType)) patch.nodeType = r.nodeType;
-    else warnings.push(`Ignored unknown block type "${String(r.nodeType)}" for "${r.id}".`);
+    else warnings.push(`Ignored unknown block type "${String(r.nodeType).slice(0, 40)}" for "${id}".`);
   }
-  const label = str(r.label);
+  const label = safeLabel(r.label);
   if (label) patch.label = label;
-  if (r.params && typeof r.params === "object") patch.params = r.params as Record<string, any>;
+  if (r.params && typeof r.params === "object") patch.params = boundValue(r.params, 0) as Record<string, unknown>;
   if (r.position) patch.position = r.position;
   return patch;
 }
 
 function toEdge(raw: any): AIEdge | null {
-  const source = str(raw?.source);
-  const target = str(raw?.target);
+  const source = safeId(raw?.source);
+  const target = safeId(raw?.target);
   if (!source || !target) return null;
-  return { id: str(raw?.id) ?? `e-${source}-${target}`, source, target };
+  return { id: safeId(raw?.id, MAX_ID_CHARS * 2 + 3) ?? `e-${source}-${target}`, source, target };
 }
 
 function arr(v: unknown): any[] {
@@ -321,20 +373,22 @@ function wantsRebuild(prompt: string) {
 export function normalizeAIResponse(
   raw: any,
   currentNodeCount: number,
-  userPrompt: string
+  userPrompt: string,
+  /** Set only from an explicit user action (e.g. a confirm button), never from model output. */
+  opts: { confirmBulkDelete?: boolean } = {}
 ): { ops: AIGraphOps; warnings: string[] } {
   const warnings: string[] = [];
   let actionType: AIActionType = coerceActionType(raw?.actionType);
 
-  const graphNodes = arr(raw?.graph?.nodes);
-  const graphEdges = arr(raw?.graph?.edges);
+  const graphNodes = arr(raw?.graph?.nodes).slice(0, MAX_GRAPH_NODES);
+  const graphEdges = arr(raw?.graph?.edges).slice(0, MAX_GRAPH_EDGES);
 
   const ops: AIGraphOps = {
     actionType,
     upsertNodes: [],
     addEdges: [],
-    deleteNodeIds: arr(raw?.deleteNodeIds).map(str).filter(Boolean) as string[],
-    deleteEdgeIds: arr(raw?.deleteEdgeIds).map(str).filter(Boolean) as string[],
+    deleteNodeIds: [...new Set(arr(raw?.deleteNodeIds).slice(0, MAX_OPS_PER_RESPONSE + 1).map((v) => safeId(v)).filter(Boolean) as string[])],
+    deleteEdgeIds: [...new Set(arr(raw?.deleteEdgeIds).slice(0, MAX_OPS_PER_RESPONSE + 1).map((v) => safeId(v, MAX_ID_CHARS * 2 + 3)).filter(Boolean) as string[])],
   };
 
   // Guard: a REPLACE on a populated canvas when the user did not ask to rebuild
@@ -361,7 +415,8 @@ export function normalizeAIResponse(
   if (actionType === "NONE" || actionType === "AUTO_LAYOUT") return { ops, warnings };
 
   // Incremental actions: explicit op fields first, then legacy `graph` as upserts.
-  const nodeSources = [...arr(raw?.addNodes), ...arr(raw?.updateNodes), ...graphNodes];
+  // One past the cap is enough to trip the limit below without parsing a flood.
+  const nodeSources = [...arr(raw?.addNodes), ...arr(raw?.updateNodes), ...graphNodes].slice(0, MAX_OPS_PER_RESPONSE + 1);
   const seen = new Set<string>();
   for (const n of nodeSources) {
     const patch = toPatch(n, warnings);
@@ -369,7 +424,27 @@ export function normalizeAIResponse(
     seen.add(patch.id);
     ops.upsertNodes.push(patch);
   }
-  ops.addEdges = [...arr(raw?.addEdges), ...graphEdges].map(toEdge).filter(Boolean) as AIEdge[];
+  ops.addEdges = [...arr(raw?.addEdges), ...graphEdges].slice(0, MAX_OPS_PER_RESPONSE + 1).map(toEdge).filter(Boolean) as AIEdge[];
+
+  // A prompt-injected reply ("delete every block") must not be able to wipe a
+  // model in one step: large deletes need the user's own words or a confirm flag.
+  if (
+    ops.deleteNodeIds.length > MAX_UNCONFIRMED_DELETES &&
+    !opts.confirmBulkDelete &&
+    !BULK_DELETE_PHRASE.test(userPrompt)
+  ) {
+    warnings.push(
+      `The assistant tried to delete ${ops.deleteNodeIds.length} blocks at once, so nothing was deleted. Ask explicitly (e.g. "delete these ${ops.deleteNodeIds.length} blocks") to confirm.`
+    );
+    ops.deleteNodeIds = [];
+    ops.deleteEdgeIds = [];
+  }
+
+  const total = ops.upsertNodes.length + ops.addEdges.length + ops.deleteNodeIds.length + ops.deleteEdgeIds.length;
+  if (total > MAX_OPS_PER_RESPONSE) {
+    warnings.push(`That change has ${total} steps; the limit is ${MAX_OPS_PER_RESPONSE} per reply, so nothing was changed. Try smaller steps.`);
+    return { ops: { actionType: "NONE", upsertNodes: [], addEdges: [], deleteNodeIds: [], deleteEdgeIds: [] }, warnings };
+  }
 
   return { ops, warnings };
 }

@@ -1,0 +1,17 @@
+# Secrets never leave this machine (Vercel gets env vars through its own settings)
+.env*
+# Not part of the web app
+docs
+motion
+MD
+verification
+refrence_Ui Images
+tests
+test-results
+playwright.config.ts
+vitest.config.ts
+*.docx
+*.py
+output.txt
+test_gen.ts
+tsconfig.tsbuildinfo

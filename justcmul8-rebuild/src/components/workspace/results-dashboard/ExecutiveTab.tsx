@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "@/components/ui/Toast";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -9,98 +9,33 @@ import {
   Gauge,
   AlertTriangle,
   Sparkles,
-  ArrowUpRight,
-  TrendingUp,
   Clock,
-  UserMinus,
-  Factory,
-  Timer,
   Boxes,
-  Car,
   Zap,
-  Radio,
   Activity,
   Check,
   DollarSign,
   Loader2,
+  ShieldCheck,
+  Lightbulb,
 } from "lucide-react";
 import type { OptimizerFix, OptimizerRecommendation } from "@/app/api/ai/optimize/route";
-import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, BarChart, Bar, Tooltip } from "recharts";
+import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
-import { resolveKpiMetrics, type ResolvedKpi } from "@/lib/simulation/resolveKpiMetrics";
-import { useCountUp } from "@/lib/hooks/useCountUp";
+import { resolveKpiMetrics } from "@/lib/simulation/resolveKpiMetrics";
+import MetricCard from "@/components/ui/MetricCard";
+import { EmptyState } from "@/components/ui/ChartCard";
+import { TONES, downsample, fmtMoney, fmtRate, fmtSeconds, isNum, maxOf } from "@/components/ui/chartTheme";
 
-const ICON_MAP: Record<string, any> = {
-  Clock,
-  UserMinus,
-  Activity,
-  Factory,
-  Timer,
-  Boxes,
-  Car,
-  TrendingUp,
-  Zap,
-  Radio,
-};
-
-function HeroStatCard({
-  icon: Icon,
-  label,
-  value,
-  decimals = 0,
-  prefix = "",
-  suffix = "",
-  subtext,
-  color,
-  delay,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  decimals?: number;
-  prefix?: string;
-  suffix?: string;
-  subtext?: string;
-  color: string;
-  delay: number;
-}) {
-  const animated = useCountUp(value, 900, decimals);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35, ease: "easeOut" }}
-      className="rounded-[20px] bg-white border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-5 flex flex-col justify-between relative overflow-hidden group hover:border-indigo-200 hover:shadow-[0_12px_28px_-6px_rgba(87,66,255,0.12)] transition-all"
-    >
-      <div className="flex items-start justify-between">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold"
-          style={{ background: `${color}15`, color }}
-        >
-          <Icon size={20} strokeWidth={2.3} />
-        </div>
-        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-gray-400">
-          KEY NUMBER
-        </span>
-      </div>
-
-      <div className="mt-4">
-        <div className="text-[28px] font-black text-gray-900 leading-none tabular-nums tracking-tight">
-          {prefix}
-          {animated}
-          {suffix}
-        </div>
-        <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wider mt-1.5">
-          {label}
-        </div>
-        {subtext && (
-          <div className="text-[11px] font-medium text-gray-400 mt-1">{subtext}</div>
-        )}
-      </div>
-    </motion.div>
-  );
+function kpiIcon(key: string) {
+  const k = key.toLowerCase();
+  if (k.includes("wait") || k.includes("latency") || k.includes("time")) return Clock;
+  if (k.includes("util")) return Gauge;
+  if (k.includes("completed") || k.includes("served")) return CheckCircle2;
+  if (k.includes("depth") || k.includes("inventory") || k.includes("level")) return Boxes;
+  if (k.includes("dropped") || k.includes("late")) return AlertTriangle;
+  return Activity;
 }
 
 export default function ExecutiveTab({
@@ -113,15 +48,27 @@ export default function ExecutiveTab({
   onApplyFix?: (fix: OptimizerFix) => void;
 }) {
   const simConfig = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue;
+  const entity = simConfig.entityName;
   const efficiencyRate =
     result.totalArrived > 0
       ? Math.round((result.totalCompleted / result.totalArrived) * 100)
       : 100;
+  const stillInside = Math.max(0, result.totalArrived - result.totalCompleted);
+  const simSecs = Math.max(1, result.totalSimTime);
 
   const healthScore = result.healthScore ?? 85;
+  const healthTone = healthScore >= 80 ? TONES.good : healthScore >= 60 ? TONES.warn : TONES.bad;
   const aiDiagnosis = result.aiDiagnosis;
   const resolvedKpis = resolveKpiMetrics(simConfig.kpiMetrics, result);
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
+  const waitP = result.waitTimePercentiles;
+  const hasCost = !!result.costAnalysis && result.costAnalysis.totalSystemCost > 0;
+
+  // Cumulative finished count over time, for the sparkline.
+  const finishedTrend = useMemo(
+    () => downsample(result.timeline ?? [], 40).map((t) => t.completed),
+    [result.timeline]
+  );
 
   const [aiRecs, setAiRecs] = useState<OptimizerRecommendation[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -143,369 +90,305 @@ export default function ExecutiveTab({
       }
     } catch (err) {
       console.error("AI Optimizer Request Failed:", err);
+      toast.error("Couldn't reach the optimizer. Check your connection and try again.", "Optimizer unavailable");
     } finally {
       setAiLoading(false);
     }
   }
 
-  const activeRecommendations = aiRecs || aiDiagnosis?.recommendations || [];
+  const activeRecommendations: OptimizerRecommendation[] = aiRecs || aiDiagnosis?.recommendations || [];
 
   return (
-    <div className="space-y-6">
-      {/* ── Top Row: Health Scorecard & AI Summary ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* System Health Scorecard (4 cols) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35 }}
-          className="lg:col-span-4 rounded-[24px] bg-gradient-to-br from-white to-[#F9F8FF] border border-indigo-100/80 shadow-[0_8px_30px_-6px_rgba(87,66,255,0.08)] p-6 flex flex-col justify-between relative overflow-hidden"
+    <div className="space-y-5 sm:space-y-6">
+      {/* ── Top row: health + AI summary ── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          aria-label="System health score"
+          className="relative flex flex-col overflow-hidden rounded-[24px] border border-[#E7E3FF] bg-gradient-to-br from-white to-[#F4F2FF] p-5 shadow-[0_14px_36px_-24px_rgba(87,66,255,.35)] sm:p-6 lg:col-span-4"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#5742FF]">
-              System Health Score
-            </span>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                healthScore >= 80
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200/60"
-                  : healthScore >= 60
-                  ? "bg-amber-50 text-amber-600 border border-amber-200/60"
-                  : "bg-red-50 text-red-600 border border-red-200/60"
-              }`}
-            >
-              {healthScore >= 80 ? "Running Great" : healthScore >= 60 ? "Needs Attention" : "Heavy Congestion"}
+          <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl" style={{ background: healthTone.tint }} />
+          <div className="relative flex items-center justify-between gap-2">
+            <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">System health</span>
+            <span className="rounded-full px-2.5 py-0.5 text-[11.5px] font-bold" style={{ background: healthTone.tint, color: healthTone.text }}>
+              {healthScore >= 80 ? "Running great" : healthScore >= 60 ? "Needs attention" : "Heavy congestion"}
             </span>
           </div>
 
-          <div className="flex items-center justify-center my-4 relative">
-            <div className="w-36 h-36 relative">
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="relative h-40 w-40" role="img" aria-label={`Health score ${healthScore} out of 100`}>
               <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart
-                  innerRadius="75%"
-                  outerRadius="100%"
-                  data={[{ value: healthScore }]}
-                  startAngle={90}
-                  endAngle={-270}
-                >
+                <RadialBarChart innerRadius="78%" outerRadius="100%" data={[{ value: healthScore }]} startAngle={90} endAngle={-270}>
+                  <defs>
+                    <linearGradient id="exec-health-grad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor={healthTone.solid} stopOpacity={0.65} />
+                      <stop offset="100%" stopColor={healthTone.solid} />
+                    </linearGradient>
+                  </defs>
                   <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                  <RadialBar
-                    dataKey="value"
-                    fill={healthScore >= 80 ? "#10B981" : healthScore >= 60 ? "#F59E0B" : "#EF4444"}
-                    cornerRadius={10}
-                    background={{ fill: "#ECEBFA" }}
-                  />
+                  <RadialBar dataKey="value" fill="url(#exec-health-grad)" cornerRadius={12} background={{ fill: "#ECEBFA" }} isAnimationActive />
                 </RadialBarChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[32px] font-black text-gray-900 leading-none">
-                  {healthScore}
-                </span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-                  / 100
-                </span>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[38px] font-black leading-none text-[#161622] tabular-nums">{healthScore}</span>
+                <span className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">of 100</span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-indigo-50 text-[12px] text-gray-600">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Check size={13} className="text-emerald-500" /> Completion Rate
-              </span>
-              <span className="font-bold text-gray-900">{efficiencyRate}% Finished</span>
+          <dl className="relative space-y-2 border-t border-[#ECEBF7] pt-3 text-[12.5px] text-slate-600">
+            <div className="flex items-center justify-between gap-2">
+              <dt className="flex items-center gap-1.5"><Check size={14} className="text-emerald-600" aria-hidden /> Completion rate</dt>
+              <dd className="font-bold text-[#161622] tabular-nums">{efficiencyRate}% finished</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Check size={13} className="text-indigo-500" /> Flow Balance
-              </span>
-              <span className="font-bold text-gray-900">
-                {result.littlesLaw?.isStable ? "Smooth Flow" : "Traffic Jam Forming"}
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="flex items-center gap-1.5"><Check size={14} className="text-[#5742FF]" aria-hidden /> Flow balance</dt>
+              <dd className="font-bold text-[#161622]">{result.littlesLaw?.isStable ? "Smooth flow" : "Line building up"}</dd>
             </div>
-          </div>
-        </motion.div>
+          </dl>
+        </motion.section>
 
-        {/* AI Summary & Slowest Choke Point (8 cols) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, delay: 0.05 }}
-          className="lg:col-span-8 rounded-[24px] bg-white border border-gray-100 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] p-6 flex flex-col justify-between"
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+          aria-label="AI performance summary"
+          className="flex flex-col justify-between rounded-[24px] border border-[#ECEBF7] bg-white p-5 shadow-[0_14px_36px_-24px_rgba(16,24,40,.25)] sm:p-6 lg:col-span-8"
         >
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-indigo-50 text-[#5742FF] flex items-center justify-center">
-                <Sparkles size={14} />
-              </div>
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#5742FF]">
-                AI Performance Summary & Choke Points
-              </span>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F3F1FF] text-[#5742FF]"><Sparkles size={15} aria-hidden /></span>
+              <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">AI summary</span>
             </div>
-            <h2 className="text-[20px] font-extrabold text-gray-900 tracking-tight mb-2">
-              {aiDiagnosis?.title || "System Performance Overview"}
+            <h2 className="mb-2 text-[19px] font-extrabold tracking-tight text-[#161622] sm:text-[21px]">
+              {aiDiagnosis?.title || "System performance overview"}
             </h2>
-            <p className="text-[13.5px] text-gray-600 leading-relaxed">
+            <p className="text-[13.5px] leading-relaxed text-slate-600">
               {aiDiagnosis?.summary ||
-                `Simulation ran for ${result.totalSimTime.toFixed(1)}s across ${
-                  Object.keys(result.nodeStats).length
-                } stations.`}
+                `The simulation ran for ${fmtSeconds(result.totalSimTime)} across ${Object.keys(result.nodeStats).length} stations.`}
             </p>
           </div>
 
-          {/* Bottleneck Spotlight Box */}
           <div
-            className={`mt-4 p-4 rounded-xl border flex items-start gap-3.5 ${
-              bottleneck
-                ? "bg-amber-50/60 border-amber-200/80 text-amber-950"
-                : "bg-emerald-50/60 border-emerald-200/80 text-emerald-950"
-            }`}
+            className="mt-4 flex items-start gap-3.5 rounded-2xl border p-4"
+            style={{
+              background: bottleneck ? TONES.warn.tint : TONES.good.tint,
+              borderColor: bottleneck ? "#FCD9A0" : "#BDEBD6",
+            }}
           >
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                bottleneck ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
-              }`}
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white"
+              style={{ color: bottleneck ? TONES.warn.text : TONES.good.text }}
             >
-              <AlertTriangle size={17} />
-            </div>
-            <div className="text-[12.5px] leading-relaxed">
-              <span className="font-extrabold block text-[13px] mb-0.5">
-                {bottleneck ? `Slowest Choke Point (Biggest Delay): "${bottleneck.label}"` : "Even Flow Across All Stations"}
-              </span>
-              <p className="text-gray-700">
+              {bottleneck ? <AlertTriangle size={18} aria-hidden /> : <ShieldCheck size={18} aria-hidden />}
+            </span>
+            <div className="min-w-0 text-[13px] leading-relaxed">
+              <p className="font-extrabold text-[#161622]">
+                {bottleneck ? (
+                  <>Biggest delay: <span className="break-words">“{bottleneck.label}”</span></>
+                ) : (
+                  "Work is flowing evenly across all stations"
+                )}
+              </p>
+              <p className="text-slate-700">
                 {aiDiagnosis?.bottleneckCause ||
                   (bottleneck
-                    ? `Working at ${Math.round(
-                        (bottleneck.utilization ?? 0) * 100
-                      )}% capacity with ${bottleneck.avgWaitTime.toFixed(1)}s average wait time.`
-                    : "Work is moving smoothly with no big lines forming.")}
+                    ? `Busy ${Math.round((bottleneck.utilization ?? 0) * 100)}% of the time, with an average wait of ${fmtSeconds(bottleneck.avgWaitTime)}.`
+                    : "No station is building a long line.")}
               </p>
             </div>
           </div>
-        </motion.div>
+        </motion.section>
       </div>
 
-      {/* ── Middle Row: Core Headline KPIs ── */}
-      <div
-        className={`grid grid-cols-2 ${
-          result.costAnalysis && result.costAnalysis.totalSystemCost > 0
-            ? "md:grid-cols-3 lg:grid-cols-5"
-            : "md:grid-cols-4"
-        } gap-4`}
-      >
-        <HeroStatCard
+      {/* ── Headline KPIs ── */}
+      <div className={`grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 ${hasCost ? "md:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-4"}`}>
+        <MetricCard
           icon={Users}
-          label={`${simConfig.entityName}s Arrived`}
+          tone="info"
+          label={`${entity}s arrived`}
           value={result.totalArrived}
-          color="#3B82F6"
-          delay={0.1}
-          subtext={`Arrival speed: ${(result.totalArrived / Math.max(1, result.totalSimTime)).toFixed(2)} /s`}
+          caption={`${fmtRate(result.totalArrived / simSecs)} per second on average`}
+          help={`How many ${entity.toLowerCase()}s entered the system during the run.`}
+          delay={0.08}
         />
-        <HeroStatCard
+        <MetricCard
           icon={CheckCircle2}
-          label={`${simConfig.entityName}s Finished`}
+          tone="good"
+          label={`${entity}s finished`}
           value={result.totalCompleted}
-          color="#10B981"
-          delay={0.15}
-          subtext={`Output speed: ${(result.totalCompleted / Math.max(1, result.totalSimTime)).toFixed(2)} /s`}
+          caption={`${fmtRate(result.totalCompleted / simSecs)} per second leaving`}
+          trend={finishedTrend.length > 1 ? finishedTrend : undefined}
+          trendLabel="Finished count over the run"
+          help={`How many ${entity.toLowerCase()}s made it all the way through. The line shows the running total over time.`}
+          delay={0.12}
         />
-        <HeroStatCard
+        <MetricCard
           icon={Gauge}
-          label="Completion Rate"
+          tone={efficiencyRate >= 90 ? "good" : efficiencyRate >= 70 ? "warn" : "bad"}
+          label="Completion rate"
           value={efficiencyRate}
-          suffix="%"
-          color="#8B5CF6"
-          delay={0.2}
-          subtext={`${result.totalArrived - result.totalCompleted} still in system`}
+          unit="%"
+          caption={`${stillInside.toLocaleString()} still in the system at the end`}
+          progress={efficiencyRate}
+          help="Finished divided by arrived. Close to 100% means the system keeps up with demand; lower means work piles up."
+          delay={0.16}
         />
-        <HeroStatCard
+        <MetricCard
           icon={Clock}
-          label="Typical Wait Time (p50)"
-          value={result.waitTimePercentiles?.p50 ?? 0}
-          decimals={1}
-          suffix="s"
-          color="#F59E0B"
-          delay={0.25}
-          subtext={`Worst-case wait (p95): ${(result.waitTimePercentiles?.p95 ?? 0).toFixed(1)}s`}
+          tone="warn"
+          label="Typical wait"
+          value={isNum(waitP?.p50) ? waitP!.p50 : 0}
+          format={fmtSeconds}
+          caption={<>Unlucky 5% wait <b className="text-[#161622]">{fmtSeconds(waitP?.p95)}</b> or more</>}
+          range={
+            waitP && waitP.max > 0
+              ? { min: 0, max: waitP.max, value: waitP.p50, marker: waitP.p95, minLabel: "0s", markerLabel: "p95", maxLabel: `max ${fmtSeconds(waitP.max)}` }
+              : undefined
+          }
+          help="Half of everyone waited less than this (the median). The bar runs from no wait to the longest wait; the tick marks where the slowest 5% begin."
+          delay={0.2}
         />
-        {result.costAnalysis && result.costAnalysis.totalSystemCost > 0 && (
-          <HeroStatCard
+        {hasCost && (
+          <MetricCard
             icon={DollarSign}
-            label="Total System Cost"
-            value={result.costAnalysis.totalSystemCost}
-            decimals={2}
-            prefix="$"
-            color="#10B981"
-            delay={0.3}
-            subtext={`$${result.costAnalysis.costPerCompletedEntity.toFixed(2)} per finished ${simConfig.entityName.toLowerCase()}`}
+            tone="brand"
+            label="Total system cost"
+            value={result.costAnalysis!.totalSystemCost}
+            format={(n) => fmtMoney(n)}
+            caption={`${fmtMoney(result.costAnalysis!.costPerCompletedEntity)} per finished ${entity.toLowerCase()}`}
+            help="Staff and machine time, held inventory and waiting penalties added together, using the costs you set on each block."
+            delay={0.24}
           />
         )}
       </div>
 
-      {/* ── Bottom Row: Domain Operations Tiles + Top Optimizations ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Domain-Specific Operations Cards (6 cols) */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-gray-500">
-              Specific Performance Metrics: {simConfig.label}
-            </span>
-          </div>
+      {/* ── Domain KPIs + recommendations ── */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <section className="space-y-3 lg:col-span-6" aria-labelledby="exec-domain-kpis">
+          <h3 id="exec-domain-kpis" className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-slate-600">
+            {simConfig.label} metrics
+          </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {resolvedKpis.map((kpi, idx) => {
-              const iconKey = kpi.key.toLowerCase();
-              const IconComp =
-                iconKey.includes("wait") || iconKey.includes("latency") || iconKey.includes("time")
-                  ? Clock
-                  : iconKey.includes("util")
-                  ? Gauge
-                  : iconKey.includes("completed") || iconKey.includes("served")
-                  ? CheckCircle2
-                  : iconKey.includes("depth") || iconKey.includes("inventory") || iconKey.includes("level")
-                  ? Boxes
-                  : iconKey.includes("dropped") || iconKey.includes("late")
-                  ? AlertTriangle
-                  : Activity;
+          {resolvedKpis.length === 0 ? (
+            <div className="rounded-[20px] border border-[#ECEBF7] bg-white">
+              <EmptyState compact title="No extra metrics for this simulation type" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-3">
+              {resolvedKpis.map((kpi, idx) => {
+                const series = kpi.series && kpi.series.length > 1 ? kpi.series : null;
+                const seriesMax = series ? maxOf(series.map((s) => s.value), 1) : 1;
+                return (
+                  <MetricCard
+                    key={kpi.key + idx}
+                    size="sm"
+                    icon={kpiIcon(kpi.key)}
+                    tone="brand"
+                    label={kpi.label}
+                    value={kpi.displayValue}
+                    caption={kpi.series ? `Across ${kpi.series.length} station${kpi.series.length === 1 ? "" : "s"}${kpi.unit ? ` · ${kpi.unit}` : ""}` : kpi.unit || undefined}
+                    delay={0.05 + idx * 0.03}
+                  >
+                    {series && (
+                      <ul className="space-y-1.5 border-t border-[#F1F0FA] pt-2.5" aria-label={`${kpi.label} by station`}>
+                        {[...series].sort((a, b) => b.value - a.value).slice(0, 3).map((item, sIdx) => (
+                          <li key={sIdx} className="flex items-center gap-2 text-[11px]">
+                            <span className="w-[72px] shrink-0 truncate font-semibold text-slate-600" title={item.name}>{item.name}</span>
+                            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                              <span className="block h-full rounded-full bg-gradient-to-r from-[#8b7bff] to-[#5742FF]" style={{ width: `${Math.min(100, (item.value / seriesMax) * 100)}%` }} />
+                            </span>
+                            <span className="shrink-0 font-bold tabular-nums text-[#161622]">
+                              {isNum(item.value) ? item.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"}
+                              {kpi.unit === "%" ? "%" : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </MetricCard>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-              return (
-                <div
-                  key={idx}
-                  className="rounded-2xl bg-white border border-gray-100 p-4 flex flex-col justify-between shadow-sm hover:border-indigo-200 hover:shadow-xs transition-all min-h-[140px]"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-[#5742FF] flex items-center justify-center">
-                      <IconComp size={16} />
-                    </div>
-                    <span className="text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-50/80 text-indigo-700 border border-indigo-100">
-                      {kpi.chartType.replace("_", " ")}
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className="text-[20px] font-black text-gray-900 leading-tight">
-                      {kpi.displayValue}
-                    </div>
-                    <div className="text-[11.5px] font-bold text-gray-700 mt-1 line-clamp-1">
-                      {kpi.label}
-                    </div>
-                    <div className="text-[10px] font-medium text-gray-400 mt-0.5">
-                      {kpi.series ? `${kpi.series.length} station${kpi.series.length > 1 ? "s" : ""}` : kpi.unit}
-                    </div>
-                  </div>
-
-                  {/* Micro Series Mini-Bar Breakdown for bar/pie charts when node data is available */}
-                  {kpi.series && kpi.series.length > 1 && (
-                    <div className="mt-2.5 pt-2 border-t border-gray-100">
-                      <div className="space-y-1 max-h-[46px] overflow-y-auto custom-scrollbar">
-                        {kpi.series.slice(0, 3).map((item, sIdx) => {
-                          const maxVal = Math.max(1, ...kpi.series!.map((s) => s.value));
-                          const pct = Math.min(100, Math.round((item.value / maxVal) * 100));
-                          return (
-                            <div key={sIdx} className="flex items-center justify-between gap-2 text-[9.5px]">
-                              <span className="text-gray-500 font-semibold truncate max-w-[80px]">{item.name}</span>
-                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-[#5742FF] rounded-full" style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="text-gray-700 font-bold tabular-nums shrink-0">
-                                {item.value}{kpi.unit === "%" ? "%" : ""}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Top Actionable Optimizations (6 cols) */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#5742FF]">
-              {aiRecs ? "Gemini Prescriptive Recommendations" : "Smart Recommendations to Speed Up Flow"}
-            </span>
-
+        <section className="space-y-3 lg:col-span-6" aria-labelledby="exec-recs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 id="exec-recs" className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-[#4331E0]">
+              {aiRecs ? "AI recommendations" : "Ways to speed things up"}
+            </h3>
             <button
               onClick={runAiOptimizer}
               disabled={aiLoading}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-[#5742FF] to-indigo-600 border border-[#8d80ff] hover:from-[#4531E5] hover:to-indigo-700 text-white text-[11px] font-black shadow-xs transition-all disabled:opacity-60"
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {aiLoading ? (
-                <>
-                  <Loader2 size={12} className="animate-spin" />
-                  <span>Analyzing Chokepoints...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={12} />
-                  <span>✨ Optimize System with AI</span>
-                </>
-              )}
+              {aiLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Sparkles size={13} aria-hidden />}
+              {aiLoading ? "Analyzing…" : "Optimize with AI"}
             </button>
           </div>
 
-          <div className="space-y-2.5">
-            {activeRecommendations.map((rec: any, i: number) => (
-              <div
-                key={i}
-                className="rounded-2xl bg-white border border-gray-100 p-4 flex items-start gap-3.5 shadow-sm hover:border-indigo-200 transition-all group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-[#F5F3FF] text-[#5742FF] font-black text-[12px] flex items-center justify-center shrink-0 mt-0.5">
-                  {i + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[13px] font-extrabold text-gray-900 group-hover:text-[#5742FF] transition-colors">
-                      {rec.title}
-                    </h4>
-                    <span className="text-[10.5px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      {rec.confidence}% recommended
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-gray-600 mt-1">{rec.action}</p>
-                  <p className="text-[11px] font-medium text-indigo-600 mt-1">
-                    Expected Benefit: {rec.impact}
-                  </p>
-
-                  {/* One-Click Apply Fix Action */}
-                  {(rec as OptimizerRecommendation).fix && onApplyFix && (
-                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-gray-500 truncate max-w-[220px]">
-                        Fix: {(rec as OptimizerRecommendation).fix!.description}
-                      </span>
-                      <button
-                        onClick={() => {
-                          onApplyFix((rec as OptimizerRecommendation).fix!);
-                          setAppliedFixIds((prev: Set<number>) => new Set([...prev, i]));
-                        }}
-                        disabled={appliedFixIds.has(i)}
-                        className={`px-3 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 transition-all ${
-                          appliedFixIds.has(i)
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-[#5742FF] hover:bg-[#4531E5] text-white shadow-xs"
-                        }`}
-                      >
-                        {appliedFixIds.has(i) ? (
-                          <>
-                            <Check size={12} strokeWidth={3} /> Applied
-                          </>
-                        ) : (
-                          <>
-                            <Zap size={12} fill="currentColor" /> Apply Fix
-                          </>
+          {activeRecommendations.length === 0 ? (
+            <div className="rounded-[20px] border border-[#ECEBF7] bg-white">
+              <EmptyState
+                compact
+                icon={Lightbulb}
+                title="No suggestions yet"
+                hint="Click “Optimize with AI” to get specific changes for this layout."
+              />
+            </div>
+          ) : (
+            <ol className="space-y-2.5">
+              {activeRecommendations.map((rec, i) => {
+                const fix = rec.fix;
+                const applied = appliedFixIds.has(i);
+                return (
+                  <motion.li
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    className="group flex items-start gap-3.5 rounded-[18px] border border-[#ECEBF7] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[border-color,box-shadow] hover:border-[#D9D3FB] hover:shadow-[0_12px_28px_-20px_rgba(87,66,255,.45)]"
+                  >
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F3F1FF] text-[12px] font-black text-[#5742FF]">{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                        <h4 className="text-[13.5px] font-extrabold text-[#161622] group-hover:text-[#4331E0]">{rec.title}</h4>
+                        {isNum(rec.confidence) && (
+                          <span className="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold" style={{ background: TONES.good.tint, color: TONES.good.text }} title="How confident the model is in this change">
+                            {Math.round(rec.confidence)}% confident
+                          </span>
                         )}
-                      </button>
+                      </div>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">{rec.action}</p>
+                      {rec.impact && <p className="mt-1 text-[12px] font-semibold text-[#4331E0]">Expected benefit: {rec.impact}</p>}
+
+                      {fix && onApplyFix && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#F1F0FA] pt-2.5">
+                          <span className="min-w-0 truncate text-[11.5px] font-semibold text-slate-600" title={fix.description}>Fix: {fix.description}</span>
+                          <button
+                            onClick={() => {
+                              onApplyFix(fix);
+                              setAppliedFixIds((prev) => new Set([...prev, i]));
+                            }}
+                            disabled={applied}
+                            className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
+                              applied ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-[#5742FF] text-white hover:bg-[#4531E5]"
+                            }`}
+                          >
+                            {applied ? <><Check size={13} strokeWidth={3} aria-hidden /> Applied</> : <><Zap size={13} fill="currentColor" aria-hidden /> Apply fix</>}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                  </motion.li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
       </div>
     </div>
   );

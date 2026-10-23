@@ -701,7 +701,7 @@ This type is ideal for: microservices, IoT sensors, pub/sub systems, CDN routing
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
 export function getSimTypeConfig(id: SimTypeId): SimTypeConfig {
-  return SIM_TYPE_REGISTRY[id];
+  return SIM_TYPE_REGISTRY[id] || SIM_TYPE_REGISTRY.human_queue;
 }
 
 export function getAllSimTypes(): SimTypeConfig[] {
@@ -710,6 +710,6 @@ export function getAllSimTypes(): SimTypeConfig[] {
 
 /** Returns the node sprite path for a given sim type + node type */
 export function getNodeSprite(simType: SimTypeId, nodeType: string): string {
-  const cfg = SIM_TYPE_REGISTRY[simType];
+  const cfg = getSimTypeConfig(simType);
   return cfg.nodeSprites[nodeType] || cfg.entitySprites[0];
 }

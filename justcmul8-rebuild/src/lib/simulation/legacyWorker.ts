@@ -145,11 +145,15 @@ function buildNodeStats(t:NStats,now:number):NodeStats{
   };
 }
 
+const MAX_RESULT_LOGS=5000;
+const MAX_TIMELINE_POINTS=2000;
+
 // ─── Graph Simulator ──────────────────────────────────────────────────────────
 class GraphSimulator {
   private eq = new EventQueue();
   private now = 0;
   private logs: SimLog[] = [];
+  private allLogs: SimLog[] = []; // ponytail: capped at MAX_RESULT_LOGS, later events are dropped from the final result
   private timeline: Array<{simTime:number;completed:number;depth:Record<string,number>}> = [];
   private totalArrived = 0;
   private totalCompleted = 0;
@@ -497,8 +501,20 @@ class GraphSimulator {
     return this.now>=this.params.durationSeconds;
   }
 
+  /** Logs since the last call (for ticks); a capped copy is kept for the final result. */
   drainLogs():SimLog[]{
-    const l=this.logs; this.logs=[]; return l;
+    const l=this.logs; this.logs=[];
+    const room=MAX_RESULT_LOGS-this.allLogs.length;
+    if(room>0) this.allLogs.push(...l.slice(0,room));
+    return l;
+  }
+
+  /** One throughput / WIP sample per tick for the timeline charts. */
+  sampleTimeline(){
+    if(this.timeline.length>=MAX_TIMELINE_POINTS) return;
+    const depth:Record<string,number>={};
+    for(const [id,t] of this.stats) if(t.nodeType==="queue"||t.nodeType==="resource") depth[id]=t.depth;
+    this.timeline.push({simTime:this.now,completed:this.totalCompleted,depth});
   }
 
   buildResult():SimResult{
@@ -515,7 +531,7 @@ class GraphSimulator {
       bottleneckLabel:bt?.label??"",
       nodeStats:this.buildNodeStatsSnapshot(),
       timeline:this.timeline,
-      logs:this.drainLogs(),
+      logs:(this.drainLogs(),this.allLogs),
     };
   }
 
@@ -538,6 +554,7 @@ function runChunk(){
   const tickEnd=((tickNum+1)*params.tickIntervalSeconds);
   const done=sim.runUntil(Math.min(tickEnd,params.durationSeconds));
   const logs=sim.drainLogs();
+  sim.sampleTimeline();
   const snap=sim.buildNodeStatsSnapshot();
 
   const tick:SimTick={

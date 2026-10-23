@@ -1,6 +1,10 @@
 import type { SimResult, SimTypeId } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
 
+/** Project names, block labels and AI text are user/collaborator-controlled: never raw HTML. */
+const esc = (v: unknown) =>
+  String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
 export function generateExecutiveHtmlReport(result: SimResult, projectName: string): string {
   const simConfig = SIM_TYPE_REGISTRY[result.simType] || SIM_TYPE_REGISTRY.human_queue;
   const healthScore = result.healthScore ?? 85;
@@ -13,7 +17,7 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Executive Simulation Report - ${projectName}</title>
+  <title>Executive Simulation Report - ${esc(projectName)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fff; color: #111827; padding: 40px; margin: 0; }
@@ -41,7 +45,7 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
 <body>
   <div class="header">
     <div>
-      <h1 class="title">${projectName}</h1>
+      <h1 class="title">${esc(projectName)}</h1>
       <div class="meta">Domain: ${simConfig.label} • Simulation Time: ${result.totalSimTime.toFixed(1)}s • Health Score: ${healthScore}/100</div>
     </div>
     <button class="no-print" onclick="window.print()" style="background:#5742FF;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;">
@@ -53,9 +57,9 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
     <div style="font-size:12px;font-weight:800;color:#5742FF;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
       Executive Diagnosis
     </div>
-    <div style="font-size:18px;font-weight:800;margin-bottom:8px;">${aiDiag?.title || "System Performance Overview"}</div>
-    <div style="font-size:14px;color:#4B5563;line-height:1.5;">${aiDiag?.summary || ""}</div>
-    ${bottleneck ? `<div style="margin-top:12px;padding:10px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;font-size:13px;color:#92400E;"><strong>Identified Bottleneck:</strong> ${bottleneck.label} (${Math.round((bottleneck.utilization || 0) * 100)}% utilized, ${bottleneck.avgWaitTime.toFixed(1)}s avg wait)</div>` : ""}
+    <div style="font-size:18px;font-weight:800;margin-bottom:8px;">${esc(aiDiag?.title || "System Performance Overview")}</div>
+    <div style="font-size:14px;color:#4B5563;line-height:1.5;">${esc(aiDiag?.summary)}</div>
+    ${bottleneck ? `<div style="margin-top:12px;padding:10px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;font-size:13px;color:#92400E;"><strong>Identified Bottleneck:</strong> ${esc(bottleneck.label)} (${Math.round((bottleneck.utilization || 0) * 100)}% utilized, ${bottleneck.avgWaitTime.toFixed(1)}s avg wait)</div>` : ""}
   </div>
 
   <div class="grid">
@@ -112,8 +116,8 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
     <tbody>
       ${Object.entries(result.nodeStats).map(([id, s]) => `
         <tr>
-          <td><strong>${s.label}</strong> ${result.bottleneckNodeId === id ? '<span class="badge badge-error">BOTTLENECK</span>' : ''}</td>
-          <td>${s.nodeType}</td>
+          <td><strong>${esc(s.label)}</strong> ${result.bottleneckNodeId === id ? '<span class="badge badge-error">BOTTLENECK</span>' : ''}</td>
+          <td>${esc(s.nodeType)}</td>
           <td>${s.entitiesIn}</td>
           <td>${s.entitiesOut}</td>
           <td>${s.utilization !== undefined ? Math.round(s.utilization * 100) + '%' : '—'}</td>
@@ -127,8 +131,8 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
   <div style="margin-top:8px;">
     ${aiDiag?.recommendations?.map((r, i) => `
       <div style="padding:12px;border:1px solid #E5E7EB;border-radius:12px;margin-bottom:8px;">
-        <div style="font-weight:700;font-size:14px;color:#111827;">${i + 1}. ${r.title}</div>
-        <div style="font-size:13px;color:#4B5563;margin-top:2px;">${r.action} — <em>Impact: ${r.impact}</em></div>
+        <div style="font-weight:700;font-size:14px;color:#111827;">${i + 1}. ${esc(r.title)}</div>
+        <div style="font-size:13px;color:#4B5563;margin-top:2px;">${esc(r.action)} — <em>Impact: ${esc(r.impact)}</em></div>
       </div>
     `).join('') || '<p style="color:#6B7280;">No optimization recommendations generated.</p>'}
   </div>

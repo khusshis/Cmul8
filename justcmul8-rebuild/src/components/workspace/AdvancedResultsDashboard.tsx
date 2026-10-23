@@ -1,25 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  LayoutGrid,
-  TrendingUp,
-  Table2,
-  ScrollText,
-  Download,
-  Scale,
-  Flame,
-  User,
-  FileText,
-  Sparkles,
-  DollarSign,
-  Loader2,
-} from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { X, Download, FileText, Loader2, Printer, Info } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { toast } from "@/components/ui/Toast";
+import TabStrip, { tabPanelProps } from "@/components/ui/TabStrip";
+import { TONES } from "@/components/ui/chartTheme";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import { generateExecutiveHtmlReport } from "@/lib/simulation/reportGenerator";
 import { generateExecutivePdfReport } from "@/lib/simulation/pdfReportGenerator";
@@ -44,15 +32,16 @@ export type DashboardTab =
   | "logs"
   | "cost";
 
-const TABS: { id: DashboardTab; label: string }[] = [
-  { id: "executive", label: "Executive Summary" },
-  { id: "analytics", label: "Flow & Balance Check" },
-  { id: "flow", label: "Traffic Heatmap" },
-  { id: "timeline", label: "Line Buildup Timeline" },
-  { id: "blocks", label: "Station Counters" },
-  { id: "entities", label: "Person / Item Journey" },
-  { id: "logs", label: "Live Activity Log" },
-  { id: "cost", label: "Cost & ROI" },
+/** Each tab carries one plain-English line: what it shows and how to read it. */
+const TABS: { id: DashboardTab; label: string; intro: string }[] = [
+  { id: "executive", label: "Executive Summary", intro: "The headline numbers and the biggest delay. Green means healthy, amber needs a look, red is congested." },
+  { id: "analytics", label: "Flow & Balance Check", intro: "Checks that work leaves as fast as it arrives, and shows how waits stretch from a normal visit to the unlucky worst case." },
+  { id: "flow", label: "Traffic Heatmap", intro: "One card per station, scored 0–100 for congestion. The higher the score, the more that station is holding things up." },
+  { id: "timeline", label: "Line Buildup Timeline", intro: "How busy the system was over time. A line that keeps climbing means arrivals are outpacing service." },
+  { id: "blocks", label: "Station Counters", intro: "Every station in a sortable table. Click a column to sort, or a row's Details button for its full numbers." },
+  { id: "entities", label: "Person / Item Journey", intro: "Follow a single person or item through each station to see exactly where its time went." },
+  { id: "logs", label: "Live Activity Log", intro: "Every event in time order. Filter by type or search by station or ID, then copy or export." },
+  { id: "cost", label: "Cost & ROI", intro: "What the run cost, split into staff/machine time, held inventory and waiting penalties per station." },
 ];
 
 export default function AdvancedResultsDashboard({
@@ -82,7 +71,23 @@ export default function AdvancedResultsDashboard({
     return enrichSimResult(rawResult);
   }, [rawResult]);
 
+  // Escape closes the suite (unless a nested dialog, e.g. station details, handled it first).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, textarea, select")) return;
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!result) return null;
+
+  const health = result.healthScore ?? 85;
+  const healthTone = health >= 80 ? TONES.good : health >= 60 ? TONES.warn : TONES.bad;
+  const activeTab = TABS.find((t) => t.id === tab)!;
 
   function handlePrintReport() {
     if (!result) return;
@@ -108,160 +113,132 @@ export default function AdvancedResultsDashboard({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("PDF Generation Error:", err);
+      toast.error("Couldn't build the PDF. Try the HTML report instead.", "PDF failed");
     } finally {
       setPdfGenerating(false);
     }
   }
 
+  async function handleCsvExport() {
+    // CSV export is Pro-only: show the server's reason instead of navigating to an error body.
+    const res = await fetch(`/api/projects/${projectId}/export?format=csv`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error || "Export failed", res.status === 402 ? "Pro feature" : "Export failed");
+      return;
+    }
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "results.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const ghostBtn =
+    "flex h-9 items-center gap-1.5 rounded-xl border border-[#ECEBF7] bg-white px-2.5 sm:px-3.5 text-[12.5px] font-bold text-slate-700 transition-colors hover:border-[#D9D3FB] hover:bg-[#F8F7FF] hover:text-[#5742FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50";
+
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
-        >
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full h-full max-w-[1440px] bg-[#F8F7FF] rounded-[28px] shadow-[0_25px_70px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col border border-indigo-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#161622]/45 p-0 backdrop-blur-sm sm:p-6"
           >
-            {/* ── Top Header Bar ── */}
-            <div className="flex-shrink-0 flex items-center justify-between px-6 h-[64px] bg-white border-b border-gray-100 gap-4">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="text-[17px] font-black text-gray-900 tracking-tight leading-tight">
-                    Simulation Analytics Suite
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="results-suite-title"
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="flex h-full w-full max-w-[1440px] flex-col overflow-hidden border border-[#E7E3FF] bg-[#F8F7FF] shadow-[0_25px_70px_rgba(22,22,34,0.3)] sm:rounded-[28px]"
+            >
+              {/* ── Header ── */}
+              <div className="flex h-[64px] shrink-0 items-center justify-between gap-3 border-b border-[#ECEBF7] bg-white px-4 sm:px-6">
+                <div className="min-w-0">
+                  <h1 id="results-suite-title" className="truncate text-[16px] font-black leading-tight tracking-tight text-[#161622] sm:text-[17px]">
+                    Simulation Analytics
                   </h1>
-                  <p className="text-[11.5px] font-semibold text-gray-400 leading-tight">
-                    {simConfig.label} • {result.totalSimTime.toFixed(1)}s Sim Clock • Health Score:{" "}
-                    <span className="text-[#5742FF] font-extrabold">{result.healthScore ?? 85}/100</span>
+                  <p className="flex min-w-0 items-center gap-1.5 truncate text-[12px] font-semibold leading-tight text-slate-600">
+                    <span className="truncate">{simConfig.label}</span>
+                    <span aria-hidden className="text-slate-300">•</span>
+                    <span className="hidden tabular-nums sm:inline">{result.totalSimTime.toFixed(1)}s simulated</span>
+                    <span aria-hidden className="hidden text-slate-300 sm:inline">•</span>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-extrabold" style={{ background: healthTone.tint, color: healthTone.text }}>
+                      Health {health}/100
+                    </span>
                   </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={pdfGenerating}
+                    aria-label="Download PDF report"
+                    title="Download the executive PDF report, including a snapshot of your canvas"
+                    className="flex h-9 items-center gap-1.5 rounded-xl border border-[#8d80ff] bg-gradient-to-b from-[#6a57ff] to-[#5742FF] px-2.5 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2 disabled:opacity-60 sm:px-3.5"
+                  >
+                    {pdfGenerating ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                    <span className="hidden sm:inline">{pdfGenerating ? "Building PDF…" : "Download PDF"}</span>
+                  </button>
+                  <button onClick={handlePrintReport} aria-label="Open printable HTML report" title="Open a printable HTML report" className={ghostBtn}>
+                    <Printer size={14} />
+                    <span className="hidden md:inline">HTML Report</span>
+                  </button>
+                  <button onClick={handleCsvExport} aria-label="Export results as CSV" title="Export results as CSV (Pro)" className={ghostBtn}>
+                    <Download size={14} />
+                    <span className="hidden md:inline">CSV</span>
+                  </button>
+                  <button
+                    onClick={onClose}
+                    aria-label="Close analytics"
+                    title="Close (Esc)"
+                    className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-[#ECEBF7] text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+                  >
+                    <X size={17} strokeWidth={2.5} />
+                  </button>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleDownloadPdf}
-                  disabled={pdfGenerating}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-[12px] font-black text-[#5742FF] shadow-xs transition-all disabled:opacity-60"
-                  title="Download complete executive PDF report with canvas snapshot"
-                >
-                  {pdfGenerating ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span className="hidden sm:inline">Generating PDF...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileText size={14} />
-                      <span className="hidden sm:inline">Download PDF</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handlePrintReport}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-50 hover:text-[#5742FF] shadow-xs transition-all"
-                  title="View formatted HTML report"
-                >
-                  <span className="hidden sm:inline">HTML Report</span>
-                </button>
-
-                <button
-                  onClick={async () => {
-                    // CSV export is Pro-only: show the server's reason instead of navigating to an error body.
-                    const res = await fetch(`/api/projects/${projectId}/export?format=csv`);
-                    if (!res.ok) {
-                      const err = await res.json().catch(() => ({}));
-                      toast.error(err.error || "Export failed", res.status === 402 ? "Pro feature" : "Export failed");
-                      return;
-                    }
-                    const url = URL.createObjectURL(await res.blob());
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "results.csv";
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 bg-white text-[12px] font-bold text-gray-700 hover:bg-gray-50 shadow-xs transition-all"
-                >
-                  <Download size={14} />
-                  <span className="hidden sm:inline">CSV Export</span>
-                </button>
-
-                <button
-                  onClick={onClose}
-                  className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-all ml-1"
-                >
-                  <X size={17} strokeWidth={2.5} />
-                </button>
+              {/* ── Tabs + plain-English intro ── */}
+              <div className="shrink-0 border-b border-[#ECEBF7] bg-white/95 px-4 pt-2 pb-2.5 sm:px-6">
+                <TabStrip tabs={TABS} value={tab} onChange={setTab} layoutId="results-suite-tabs" label="Analytics sections" className="-mx-1 px-1 pb-1" />
+                <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-slate-600">
+                  <Info size={13} className="mt-0.5 shrink-0 text-[#5742FF]" aria-hidden />
+                  <span>{activeTab.intro}</span>
+                </p>
               </div>
-            </div>
 
-            {/* ── Dedicated Navigation Tab Strip (Spacious, No Icon Clutter) ── */}
-            <div className="flex items-center gap-1.5 px-6 py-2 bg-white/95 border-b border-gray-100/90 overflow-x-auto scrollbar-none shrink-0 select-none">
-              {TABS.map((t) => {
-                const isActive = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTab(t.id)}
-                    className={`relative px-4 py-1.5 rounded-full text-[12px] font-bold flex items-center transition-all whitespace-nowrap ${
-                      isActive ? "text-white" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-                    }`}
+              {/* ── Content ── */}
+              <div className="custom-scrollbar flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6" {...tabPanelProps("results-suite-tabs", tab)}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tab}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-dashboard-tab"
-                        className="absolute inset-0 rounded-full bg-[#5742FF] shadow-sm"
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                      />
-                    )}
-                    <span className="relative z-10">{t.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* ── Main Content Area ── */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={tab}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {tab === "executive" && (
-                    <ExecutiveTab result={result} simType={simType} onApplyFix={onApplyFix} />
-                  )}
-                  {tab === "analytics" && (
-                    <DeepAnalyticsTab result={result} simType={simType} />
-                  )}
-                  {tab === "flow" && (
-                    <FlowHeatmapTab result={result} simType={simType} />
-                  )}
-                  {tab === "timeline" && <TimelineTab result={result} />}
-                  {tab === "blocks" && <BlocksTab result={result} />}
-                  {tab === "entities" && (
-                    <EntityTracerTab result={result} simType={simType} />
-                  )}
-                  {tab === "logs" && <LogsTab result={result} />}
-                  {tab === "cost" && (
-                    <CostRoiTab result={result} simType={simType} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+                    {tab === "executive" && <ExecutiveTab result={result} simType={simType} onApplyFix={onApplyFix} />}
+                    {tab === "analytics" && <DeepAnalyticsTab result={result} simType={simType} />}
+                    {tab === "flow" && <FlowHeatmapTab result={result} simType={simType} />}
+                    {tab === "timeline" && <TimelineTab result={result} />}
+                    {tab === "blocks" && <BlocksTab result={result} />}
+                    {tab === "entities" && <EntityTracerTab result={result} simType={simType} />}
+                    {tab === "logs" && <LogsTab result={result} />}
+                    {tab === "cost" && <CostRoiTab result={result} simType={simType} />}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { safeRedirect } from "@/lib/safeRedirect";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
@@ -20,7 +21,7 @@ export default function SignupPage() {
   React.useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const r = q.get("redirect");
-    if (r && r.startsWith("/") && !r.startsWith("//")) setRedirect(r);
+    if (r && safeRedirect(r, "") === r) setRedirect(r);
     // Plan picked on the pricing page: pre-select it in onboarding.
     else if (q.get("plan") === "pro") setRedirect(`/onboarding?plan=pro&billing=${q.get("billing") === "yearly" ? "yearly" : "monthly"}`);
   }, []);

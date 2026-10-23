@@ -71,5 +71,7 @@ export function sampleDistribution(
   if (type === "uniform" && arg3 !== undefined && arg4 !== undefined) {
     return uniform(arg3, arg4);
   }
-  return sample(type, mean, arg3);
+  // A spread of 0/undefined means "use the default" (mean * 0.3), matching the Python engine;
+  // callers wanting no variance use the deterministic distribution.
+  return sample(type, mean, arg3 || undefined);
 }

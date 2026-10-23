@@ -2,28 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
 import { requirePaid } from "@/lib/billing/server";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^[^\s@<>",;]{1,64}@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES = ["viewer", "editor"];
+const MAX_MEMBERS = 50;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 // Every member mutation is owner-only; RLS enforces it too, this just gives a clean 403.
 async function requireOwner(supabase: Supabase, id: string) {
+  if (!UUID_RE.test(id)) return { error: NextResponse.json({ error: "Project not found" }, { status: 404 }) };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  const limited = await rateLimit(`members:${user.id}`, 60, 30);
+  if (limited) return { error: limited };
   const { data: role } = await supabase.rpc("project_role", { pid: id });
   if (role !== "owner") return { error: NextResponse.json({ error: "Only the owner can manage access" }, { status: 403 }) };
   return { user };
 }
 
 async function readBody(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
+  const body = (await req.json().catch(() => null)) ?? {};
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   return {
-    email: typeof body.email === "string" ? body.email.trim().toLowerCase() : "",
-    role: body.role as string,
+    email: email.length <= 254 && EMAIL_RE.test(email) ? email : "",
+    role: typeof body.role === "string" ? body.role : "",
   };
 }
+
+/** Header-safe single line for the email subject. */
+const oneLine = (s: string) => s.replace(/[\r\n\t]+/g, " ").slice(0, 120);
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
@@ -46,8 +56,8 @@ async function sendInviteEmail(opts: { to: string; inviter: string; projectName:
     await mailer.sendMail({
       from: `"JustCmul8" <${process.env.GMAIL_USER}>`,
       to: opts.to,
-      subject: `${opts.inviter} shared "${opts.projectName}" with you`,
-      text: `${opts.inviter} gave you ${opts.role} access to "${opts.projectName}" on JustCmul8.\nOpen it: ${opts.url}\nSign in (or create an account) with ${opts.to} to get access.`,
+      subject: `${oneLine(opts.inviter)} shared "${oneLine(opts.projectName)}" with you`,
+      text: `${oneLine(opts.inviter)} gave you ${opts.role} access to "${oneLine(opts.projectName)}" on JustCmul8.\nOpen it: ${opts.url}\nSign in (or create an account) with ${opts.to} to get access.`,
       html: `
         <div style="font-family:system-ui,sans-serif;max-width:480px;margin:auto;padding:24px;color:#111827">
           <h2 style="margin:0 0 12px">${inviter} invited you to a simulation</h2>
@@ -60,7 +70,8 @@ async function sendInviteEmail(opts: { to: string; inviter: string; projectName:
     });
     return { sent: true };
   } catch (err) {
-    return { sent: false, error: err instanceof Error ? err.message : "Email failed" };
+    console.error("[members] invite email failed:", err instanceof Error ? err.message : err);
+    return { sent: false, error: "the email service is unavailable" };
   }
 }
 
@@ -74,9 +85,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (locked) return locked;
 
   const { email, role } = await readBody(req);
-  if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
+  if (!email) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   if (!ROLES.includes(role)) return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   if (email === auth.user.email?.toLowerCase()) return NextResponse.json({ error: "You already own this project" }, { status: 400 });
+
+  // Each invite sends an email from our account: cap volume per owner and per project.
+  const tooMany = await rateLimit(`invite:${auth.user.id}`, 3600, 20, "You've sent a lot of invites. Please try again in an hour.");
+  if (tooMany) return tooMany;
+  const { count } = await supabase.from("project_members").select("email", { count: "exact", head: true }).eq("project_id", id);
+  if ((count ?? 0) >= MAX_MEMBERS) {
+    return NextResponse.json({ error: `A project can have up to ${MAX_MEMBERS} people.` }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from("project_members")
@@ -90,7 +109,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     inviter: profile?.display_name || auth.user.email || "Someone",
     projectName: project?.name || "a simulation",
     role,
-    url: `${req.nextUrl.origin}/dashboard/project/${id}`,
+    // APP_URL pins the link to our domain; the Host header is client-supplied.
+    url: `${process.env.APP_URL || req.nextUrl.origin}/dashboard/project/${id}`,
   });
   if (!mail.sent) console.warn("[members] invite email not sent:", mail.error);
 
@@ -104,7 +124,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (auth.error) return auth.error;
 
   const { email, role } = await readBody(req);
-  if (!ROLES.includes(role)) return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  if (!email || !ROLES.includes(role)) return NextResponse.json({ error: "Invalid role" }, { status: 400 });
 
   // A role picked by the owner is deliberate, so it no longer follows the link settings.
   const { error } = await supabase
@@ -123,6 +143,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (auth.error) return auth.error;
 
   const { email } = await readBody(req);
+  if (!email) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   const { error } = await supabase.from("project_members").delete().eq("project_id", id).eq("email", email);
   if (error) return NextResponse.json({ error: "Failed to remove person" }, { status: 500 });
   return NextResponse.json({ ok: true });

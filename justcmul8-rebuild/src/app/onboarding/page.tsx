@@ -1,4 +1,5 @@
 "use client";
+import { safeRedirect } from "@/lib/safeRedirect";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "framer-motion";
@@ -9,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
 import { CubeMark, TEXT_SRC, TEXT_RATIO } from "@/components/brand/CubeMark";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
-import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, type Interval } from "@/lib/billing/plans";
+import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, PRO_YEARLY_TOTAL, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
 import PageScrollbar from "@/components/PageScrollbar";
 import {
@@ -63,7 +64,7 @@ export default function OnboardingPage() {
   React.useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const n = q.get("next");
-    if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
+    if (n && safeRedirect(n, "") === n) setNext(n);
     if (q.get("plan") === "pro") setPlan("pro");
     if (q.get("billing") === "yearly") setBillingInterval("yearly");
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -335,7 +336,7 @@ export default function OnboardingPage() {
                                 <button key={b} type="button" onClick={() => setBillingInterval(b)} className="relative rounded-full px-4 py-2">
                                   {interval === b && <motion.span layoutId="bill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18)]" transition={spring(20, 0.85)} />}
                                   <span className={`relative ${interval === b ? "text-[#161622]" : "text-[#64748b]"}`}>
-                                    {b === "monthly" ? "Monthly" : <>Yearly <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">−20%</span></>}
+                                    {b === "monthly" ? "Monthly" : <>Yearly <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">−{YEARLY_SAVING_PCT}%</span></>}
                                   </span>
                                 </button>
                               ))}
@@ -353,7 +354,7 @@ export default function OnboardingPage() {
                                 <p className="font-space text-[19px] font-bold text-[#161622]">Free</p>
                                 <SelectDot on={plan === "free"} />
                               </div>
-                              <p className="mt-2"><span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em] text-[#161622]">$0</span></p>
+                              <p className="mt-2"><span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em] text-[#161622]">₹0</span></p>
                               <p className="mt-1 text-[12px] font-medium text-[#94a3b8]">Free forever, no card</p>
                               <Perks items={[`${PLAN_CREDITS.free} credits every month`, "Visual builder & live results", "Monte Carlo & JSON export"]} />
                             </motion.button>
@@ -371,15 +372,15 @@ export default function OnboardingPage() {
                                 <SelectDot on={plan === "pro"} light />
                               </div>
                               <p className="relative mt-2 flex items-end gap-1">
-                                <span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em]">$</span>
+                                <span className="font-space text-[40px] font-bold leading-none tracking-[-0.04em]">₹</span>
                                 <span className="relative inline-flex overflow-hidden">
                                   <motion.span key={interval} className="font-space text-[40px] font-bold leading-none tracking-[-0.04em] tabular-nums" initial={{ y: "100%", opacity: 0 }} animate={{ y: "0%", opacity: 1 }} transition={spring(16, 0.85)}>
-                                    {PRO_PRICE[interval]}
+                                    {PRO_PRICE[interval].toLocaleString("en-IN")}
                                   </motion.span>
                                 </span>
                                 <span className="mb-1 text-[13px] text-white/70">/ mo</span>
                               </p>
-                              <p className="relative mt-1 text-[12px] font-medium text-white/70">{interval === "yearly" ? `Billed $${PRO_PRICE.yearly * 12} yearly` : "Billed monthly"} after the trial</p>
+                              <p className="relative mt-1 text-[12px] font-medium text-white/70">{interval === "yearly" ? `Billed ${inr(PRO_YEARLY_TOTAL)} yearly` : "Billed monthly"} after the trial</p>
                               <Perks light items={[`${PLAN_CREDITS.pro} credits every month`, ...PRO_FEATURES.map((f) => f[0].toUpperCase() + f.slice(1))]} />
                             </motion.button>
                           </div>

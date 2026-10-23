@@ -923,6 +923,8 @@ export interface NodeCanvasProps {
   simTick?: SimTick | null;
   bottleneckNodeId?: string;
   readOnly?: boolean;
+  /** Hide the minimap on small embedded canvases where it would cover the graph. */
+  hideMiniMap?: boolean;
   remoteUsers?: PresenceUser[];
   onBroadcastCursor?: (cursor: { x: number; y: number } | null) => void;
   /** Fires on every pan/zoom (and once on init) so overlays can stay aligned with the graph. */
@@ -976,7 +978,7 @@ function NodeCanvasInner({
   nodes, edges, onNodesChange, onEdgesChange, onNodeDragStop,
   selectedNodeId, onSelectNode, simState, simType, simTick, bottleneckNodeId = "",
   remoteUsers = [], onBroadcastCursor, onViewportChange,
-  exposedRef, readOnly = false,
+  exposedRef, readOnly = false, hideMiniMap = false,
 }: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
@@ -1271,12 +1273,14 @@ function NodeCanvasInner({
         >
           <Background variant={BackgroundVariant.Dots} size={1.5} color="#d6d6de" gap={24} />
           <Controls className="jc-controls" />
-          <MiniMap
-            nodeColor={getMiniMapNodeColor}
-            nodeBorderRadius={6}
-            maskColor="rgba(245, 243, 255, 0.72)"
-            className="jc-minimap"
-          />
+          {!hideMiniMap && (
+            <MiniMap
+              nodeColor={getMiniMapNodeColor}
+              nodeBorderRadius={6}
+              maskColor="rgba(245, 243, 255, 0.72)"
+              className="jc-minimap"
+            />
+          )}
           <RemoteCursorsOverlay remoteUsers={remoteUsers} wrapperRef={reactFlowWrapper} />
         </ReactFlow>
       </div>

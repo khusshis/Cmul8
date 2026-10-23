@@ -4,7 +4,7 @@ import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallba
 import Tooltip from "@/components/ui/Tooltip";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
@@ -566,7 +566,7 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (!project || !localDirtyRef.current || !canEditRef.current) return;
     localDirtyRef.current = false;
-    triggerAutoSave(nodes, edges);
+    triggerAutoSave();
     // Granular ops only cover canvas drags/connects; the snapshot converges everything else
     // (properties, AI edits, templates, undo) and repairs any op a peer missed.
     // ponytail: last-writer-wins on concurrent edits; move to Yjs if people co-edit the same block a lot.
@@ -665,14 +665,17 @@ export default function WorkspacePage() {
     }
   }, []);
 
-  function triggerAutoSave(n: any[], e: any[]) {
+  function triggerAutoSave() {
     setSaved(false);
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => autoSave(n, e), 1500);
+    saveTimer.current = setTimeout(autoSave, 1500);
   }
 
-  async function autoSave(n: any[], e: any[]) {
+  // Saves the graph as it is when the timer fires, not when it was scheduled: a peer's
+  // edit that arrived in between must be included, or this save would overwrite it.
+  async function autoSave() {
     if (!project || !canEditRef.current) return;
+    const n = nodesRef.current, e = edgesRef.current;
     const strip = (items: any[]) => items.map(({ selected, dragging, ...rest }) => rest);
     const { data, error } = await supabase.from("projects").update({
       graph_json: { nodes: strip(n), edges: strip(e) },
@@ -789,7 +792,7 @@ export default function WorkspacePage() {
   const showTemplateGallery = canEdit && nodes.length === 0 && !galleryDismissed;
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
     <AnimatePresence>{loading && <WorkspaceLoader key="workspace-loader" />}</AnimatePresence>
     {!loading && (
     <div className="h-screen flex flex-col overflow-hidden bg-bg-surface-sunken text-text-primary">
@@ -1478,6 +1481,15 @@ export default function WorkspacePage() {
         durationSeconds={Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60))}
         speed={speed}
         tickInterval={Math.max(0.05, Math.max(1, (durationValue || 1) * (unitMultipliers[durationUnit] || 60)) / 1000)}
+        projectId={project?.id || ""}
+        projectName={project?.name || "Simulation"}
+        canEdit={canEdit}
+        onApplyScenario={(newNodes, newEdges) => {
+          if (!canEditRef.current) return;
+          onUpdateNodes(() => newNodes);
+          onUpdateEdges(() => newEdges);
+          recordHistory(newNodes, newEdges);
+        }}
       />
 
       <CodeInspectorPanel
@@ -1491,6 +1503,6 @@ export default function WorkspacePage() {
       />
     </div>
     )}
-    </>
+    </MotionConfig>
   );
 }

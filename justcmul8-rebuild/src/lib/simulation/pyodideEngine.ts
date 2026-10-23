@@ -8,10 +8,18 @@
 import type { SimulationEngine, SimParams, SimTick, SimResult, PyodideStatus } from "./types";
 import { ClientSimEngine } from "./clientEngine";
 
+type WorkerMessage =
+  | { type: "tick"; data: SimTick }
+  | { type: "complete"; data: SimResult }
+  | { type: "error"; message: string }
+  | ({ type: "status" } & PyodideStatus);
+
 export class PyodideSimEngine implements SimulationEngine {
   private worker: Worker | null = null;
   private running = false;
   private useFallback = false;
+  /** The fallback engine of the current run, so stop()/destroy() can reach it. */
+  private legacy: ClientSimEngine | null = null;
 
   private onTickCallbacks    = new Set<(tick: SimTick) => void>();
   private onCompleteCallbacks = new Set<(result: SimResult) => void>();
@@ -31,7 +39,7 @@ export class PyodideSimEngine implements SimulationEngine {
     this.worker.postMessage({ type: "init" });
   }
 
-  private handleMessage(msg: any) {
+  private handleMessage(msg: WorkerMessage) {
     switch (msg.type) {
       case "tick":
         this.onTickCallbacks.forEach(cb => cb(msg.data));
@@ -60,7 +68,9 @@ export class PyodideSimEngine implements SimulationEngine {
   start(params: SimParams): void {
     if (this.useFallback) {
       console.log("Using legacy fallback engine");
+      this.legacy?.stop();
       const legacy = new ClientSimEngine();
+      this.legacy = legacy;
       legacy.onTick(tick => this.onTickCallbacks.forEach(cb => cb(tick)));
       legacy.onComplete(res => this.onCompleteCallbacks.forEach(cb => cb({ ...res, engine: "legacy" })));
       legacy.onError(err => this.onErrorCallbacks.forEach(cb => cb(err)));
@@ -73,20 +83,26 @@ export class PyodideSimEngine implements SimulationEngine {
     this.worker!.postMessage({ type: "start", params });
   }
 
-  onTick(callback: (tick: SimTick) => void): void {
+  // Each register call returns an unsubscribe function, so short-lived listeners
+  // (e.g. one Monte Carlo batch) don't pile up on a long-lived engine.
+  onTick(callback: (tick: SimTick) => void): () => void {
     this.onTickCallbacks.add(callback);
+    return () => { this.onTickCallbacks.delete(callback); };
   }
 
-  onComplete(callback: (result: SimResult) => void): void {
+  onComplete(callback: (result: SimResult) => void): () => void {
     this.onCompleteCallbacks.add(callback);
+    return () => { this.onCompleteCallbacks.delete(callback); };
   }
 
-  onError(callback: (error: string) => void): void {
+  onError(callback: (error: string) => void): () => void {
     this.onErrorCallbacks.add(callback);
+    return () => { this.onErrorCallbacks.delete(callback); };
   }
 
-  onStatus(callback: (status: PyodideStatus) => void): void {
+  onStatus(callback: (status: PyodideStatus) => void): () => void {
     this.onStatusCallbacks.add(callback);
+    return () => { this.onStatusCallbacks.delete(callback); };
   }
 
   pause(): void {
@@ -99,6 +115,8 @@ export class PyodideSimEngine implements SimulationEngine {
 
   stop(): void {
     this.running = false;
+    this.legacy?.stop();
+    this.legacy = null;
     this.worker?.postMessage({ type: "stop" });
   }
 

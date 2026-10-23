@@ -40,7 +40,21 @@ function MarkdownMessage({ content, isUser }: { content: string; isUser?: boolea
     <div className="text-[12px] leading-relaxed select-text break-words space-y-1">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        // Model output can be steered by prompt injection in project content. An
+        // <img> would load on render and could leak data in its URL, so images are
+        // never rendered; links only open http(s) targets in a new, unlinked tab.
+        disallowedElements={["img"]}
+        unwrapDisallowed={false}
+        skipHtml
         components={{
+          a: ({ href, children }) =>
+            typeof href === "string" && /^https?:\/\//i.test(href) ? (
+              <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-[#4F46E5] underline break-all">
+                {children}
+              </a>
+            ) : (
+              <span>{children}</span>
+            ),
           h1: ({ children }) => (
             <h1 className="text-[13.5px] font-black text-gray-900 mt-2 mb-1 tracking-tight">
               {children}

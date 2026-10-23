@@ -1,161 +1,166 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
-import { GitFork, ArrowRight, AlertTriangle, CheckCircle2, Flame, ShieldAlert, CornerDownRight } from "lucide-react";
+import { Flame, ArrowDownToLine, ArrowUpFromLine, Network } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
+import { EmptyState } from "@/components/ui/ChartCard";
+import { HelpTip } from "@/components/ui/MetricCard";
+import { TONES, fmtSeconds } from "@/components/ui/chartTheme";
+
+const LEVELS = [
+  { max: 50, label: "Free flow", tone: TONES.good },
+  { max: 80, label: "Moderate", tone: TONES.warn },
+  { max: Infinity, label: "Choked", tone: TONES.bad },
+] as const;
+const levelOf = (heat: number) => LEVELS.find((l) => heat <= l.max) ?? LEVELS[2];
 
 export default function FlowHeatmapTab({
   result,
-  simType,
 }: {
   result: SimResult;
   simType: SimTypeId;
 }) {
-  const nodeStatsEntries = Object.entries(result.nodeStats);
+  // Congestion heat index (0 to 100) per node
+  const nodesWithHeat = useMemo(
+    () =>
+      Object.entries(result.nodeStats).map(([nodeId, stat]) => {
+        let heat = 0;
+        const util = stat.utilization || 0;
+        const renege = stat.renegeCount || 0;
+        const wait = stat.avgWaitTime || 0;
 
-  // Compute congestion heat index (0 to 100) per node
-  const nodesWithHeat = nodeStatsEntries.map(([nodeId, stat]) => {
-    let heat = 0;
-    const util = stat.utilization || 0;
-    const renege = stat.renegeCount || 0;
-    const wait = stat.avgWaitTime || 0;
+        if (stat.nodeType === "queue" || stat.nodeType === "store") {
+          heat = Math.min(100, Math.round(((stat.currentDepth || 0) * 15) + (renege * 20) + (wait * 5)));
+        } else if (stat.nodeType === "resource" || stat.nodeType === "service" || stat.nodeType === "priority_resource") {
+          heat = Math.min(100, Math.round(util * 100));
+        } else {
+          heat = stat.entitiesIn > 0 ? 10 : 0;
+        }
+        return { nodeId, stat, heat: Number.isFinite(heat) ? heat : 0 };
+      }),
+    [result.nodeStats]
+  );
 
-    if (stat.nodeType === "queue" || stat.nodeType === "store") {
-      heat = Math.min(100, Math.round((stat.currentDepth * 15) + (renege * 20) + (wait * 5)));
-    } else if (stat.nodeType === "resource" || stat.nodeType === "service" || stat.nodeType === "priority_resource") {
-      heat = Math.min(100, Math.round(util * 100));
-    } else {
-      heat = stat.entitiesIn > 0 ? 10 : 0;
-    }
-
-    return {
-      nodeId,
-      stat,
-      heat,
-    };
-  });
-
-  const isBottleneck = (nodeId: string) => result.bottleneckNodeId === nodeId;
+  if (nodesWithHeat.length === 0) {
+    return (
+      <div className="rounded-[24px] border border-[#ECEBF7] bg-white">
+        <EmptyState icon={Network} title="No stations to score" hint="Add blocks to your canvas and run the simulation to see where congestion builds." />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* ── Top Header Banner ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-5 rounded-[22px] bg-gradient-to-r from-indigo-50/70 via-white to-purple-50/70 border border-indigo-100/80">
-        <div>
-          <div className="flex items-center gap-2">
-            <Flame size={18} className="text-orange-500" />
-            <h3 className="text-[16px] font-black text-gray-900">
-              System Flow Dynamics & Congestion Heatmap
-            </h3>
+    <div className="space-y-5">
+      {/* ── Legend banner ── */}
+      <div className="flex flex-col gap-3 rounded-[22px] border border-[#E7E3FF] bg-gradient-to-r from-[#F4F2FF] via-white to-[#FFF6EC] p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#D55E00] shadow-sm"><Flame size={16} aria-hidden /></span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1">
+              <h3 className="text-[15px] font-extrabold text-[#161622]">Congestion heatmap</h3>
+              <HelpTip
+                align="start"
+                label="How the heat score works"
+                text="Staff and machines score by how busy they were (90% busy = 90). Waiting lines score by how many are still queued, how many gave up, and how long people waited. Other blocks score low."
+              />
+            </div>
+            <p className="text-[12.5px] text-slate-600">Each station gets a 0–100 congestion score. The bottleneck is outlined in red.</p>
           </div>
-          <p className="text-[12.5px] text-gray-500 mt-0.5">
-            Real-time heat rating of all blocks in the network: identifies choke points, queue accumulation, and branch discharge splits.
-          </p>
         </div>
-
-        <div className="flex items-center gap-3 text-[11px] font-bold text-gray-600 shrink-0">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Free Flow (&lt;50)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Moderate (50-80)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Choked (&gt;80)
-          </span>
-        </div>
+        <ul className="flex shrink-0 flex-wrap gap-2 text-[11.5px] font-bold" aria-label="Heat levels">
+          {LEVELS.map((l, i) => (
+            <li key={l.label} className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 shadow-[0_1px_2px_rgba(16,24,40,.06)]" style={{ color: l.tone.text }}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.tone.solid }} aria-hidden />
+              {l.label} <span className="font-semibold text-slate-500">{i === 0 ? "0–50" : i === 1 ? "51–80" : "81+"}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* ── Grid of Node Flow Heat Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* ── Station cards ── */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {nodesWithHeat.map(({ nodeId, stat, heat }, i) => {
-          const bottleneck = isBottleneck(nodeId);
-          const heatColor =
-            heat > 80 ? "#EF4444" : heat > 50 ? "#F59E0B" : "#10B981";
-          const heatBg =
-            heat > 80 ? "bg-red-50/50" : heat > 50 ? "bg-amber-50/50" : "bg-emerald-50/30";
-
+          const bottleneck = result.bottleneckNodeId === nodeId;
+          const level = levelOf(heat);
+          const t = level.tone;
           return (
-            <motion.div
+            <motion.article
               key={nodeId}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={`rounded-[20px] bg-white border p-5 flex flex-col justify-between relative overflow-hidden shadow-sm hover:shadow-md transition-all ${
-                bottleneck
-                  ? "border-red-300 ring-2 ring-red-400/20"
-                  : "border-gray-100 hover:border-indigo-200"
+              transition={{ delay: Math.min(i * 0.04, 0.4) }}
+              className={`group relative flex flex-col overflow-hidden rounded-[20px] border bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-22px_var(--ring)] motion-reduce:transform-none sm:p-5 ${
+                bottleneck ? "border-rose-300 ring-2 ring-rose-400/25" : "border-[#ECEBF7]"
               }`}
+              style={{ ["--ring" as string]: t.ring }}
+              aria-label={`${stat.label}: congestion ${heat} of 100, ${level.label}${bottleneck ? ", bottleneck" : ""}`}
             >
-              {/* Top Row: Label & Heat Badge */}
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[14.5px] text-gray-900 tracking-tight">
-                      {stat.label}
-                    </span>
+              <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${t.solid}, ${t.solid}00 90%)` }} />
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h4 className="min-w-0 break-words text-[14.5px] font-extrabold tracking-tight text-[#161622]">{stat.label}</h4>
                     {bottleneck && (
-                      <span className="text-[9.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-600 text-white">
-                        BOTTLENECK
-                      </span>
+                      <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Bottleneck</span>
                     )}
                   </div>
-                  <span className="text-[11px] font-semibold text-gray-400">
+                  <span className="text-[12px] font-semibold text-slate-500">
                     {NODE_LABELS[stat.nodeType as keyof typeof NODE_LABELS] || stat.nodeType}
                   </span>
                 </div>
-
-                <div
-                  className={`px-2.5 py-1 rounded-xl font-black text-[12px] flex items-center gap-1 ${heatBg}`}
-                  style={{ color: heatColor }}
-                >
-                  <Flame size={12} /> {heat}
-                  <span className="text-[9px] font-bold text-gray-400 uppercase">/100</span>
+                <div className="shrink-0 text-right">
+                  <div className="text-[26px] font-black leading-none tabular-nums" style={{ color: t.text }}>
+                    {heat}
+                    <span className="text-[11px] font-bold text-slate-500">/100</span>
+                  </div>
+                  <div className="mt-0.5 text-[11px] font-bold" style={{ color: t.text }}>{level.label}</div>
                 </div>
               </div>
 
-              {/* Middle Section: Inflow vs Outflow Metric */}
-              <div className="grid grid-cols-2 gap-2 my-3 p-3 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+              {/* Heat gauge */}
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden>
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: `linear-gradient(90deg, ${TONES.good.solid}, ${heat > 50 ? TONES.warn.solid : TONES.good.solid}, ${heat > 80 ? TONES.bad.solid : heat > 50 ? TONES.warn.solid : TONES.good.solid})` }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(2, heat)}%` }}
+                  transition={{ duration: 0.8, delay: 0.1 + Math.min(i * 0.04, 0.4), ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+
+              <dl className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-[#FBFAFF] p-3 text-center">
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase block">Inflow</span>
-                  <span className="text-[16px] font-black text-gray-800 tabular-nums">
-                    {stat.entitiesIn}
-                  </span>
+                  <dt className="flex items-center justify-center gap-1 text-[10.5px] font-bold uppercase text-slate-500"><ArrowDownToLine size={11} aria-hidden /> In</dt>
+                  <dd className="text-[17px] font-black tabular-nums text-[#161622]">{(stat.entitiesIn ?? 0).toLocaleString()}</dd>
                 </div>
-                <div className="border-l border-gray-200">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase block">Outflow</span>
-                  <span className="text-[16px] font-black text-emerald-600 tabular-nums">
-                    {stat.entitiesOut}
-                  </span>
+                <div className="border-l border-[#ECEBF7]">
+                  <dt className="flex items-center justify-center gap-1 text-[10.5px] font-bold uppercase text-slate-500"><ArrowUpFromLine size={11} aria-hidden /> Out</dt>
+                  <dd className="text-[17px] font-black tabular-nums text-emerald-700">{(stat.entitiesOut ?? 0).toLocaleString()}</dd>
                 </div>
-              </div>
+              </dl>
 
-              {/* Bottom Metrics Bar */}
-              <div className="space-y-1.5 text-[11.5px] text-gray-600 pt-2 border-t border-gray-100">
+              <dl className="mt-3 space-y-1.5 text-[12px] text-slate-600">
                 {stat.utilization !== undefined && (
                   <div className="flex items-center justify-between">
-                    <span>Utilization</span>
-                    <span className="font-extrabold text-gray-900">
-                      {Math.round(stat.utilization * 100)}%
-                    </span>
+                    <dt>Busy</dt>
+                    <dd className="font-bold tabular-nums text-[#161622]">{Math.round((stat.utilization || 0) * 100)}%</dd>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span>Avg Wait Time</span>
-                  <span className="font-extrabold text-gray-900">
-                    {(stat.avgWaitTime ?? 0).toFixed(2)}s
-                  </span>
+                  <dt>Average wait</dt>
+                  <dd className="font-bold tabular-nums text-[#161622]">{fmtSeconds(stat.avgWaitTime)}</dd>
                 </div>
                 {(stat.renegeCount ?? 0) > 0 && (
-                  <div className="flex items-center justify-between text-red-600 font-bold">
-                    <span>Reneged / Lost</span>
-                    <span>{stat.renegeCount} entities</span>
+                  <div className="flex items-center justify-between font-bold text-rose-700">
+                    <dt>Gave up waiting</dt>
+                    <dd className="tabular-nums">{stat.renegeCount!.toLocaleString()}</dd>
                   </div>
                 )}
-              </div>
-            </motion.div>
+              </dl>
+            </motion.article>
           );
         })}
       </div>

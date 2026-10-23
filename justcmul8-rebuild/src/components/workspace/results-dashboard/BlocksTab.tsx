@@ -1,21 +1,27 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, X } from "lucide-react";
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, X, ArrowDownToLine, ArrowUpFromLine, Clock, Gauge, ChevronRight } from "lucide-react";
 import type { SimResult, NodeStats } from "@/lib/simulation/types";
 import { NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
+import MetricCard from "@/components/ui/MetricCard";
+import { EmptyState } from "@/components/ui/ChartCard";
+import { TONES, fmtSeconds } from "@/components/ui/chartTheme";
 
 type SortKey = "label" | "nodeType" | "entitiesIn" | "entitiesOut" | "utilization" | "avgWaitTime";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "label", label: "Station Name" },
-  { key: "nodeType", label: "Station Type" },
-  { key: "entitiesIn", label: "Arrived" },
-  { key: "entitiesOut", label: "Finished" },
-  { key: "utilization", label: "Busy %" },
-  { key: "avgWaitTime", label: "Avg Wait" },
+const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
+  { key: "label", label: "Station" },
+  { key: "nodeType", label: "Type" },
+  { key: "entitiesIn", label: "Arrived", numeric: true },
+  { key: "entitiesOut", label: "Finished", numeric: true },
+  { key: "utilization", label: "Busy", numeric: true },
+  { key: "avgWaitTime", label: "Avg wait", numeric: true },
 ];
+
+const typeLabel = (t: string) => NODE_LABELS[t as keyof typeof NODE_LABELS] || t;
+const utilTone = (u: number) => (u > 85 ? TONES.bad : u > 60 ? TONES.warn : TONES.good);
 
 export default function BlocksTab({ result }: { result: SimResult }) {
   const [search, setSearch] = useState("");
@@ -23,18 +29,20 @@ export default function BlocksTab({ result }: { result: SimResult }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
+  const total = Object.keys(result.nodeStats).length;
+
   const rows = useMemo(() => {
     let entries = Object.entries(result.nodeStats);
     if (search.trim()) {
       const q = search.toLowerCase();
       entries = entries.filter(
-        ([, s]) => s.label.toLowerCase().includes(q) || s.nodeType.toLowerCase().includes(q)
+        ([, s]) => s.label.toLowerCase().includes(q) || s.nodeType.toLowerCase().includes(q) || typeLabel(s.nodeType).toLowerCase().includes(q)
       );
     }
     entries.sort(([, a], [, b]) => {
-      const av = (a as any)[sortKey] ?? 0;
-      const bv = (b as any)[sortKey] ?? 0;
-      const cmp = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+      const av = a[sortKey] ?? 0;
+      const bv = b[sortKey] ?? 0;
+      const cmp = typeof av === "string" ? av.localeCompare(String(bv)) : (av as number) - (bv as number);
       return sortDir === "asc" ? cmp : -cmp;
     });
     return entries;
@@ -48,209 +56,186 @@ export default function BlocksTab({ result }: { result: SimResult }) {
     }
   }
 
-  const selectedBlockStats: NodeStats | null = selectedBlockId
-    ? result.nodeStats[selectedBlockId]
-    : null;
+  const selectedBlockStats: NodeStats | null = selectedBlockId ? result.nodeStats[selectedBlockId] : null;
+
+  // Escape closes the details dialog. Capture phase + preventDefault so the parent suite doesn't also close.
+  useEffect(() => {
+    if (!selectedBlockId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSelectedBlockId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [selectedBlockId]);
 
   return (
     <div className="space-y-4">
-      {/* ── Search & Filter Controls ── */}
-      <div className="rounded-[22px] bg-white border border-gray-100 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="overflow-hidden rounded-[22px] border border-[#ECEBF7] bg-white shadow-[0_14px_36px_-24px_rgba(87,66,255,.3)]">
+        {/* ── Search ── */}
+        <div className="flex flex-col gap-3 border-b border-[#F1F0FA] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <label className="relative block w-full sm:max-w-sm">
+            <span className="sr-only">Search stations</span>
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search station by name or type..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-[13px] bg-gray-50 focus:bg-white focus:outline-none focus:border-[#5742FF] transition-all"
+              placeholder="Search by station name or type…"
+              className="h-10 w-full rounded-xl border border-[#E7E5F6] bg-[#FAFAFF] pl-10 pr-9 text-[13px] text-[#161622] outline-none transition-shadow placeholder:text-slate-500 focus:border-[#C4B5FD] focus:bg-white focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
             />
-          </div>
-          <span className="text-[12px] font-bold text-gray-500">
-            {rows.length} station{rows.length !== 1 ? "s" : ""} inspected
+            {search && (
+              <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                <X size={13} />
+              </button>
+            )}
+          </label>
+          <span className="text-[12.5px] font-semibold text-slate-600" aria-live="polite">
+            {rows.length === total ? `${total} station${total === 1 ? "" : "s"}` : `${rows.length} of ${total} stations`}
           </span>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px] text-left">
-            <thead>
-              <tr className="border-b border-gray-100 bg-[#FAF9FF]">
-                {COLUMNS.map((col) => (
-                  <th
-                    key={col.key}
-                    onClick={() => toggleSort(col.key)}
-                    className="py-3 px-5 text-[11px] font-black uppercase tracking-wider text-gray-500 cursor-pointer select-none hover:text-[#5742FF] transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      {col.label}
-                      {sortKey === col.key ? (
-                        sortDir === "asc" ? (
-                          <ArrowUp size={12} className="text-[#5742FF]" />
-                        ) : (
-                          <ArrowDown size={12} className="text-[#5742FF]" />
-                        )
-                      ) : (
-                        <ArrowUpDown size={12} className="opacity-30" />
-                      )}
-                    </span>
-                  </th>
-                ))}
-                <th className="py-3 px-5 text-[11px] font-black uppercase tracking-wider text-gray-500 text-right">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([id, s], i) => {
-                const isBottleneck = result.bottleneckNodeId === id;
-                const util = s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
-
-                return (
-                  <motion.tr
-                    key={id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                    className={`border-b border-gray-100 hover:bg-[#FAF9FF] transition-colors ${
-                      isBottleneck ? "bg-red-50/40" : ""
-                    }`}
-                  >
-                    <td className="py-3.5 px-5 font-bold text-gray-900">
-                      <div className="flex items-center gap-2">
-                        <span>{s.label}</span>
-                        {isBottleneck && (
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-600 text-white">
-                            SLOWEST CHOKE POINT
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-5 text-gray-500 font-medium">
-                      {NODE_LABELS[s.nodeType as keyof typeof NODE_LABELS] || s.nodeType}
-                    </td>
-                    <td className="py-3.5 px-5 font-bold text-blue-600 tabular-nums">
-                      {s.entitiesIn}
-                    </td>
-                    <td className="py-3.5 px-5 font-bold text-emerald-600 tabular-nums">
-                      {s.entitiesOut}
-                    </td>
-                    <td className="py-3.5 px-5">
-                      {util !== null ? (
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-16 h-2 rounded-full bg-gray-100 overflow-hidden">
-                            <div
-                              style={{
-                                width: `${util}%`,
-                                backgroundColor:
-                                  util > 85 ? "#EF4444" : util > 60 ? "#F59E0B" : "#10B981",
-                              }}
-                              className="h-full rounded-full"
-                            />
-                          </div>
-                          <span className="font-extrabold text-gray-900 text-[12px] tabular-nums">
-                            {util}%
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-5 font-bold text-gray-800 tabular-nums">
-                      {(s.avgWaitTime ?? 0).toFixed(2)}s
-                    </td>
-                    <td className="py-3.5 px-5 text-right">
-                      <button
-                        onClick={() => setSelectedBlockId(id)}
-                        className="px-2.5 py-1 text-[11px] font-bold text-[#5742FF] bg-indigo-50 hover:bg-[#5742FF] hover:text-white rounded-lg transition-all"
+        {rows.length === 0 ? (
+          <EmptyState compact icon={Search} title={total === 0 ? "No stations in this model" : `No stations match “${search}”`} hint={total === 0 ? undefined : "Try a different name or type."} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-[13px]">
+              <caption className="sr-only">Station counters. Use the column buttons to sort.</caption>
+              <thead>
+                <tr className="border-b border-[#F1F0FA] bg-[#FAF9FF]">
+                  {COLUMNS.map((col) => {
+                    const active = sortKey === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                        className={`px-4 py-2 sm:px-5 ${col.numeric ? "text-right" : ""}`}
                       >
-                        Details
-                      </button>
-                    </td>
-                  </motion.tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(col.key)}
+                          className={`inline-flex items-center gap-1.5 rounded-md py-1 text-[11px] font-black uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 ${
+                            active ? "text-[#4331E0]" : "text-slate-600 hover:text-[#4331E0]"
+                          }`}
+                        >
+                          {col.label}
+                          {active ? sortDir === "asc" ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden /> : <ArrowUpDown size={12} className="opacity-40" aria-hidden />}
+                        </button>
+                      </th>
+                    );
+                  })}
+                  <th scope="col" className="px-4 py-3 text-right sm:px-5"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([id, s], i) => {
+                  const isBottleneck = result.bottleneckNodeId === id;
+                  const util = s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
+                  return (
+                    <motion.tr
+                      key={id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                      className={`border-b border-[#F4F3FB] transition-colors last:border-0 hover:bg-[#FAF9FF] ${isBottleneck ? "bg-rose-50/50" : ""}`}
+                    >
+                      <th scope="row" className="px-4 py-3 font-bold text-[#161622] sm:px-5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>{s.label}</span>
+                          {isBottleneck && <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">Bottleneck</span>}
+                        </div>
+                      </th>
+                      <td className="px-4 py-3 font-medium text-slate-600 sm:px-5">{typeLabel(s.nodeType)}</td>
+                      <td className="px-4 py-3 text-right font-bold tabular-nums text-[#161622] sm:px-5">{(s.entitiesIn ?? 0).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-bold tabular-nums text-emerald-700 sm:px-5">{(s.entitiesOut ?? 0).toLocaleString()}</td>
+                      <td className="px-4 py-3 sm:px-5">
+                        {util !== null ? (
+                          <div className="flex items-center justify-end gap-2.5">
+                            <div className="h-2 w-16 overflow-hidden rounded-full bg-slate-100" aria-hidden>
+                              <div style={{ width: `${Math.min(100, util)}%`, backgroundColor: utilTone(util).solid }} className="h-full rounded-full" />
+                            </div>
+                            <span className="w-9 text-right text-[12.5px] font-extrabold tabular-nums text-[#161622]">{util}%</span>
+                          </div>
+                        ) : (
+                          <span className="block text-right text-slate-500" aria-label="Not applicable">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold tabular-nums text-[#161622] sm:px-5">{fmtSeconds(s.avgWaitTime)}</td>
+                      <td className="px-4 py-3 text-right sm:px-5">
+                        <button
+                          onClick={() => setSelectedBlockId(id)}
+                          aria-label={`Details for ${s.label}`}
+                          className="inline-flex items-center gap-0.5 rounded-lg bg-[#F3F1FF] px-2.5 py-1 text-[12px] font-bold text-[#4331E0] transition-colors hover:bg-[#5742FF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+                        >
+                          Details <ChevronRight size={13} aria-hidden />
+                        </button>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* ── Station Drill-Down Modal ── */}
+      {/* ── Station details dialog ── */}
       <AnimatePresence>
         {selectedBlockId && selectedBlockStats && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161622]/45 p-4 backdrop-blur-sm"
             onClick={() => setSelectedBlockId(null)}
           >
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="block-detail-title"
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white w-full max-w-lg rounded-[24px] shadow-2xl p-6 relative space-y-5"
+              className="relative max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-[24px] bg-[#F8F7FF] p-5 shadow-2xl sm:p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <div>
-                  <h3 className="text-[18px] font-black text-gray-900">
-                    {selectedBlockStats.label}
-                  </h3>
-                  <span className="text-[12px] font-semibold text-gray-400">
-                    {NODE_LABELS[selectedBlockStats.nodeType as keyof typeof NODE_LABELS] ||
-                      selectedBlockStats.nodeType}
-                  </span>
+              <div className="flex items-start justify-between gap-3 border-b border-[#ECEBF7] pb-4">
+                <div className="min-w-0">
+                  <h3 id="block-detail-title" className="break-words text-[18px] font-black text-[#161622]">{selectedBlockStats.label}</h3>
+                  <span className="text-[12.5px] font-semibold text-slate-600">{typeLabel(selectedBlockStats.nodeType)}</span>
                 </div>
                 <button
+                  autoFocus
                   onClick={() => setSelectedBlockId(null)}
-                  className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500"
+                  aria-label="Close station details"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                  <span className="text-[10.5px] font-bold text-gray-400 uppercase block mb-1">
-                    Total Arrived
-                  </span>
-                  <span className="text-[22px] font-black text-blue-600 tabular-nums">
-                    {selectedBlockStats.entitiesIn}
-                  </span>
-                </div>
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                  <span className="text-[10.5px] font-bold text-gray-400 uppercase block mb-1">
-                    Total Finished
-                  </span>
-                  <span className="text-[22px] font-black text-emerald-600 tabular-nums">
-                    {selectedBlockStats.entitiesOut}
-                  </span>
-                </div>
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                  <span className="text-[10.5px] font-bold text-gray-400 uppercase block mb-1">
-                    Average Line Wait
-                  </span>
-                  <span className="text-[22px] font-black text-gray-900 tabular-nums">
-                    {(selectedBlockStats.avgWaitTime ?? 0).toFixed(2)}s
-                  </span>
-                </div>
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
-                  <span className="text-[10.5px] font-bold text-gray-400 uppercase block mb-1">
-                    Busy % (Workload)
-                  </span>
-                  <span className="text-[22px] font-black text-[#5742FF] tabular-nums">
-                    {selectedBlockStats.utilization !== undefined
-                      ? `${Math.round(selectedBlockStats.utilization * 100)}%`
-                      : "N/A"}
-                  </span>
-                </div>
+                <MetricCard size="sm" icon={ArrowDownToLine} tone="info" label="Arrived" value={selectedBlockStats.entitiesIn ?? 0} />
+                <MetricCard size="sm" icon={ArrowUpFromLine} tone="good" label="Finished" value={selectedBlockStats.entitiesOut ?? 0} delay={0.03} />
+                <MetricCard size="sm" icon={Clock} tone="warn" label="Average wait" value={selectedBlockStats.avgWaitTime ?? 0} format={fmtSeconds} delay={0.06} />
+                <MetricCard
+                  size="sm"
+                  icon={Gauge}
+                  tone={selectedBlockStats.utilization === undefined ? "neutral" : selectedBlockStats.utilization > 0.85 ? "bad" : selectedBlockStats.utilization > 0.6 ? "warn" : "good"}
+                  label="Busy"
+                  value={selectedBlockStats.utilization !== undefined ? Math.round(selectedBlockStats.utilization * 100) : "N/A"}
+                  unit={selectedBlockStats.utilization !== undefined ? "%" : undefined}
+                  progress={selectedBlockStats.utilization !== undefined ? selectedBlockStats.utilization * 100 : undefined}
+                  delay={0.09}
+                />
               </div>
 
               {(selectedBlockStats.renegeCount ?? 0) > 0 && (
-                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-[12px] text-red-700 font-bold flex items-center justify-between">
-                  <span>Left Line (Gave Up Waiting):</span>
-                  <span>{selectedBlockStats.renegeCount}</span>
+                <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-[12.5px] font-bold text-rose-700">
+                  <span>Gave up waiting and left</span>
+                  <span className="tabular-nums">{selectedBlockStats.renegeCount!.toLocaleString()}</span>
                 </div>
               )}
             </motion.div>

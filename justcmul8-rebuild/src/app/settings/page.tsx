@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/Toast";
 import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
-import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, type Billing, type Interval } from "@/lib/billing/plans";
+import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, type Billing, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
 import {
   CreditsScene, FlowField, LineInput, PillChoice, ProfileScene, ROLES, Stage, TEAM_SIZES, Ticker, WorldScene, sceneFor, usePointer,
@@ -27,7 +27,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 const isTab = (t: string | null): t is TabId => TABS.some((x) => x.id === t);
 
-const label = "text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]";
+const label = "text-[11px] font-bold uppercase tracking-[0.14em] text-[#64748b]";
 const card = "relative rounded-[26px] border border-[#ecebf7] bg-white/85 p-5 sm:p-6 shadow-[0_1px_2px_rgba(16,24,40,.04),0_24px_50px_-36px_rgba(87,66,255,.35)] backdrop-blur";
 const fmtDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 
@@ -126,7 +126,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
           </>}
           <div className="relative flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${pro ? "text-white/70" : "text-[#94a3b8]"}`}>Current plan</p>
+              <p className={`text-[11px] font-bold uppercase tracking-[0.14em] ${pro ? "text-white/70" : "text-[#64748b]"}`}>Current plan</p>
               <p className="mt-1 flex items-center gap-2 font-space text-[30px] font-bold leading-none tracking-[-0.03em]">
                 {pro ? (billing.plan === "enterprise" ? "Enterprise" : "Pro") : "Free"}
                 {billing.status === "trialing" && <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold tracking-normal text-[#5742FF]">TRIAL</span>}
@@ -136,15 +136,15 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
             <div className="text-right">
               <p className="font-space text-[38px] font-bold leading-none tracking-[-0.04em] tabular-nums">
                 <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={spring(14, 0.7, 0.3)}>{billing.credits}</motion.span>
-                <span className={`text-[14px] font-semibold ${pro ? "text-white/60" : "text-[#94a3b8]"}`}> / {allowance}</span>
+                <span className={`text-[14px] font-semibold ${pro ? "text-white/60" : "text-[#64748b]"}`}> / {allowance}</span>
               </p>
-              <p className={`text-[11px] font-bold uppercase tracking-[0.12em] ${pro ? "text-white/70" : "text-[#94a3b8]"}`}>credits left</p>
+              <p className={`text-[11px] font-bold uppercase tracking-[0.12em] ${pro ? "text-white/70" : "text-[#64748b]"}`}>credits left</p>
             </div>
           </div>
           <div className={`relative mt-5 h-2.5 overflow-hidden rounded-full ${pro ? "bg-white/20" : "bg-[#f1f0fa]"}`}>
             <motion.div className={`h-full rounded-full ${pro ? "bg-white" : "bg-gradient-to-r from-[#8b5cf6] to-[#5742FF]"}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.35 }} />
           </div>
-          <p className={`relative mt-2 text-[12px] font-medium ${pro ? "text-white/70" : "text-[#94a3b8]"}`}>Refills to {allowance} on {fmtDate(billing.credits_reset_at)}</p>
+          <p className={`relative mt-2 text-[12px] font-medium ${pro ? "text-white/70" : "text-[#64748b]"}`}>Refills to {allowance} on {fmtDate(billing.credits_reset_at)}</p>
         </div>
       </Rise>
 
@@ -161,7 +161,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
                       <button key={b} type="button" onClick={() => setBillingInterval(b)} className="relative rounded-full px-4 py-2">
                         {interval === b && <motion.span layoutId="settings-bill-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18)]" transition={spring(20, 0.85)} />}
                         <span className={`relative ${interval === b ? "text-[#161622]" : "text-[#64748b]"}`}>
-                          ${PRO_PRICE[b]}/mo {b === "yearly" && <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">−20%</span>}
+                          {inr(PRO_PRICE[b])}/mo {b === "yearly" && <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">−{YEARLY_SAVING_PCT}%</span>}
                         </span>
                       </button>
                     ))}
@@ -206,7 +206,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
         <div className={card}>
           <CardHead icon={Sparkles} title="Credit activity" sub={`New simulation ${CREDIT_COSTS.create_simulation} · AI optimize ${CREDIT_COSTS.ai_optimize} · AI chat ${CREDIT_COSTS.ai_chat}. Running simulations is free.`} />
           {ledger.length === 0 ? (
-            <p className="rounded-2xl bg-[#fafaff] px-4 py-6 text-center text-[13px] text-[#94a3b8]">No credit activity yet.</p>
+            <p className="rounded-2xl bg-[#fafaff] px-4 py-6 text-center text-[13px] text-[#64748b]">No credit activity yet.</p>
           ) : (
             <ul className="space-y-1.5">
               {ledger.map((l, i) => (
@@ -218,7 +218,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
                   <span className="flex min-w-0 items-center gap-3">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${l.delta < 0 ? "bg-[#5742FF]" : "bg-emerald-500"}`} />
                     <span className="truncate text-[13.5px] font-semibold capitalize text-[#334155]">{l.reason.replace(/_/g, " ")}</span>
-                    <span className="shrink-0 text-[12px] text-[#94a3b8]">{fmtDate(l.created_at)}</span>
+                    <span className="shrink-0 text-[12px] text-[#64748b]">{fmtDate(l.created_at)}</span>
                   </span>
                   <span className={`font-mono text-[13px] font-bold tabular-nums ${l.delta < 0 ? "text-[#161622]" : "text-emerald-600"}`}>{l.delta > 0 ? "+" : ""}{l.delta}</span>
                 </motion.li>
@@ -279,7 +279,7 @@ function HelpPanel() {
                 <div key={f.q} className={`rounded-2xl border transition-colors ${on ? "border-[#d9d3fb] bg-[#fafaff]" : "border-[#f1f0fa]"}`}>
                   <button type="button" aria-expanded={on} onClick={() => setOpen(on ? null : i)} className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left text-[14px] font-bold text-[#161622]">
                     {f.q}
-                    <motion.span animate={{ rotate: on ? 180 : 0 }} transition={spring(18, 0.8)} className={on ? "text-[#5742FF]" : "text-[#94a3b8]"}><ChevronDown size={16} /></motion.span>
+                    <motion.span animate={{ rotate: on ? 180 : 0 }} transition={spring(18, 0.8)} className={on ? "text-[#5742FF]" : "text-[#64748b]"}><ChevronDown size={16} /></motion.span>
                   </button>
                   <AnimatePresence initial={false}>
                     {on && (
@@ -329,7 +329,7 @@ function SupportScene() {
           >
             <span className="lp-float flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: n.c, animationDelay: `${i * 0.8}s` }}><n.icon size={20} /></span>
             <p className="mt-2 font-space text-[14px] font-bold text-[#161622]">{n.t}</p>
-            <p className="text-[11px] font-semibold text-[#94a3b8]">{n.s}</p>
+            <p className="text-[11px] font-semibold text-[#64748b]">{n.s}</p>
           </motion.div>
         ))}
         <motion.div className="absolute left-1/2 top-[18%] -translate-x-1/2 rounded-full border border-[#ecebf7] bg-white px-3 py-1 text-[11px] font-bold text-[#5742FF] shadow-sm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
@@ -451,7 +451,8 @@ function SettingsInner() {
     } else {
       setDeleting(false);
       setDeleteText("");
-      toast.error("Couldn't delete your account. Please try again.");
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error || "Couldn't delete your account. Please try again.");
     }
   }
 
@@ -485,7 +486,7 @@ function SettingsInner() {
                 <p className="truncate font-space text-[17px] font-bold text-[#161622]">{name.trim() || (loading ? " " : "Add your name")}</p>
                 <p className="flex flex-wrap items-center gap-x-3 text-[12.5px] font-medium text-[#64748b]">
                   <span className="truncate">{email}</span>
-                  {joined && <span className="flex items-center gap-1 text-[#94a3b8]"><CalendarDays size={12} /> Joined {new Date(joined).toLocaleDateString(undefined, { month: "short", year: "numeric" })}</span>}
+                  {joined && <span className="flex items-center gap-1 text-[#64748b]"><CalendarDays size={12} /> Joined {new Date(joined).toLocaleDateString(undefined, { month: "short", year: "numeric" })}</span>}
                 </p>
               </div>
             </motion.div>
@@ -560,7 +561,7 @@ function SettingsInner() {
                             <div>
                               <p className={label}>Email</p>
                               <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#ecebf7] bg-[#fafaff] px-3.5 py-2 text-[13.5px] font-semibold text-[#475569]">
-                                <Mail size={14} className="text-[#94a3b8]" /> {email} <Lock size={12} className="text-[#cbd5e1]" />
+                                <Mail size={14} className="text-[#64748b]" /> {email} <Lock size={12} className="text-[#cbd5e1]" />
                               </p>
                             </div>
                           </div>

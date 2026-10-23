@@ -3,16 +3,17 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import {
   Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, ArrowRight, FolderPlus, MoreHorizontal, Loader2,
-  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, Coins, type LucideIcon,
+  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, Coins, ArrowUpDown, Workflow, type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { toast } from "@/components/ui/Toast";
 import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
 import { WorkflowPreview, graphStats } from "@/components/dashboard/WorkflowPreview";
+import WorkspaceLoader from "@/components/workspace/WorkspaceLoader";
 import { Diorama, TYPES as SCENES } from "@/components/landing/SimTypesSection";
 import { CREDIT_COSTS, creditErrorMessage, type Billing } from "@/lib/billing/plans";
 
@@ -48,6 +49,43 @@ function timeAgo(iso: string) {
   return "";
 }
 
+type SortKey = "recent" | "name" | "domain";
+const SORTS: { id: SortKey; label: string }[] = [
+  { id: "recent", label: "Last edited" },
+  { id: "name", label: "Name A–Z" },
+  { id: "domain", label: "Domain" },
+];
+
+// Stable avatar colour per email.
+const AVATAR_COLORS = ["#5742FF", "#0072B2", "#009E73", "#D55E00", "#CC79A7", "#7C3AED"];
+const avatarColor = (s: string) => AVATAR_COLORS[[...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % AVATAR_COLORS.length];
+
+function Collaborators({ emails, own }: { emails: string[]; own: boolean }) {
+  if (emails.length === 0) {
+    return <span className="text-[11.5px] font-semibold text-[#64748b]">{own ? "Only you" : ""}</span>;
+  }
+  const shown = emails.slice(0, 3);
+  return (
+    <span className="flex items-center gap-1.5" title={emails.join(", ")}>
+      <span className="flex -space-x-1.5">
+        {shown.map((e) => (
+          <span key={e} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold uppercase text-white" style={{ background: avatarColor(e) }} aria-hidden>
+            {e.charAt(0)}
+          </span>
+        ))}
+        {emails.length > 3 && (
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-[#eeecf9] text-[10px] font-bold text-[#475569]" aria-hidden>
+            +{emails.length - 3}
+          </span>
+        )}
+      </span>
+      <span className="text-[11.5px] font-semibold text-[#64748b]">
+        {emails.length} collaborator{emails.length === 1 ? "" : "s"}
+      </span>
+    </span>
+  );
+}
+
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
@@ -62,6 +100,12 @@ export default function DashboardPage() {
   const [newName, setNewName] = React.useState("");
   const [newType, setNewType] = React.useState(DOMAINS[0].id);
   const [creating, setCreating] = React.useState(false);
+  // Full-screen loader the instant a project is opened, before the route has even loaded.
+  const [opening, setOpening] = React.useState(false);
+  const onOpen = (e: React.MouseEvent) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new tab / window
+    setOpening(true);
+  };
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
@@ -72,11 +116,25 @@ export default function DashboardPage() {
   const [userName, setUserName] = React.useState("");
   const [view, setView] = React.useState<"mine" | "shared">("mine");
   const [billing, setBilling] = React.useState<Billing | null>(null);
+  const [sort, setSort] = React.useState<SortKey>("recent");
+  // project id → invited collaborator emails (RLS only returns rows for projects you can see)
+  const [members, setMembers] = React.useState<Record<string, string[]>>({});
 
   const mine = projects.filter((p) => p.user_id === userId);
   const shared = projects.filter((p) => p.user_id !== userId);
   const q = query.trim().toLowerCase();
-  const visible = (view === "mine" ? mine : shared).filter((p) => !q || p.name.toLowerCase().includes(q));
+  const visible = (view === "mine" ? mine : shared)
+    .filter((p) => !q || p.name.toLowerCase().includes(q) || domainOf(p.sim_type).label.toLowerCase().includes(q))
+    .sort((a, b) =>
+      sort === "name" ? a.name.localeCompare(b.name) :
+      sort === "domain" ? domainOf(a.sim_type).label.localeCompare(domainOf(b.sim_type).label) || a.name.localeCompare(b.name) :
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+
+  function openNew(type?: string) {
+    if (type) setNewType(type);
+    setShowModal(true);
+  }
 
   async function createProject() {
     if (!newName.trim()) return;
@@ -95,6 +153,7 @@ export default function DashboardPage() {
       setNewName("");
       setBilling((b) => (b ? { ...b, credits: b.credits - CREDIT_COSTS.create_simulation } : b));
       toast.success("Simulation created successfully!", "Project Ready");
+      setOpening(true);
       router.push(`/dashboard/project/${data.id}`);
     } else {
       console.error("Supabase Error:", error);
@@ -133,6 +192,14 @@ export default function DashboardPage() {
       const { data } = await supabase.from("projects").select("*").order("updated_at", { ascending: false });
       setProjects(data || []);
       setLoading(false);
+      if (data?.length) {
+        // Collaborator avatars are decoration: a failure here just leaves them out.
+        supabase.from("project_members").select("project_id, email").in("project_id", data.map((p) => p.id)).then(({ data: rows }) => {
+          const map: Record<string, string[]> = {};
+          for (const r of rows || []) (map[r.project_id] ||= []).push(r.email);
+          setMembers(map);
+        });
+      }
       fetch("/api/billing").then((r) => (r.ok ? r.json() : null)).then(setBilling).catch(() => {});
     });
     // The navbar's "New Simulation" button opens the modal through this event.
@@ -140,9 +207,18 @@ export default function DashboardPage() {
     window.addEventListener("open-new-sim-modal", handleOpenModal);
     const handleOutsideClick = () => setMenuOpenId(null);
     window.addEventListener("click", handleOutsideClick);
+    // Escape closes whatever is open on top.
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpenId(null);
+      setShowModal(false);
+      setDeleteId(null);
+    };
+    window.addEventListener("keydown", handleKey);
     return () => {
       window.removeEventListener("open-new-sim-modal", handleOpenModal);
       window.removeEventListener("click", handleOutsideClick);
+      window.removeEventListener("keydown", handleKey);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -152,7 +228,9 @@ export default function DashboardPage() {
   const scene = SCENES.find((s) => s.id === chosen.scene) ?? SCENES[0];
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen relative overflow-x-clip bg-[#fafaff]">
+      {opening && <WorkspaceLoader />}
       <Backdrop tone="a" />
       <Navbar />
 
@@ -183,23 +261,31 @@ export default function DashboardPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.9, 0.2)} className="flex flex-col sm:flex-row gap-3 sm:items-center">
             {/* Search */}
             <label className="relative flex h-11 items-center rounded-full border border-[#ecebf7] bg-white pl-4 pr-3 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-[#c4b5fd] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] transition-shadow sm:flex-1 sm:max-w-sm">
-              <Search size={16} className="text-[#94a3b8] shrink-0" />
+              <Search size={16} className="text-[#64748b] shrink-0" />
               <span className="sr-only">Search simulations</span>
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search simulations" className="ml-2 w-full bg-transparent text-[13.5px] font-medium text-[#161622] placeholder:text-[#94a3b8] outline-none" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search simulations" className="ml-2 w-full bg-transparent text-[13.5px] font-medium text-[#161622] placeholder:text-[#64748b] outline-none" />
               {query && (
-                <button onClick={() => setQuery("")} aria-label="Clear search" className="text-[#94a3b8] hover:text-[#161622]"><X size={14} /></button>
+                <button onClick={() => setQuery("")} aria-label="Clear search" className="text-[#64748b] hover:text-[#161622]"><X size={14} /></button>
               )}
             </label>
+            {/* Sort */}
+            <label className="relative flex h-11 items-center gap-1.5 rounded-full border border-[#ecebf7] bg-white pl-3.5 pr-2 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-[#c4b5fd] focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] sm:w-auto">
+              <ArrowUpDown size={14} className="shrink-0 text-[#64748b]" aria-hidden />
+              <span className="sr-only">Sort simulations</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="h-full w-full cursor-pointer bg-transparent pr-1 text-[13px] font-semibold text-[#334155] outline-none sm:w-auto">
+                {SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </label>
             {/* Mine / shared: sliding pill */}
-            <div className="relative sm:ml-auto flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist">
+            <div className="relative sm:ml-auto flex h-11 items-center rounded-full bg-black/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist" aria-label="Which simulations">
               {([["mine", "My simulations", mine.length], ["shared", "Shared with me", shared.length]] as const).map(([key, label, n]) => (
-                <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold">
+                <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 flex-1 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 sm:flex-none">
                   {view === key && (
                     <motion.span layoutId="dash-view-pill" className="absolute inset-0 rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff]" transition={spring(20, 0.85)} />
                   )}
                   <span className={`relative transition-colors ${view === key ? "text-[#161622]" : "text-[#64748b] hover:text-[#161622]"}`}>
                     {label}
-                    {n > 0 && <span className="ml-1.5 text-[11px] text-[#94a3b8]">{n}</span>}
+                    {n > 0 && <span className="ml-1.5 text-[11px] text-[#64748b]">{n}</span>}
                   </span>
                 </button>
               ))}
@@ -241,12 +327,37 @@ export default function DashboardPage() {
               {q ? `No simulations match “${query}”` : view === "shared" ? "Nothing shared with you yet" : "No simulations yet"}
             </h2>
             <p className="mt-2 text-sm text-[#64748b] max-w-sm">
-              {q ? "Try a different name." : view === "shared" ? "Simulations other people share with your email will show up here." : "Create your first simulation to get started."}
+              {q ? "Try a different name or domain." : view === "shared" ? "Simulations other people share with your email will show up here." : "Pick what you want to model. You'll land in the editor with the right building blocks, ready to drag and run."}
             </p>
-            {!q && view === "mine" && (
-              <button onClick={() => setShowModal(true)} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
-                <Plus size={17} strokeWidth={2.5} /> Create first simulation
+            {q && (
+              <button onClick={() => setQuery("")} className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full border border-[#e7e5f6] bg-white px-4 text-[13px] font-semibold text-[#334155] hover:border-[#5742FF] hover:text-[#5742FF]">
+                <X size={14} /> Clear search
               </button>
+            )}
+            {!q && view === "mine" && (
+              <>
+                <button onClick={() => openNew()} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-[#6a57ff] to-[#5742FF] border border-[#8d80ff] px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 focus-visible:ring-offset-2">
+                  <Plus size={17} strokeWidth={2.5} /> Create your first simulation
+                </button>
+                <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.14em] text-[#64748b]">Or start from a domain</p>
+                <div className="mt-3 grid w-full max-w-2xl grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 sm:grid-cols-3">
+                  {DOMAINS.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => openNew(d.id)}
+                      className="group flex items-center gap-3 rounded-2xl border border-[#ecebf7] bg-white p-3 text-left transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_rgba(16,24,40,.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50 motion-reduce:transform-none"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors" style={{ background: d.tint, color: d.color }}>
+                        <d.icon size={18} strokeWidth={2.2} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-bold text-[#161622]">{d.label}</span>
+                        <span className="block truncate text-[11.5px] text-[#64748b]">{d.sub}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </motion.div>
         ) : (
@@ -267,9 +378,9 @@ export default function DashboardPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ ...spring(13, 0.85, Math.min(i, 10) * 0.04), opacity: { duration: 0.3, delay: Math.min(i, 10) * 0.04 } }}
                   >
-                    <div className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#ecebf7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(16,24,40,.28)]">
+                    <div className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-[#ecebf7] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(16,24,40,.28)] focus-within:shadow-[0_24px_48px_-24px_rgba(87,66,255,.35)] motion-reduce:hover:translate-y-0">
                       {/* Workflow preview */}
-                      <Link href={`/dashboard/project/${proj.id}`} className="relative block h-[168px] shrink-0 overflow-hidden border-b border-[#f1f0fa]" style={{ background: `linear-gradient(180deg, #fff, ${dom.tint})` }} aria-label={`Open ${proj.name}`}>
+                      <Link href={`/dashboard/project/${proj.id}`} onClick={onOpen} className="relative block h-[168px] shrink-0 overflow-hidden border-b border-[#f1f0fa]" style={{ background: `linear-gradient(180deg, #fff, ${dom.tint})` }} aria-label={`Open ${proj.name}`}>
                         <div
                           aria-hidden
                           className="absolute inset-0"
@@ -278,11 +389,6 @@ export default function DashboardPage() {
                         <div className="absolute inset-3 transition-transform duration-500 group-hover:scale-[1.04]">
                           <WorkflowPreview graph={proj.graph_json} accent={dom.color} />
                         </div>
-                        {stats.blocks > 0 && (
-                          <span className="absolute bottom-2.5 left-3 rounded-full bg-white/90 border border-white px-2 py-0.5 text-[10.5px] font-semibold text-[#64748b] shadow-[0_2px_6px_-2px_rgba(16,24,40,.15)]">
-                            {stats.blocks} blocks · {stats.links} links
-                          </span>
-                        )}
                         <span className="absolute bottom-2.5 right-3 inline-flex items-center gap-1 rounded-full bg-[#161622] px-2.5 py-1 text-[11px] font-semibold text-white opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
                           Open editor <ArrowRight size={12} />
                         </span>
@@ -293,8 +399,10 @@ export default function DashboardPage() {
                         <div className="absolute top-3 right-3 z-20">
                           <button
                             onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === proj.id ? null : proj.id); }}
-                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 border border-white text-[#64748b] shadow-[0_2px_6px_-2px_rgba(16,24,40,.2)] hover:text-[#161622] transition-colors"
-                            aria-label="More options"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 border border-white text-[#64748b] shadow-[0_2px_6px_-2px_rgba(16,24,40,.2)] hover:text-[#161622] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
+                            aria-label={`More options for ${proj.name}`}
+                            aria-haspopup="menu"
+                            aria-expanded={menuOpenId === proj.id}
                           >
                             <MoreHorizontal size={16} />
                           </button>
@@ -311,7 +419,7 @@ export default function DashboardPage() {
                                 <button onClick={() => { setMenuOpenId(null); setRenamingId(proj.id); setRenameValue(proj.name); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#334155] hover:bg-[#f6f4ff] hover:text-[#5742FF]">
                                   <Edit2 size={14} /> Rename
                                 </button>
-                                <Link href={`/dashboard/project/${proj.id}`} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#334155] hover:bg-[#f6f4ff] hover:text-[#5742FF]">
+                                <Link href={`/dashboard/project/${proj.id}`} onClick={onOpen} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-[#334155] hover:bg-[#f6f4ff] hover:text-[#5742FF]">
                                   <ExternalLink size={14} /> Open editor
                                 </Link>
                                 <div className="my-1 h-px bg-[#f1f0fa]" />
@@ -326,7 +434,7 @@ export default function DashboardPage() {
 
                       {/* Body */}
                       <div className="flex flex-1 flex-col p-4 sm:p-5">
-                        <span className="inline-flex w-max items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold" style={{ background: dom.tint, color: dom.color }}>
+                        <span className="inline-flex w-max items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold" style={{ background: dom.tint, color: `color-mix(in srgb, ${dom.color} 62%, #000)` }}>
                           <DomIcon size={12} strokeWidth={2.4} /> {dom.label}
                         </span>
 
@@ -345,34 +453,41 @@ export default function DashboardPage() {
                             </button>
                           </div>
                         ) : (
-                          <Link href={`/dashboard/project/${proj.id}`} className="mt-2.5 truncate font-space text-[18px] font-bold tracking-[-0.02em] text-[#161622] hover:text-[#5742FF] transition-colors" title={proj.name}>
+                          <Link href={`/dashboard/project/${proj.id}`} onClick={onOpen} className="mt-2.5 truncate font-space text-[18px] font-bold tracking-[-0.02em] text-[#161622] hover:text-[#5742FF] transition-colors" title={proj.name}>
                             {proj.name}
                           </Link>
                         )}
 
-                        <div className="mt-1.5 flex items-center justify-between text-[12px] font-medium text-[#94a3b8]">
+                        <div className="mt-1.5 flex items-center justify-between text-[12px] font-medium text-[#64748b]">
                           <span className="flex items-center gap-1.5" title={new Date(proj.updated_at).toLocaleString()}>
                             <Clock size={13} /> Edited {timeAgo(proj.updated_at)}
                           </span>
                           {!own && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#f6f4ff] px-2 py-0.5 text-[10.5px] font-bold text-[#5742FF]">
-                              <Share2 size={10} /> Shared
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#f6f4ff] px-2 py-0.5 text-[10.5px] font-bold text-[#4331E0]">
+                              <Share2 size={10} /> Shared with you
                             </span>
                           )}
                         </div>
 
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#f1f0fa] pt-3">
+                          <Collaborators emails={members[proj.id] ?? []} own={own} />
+                          <span className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-[#64748b]" title={`${stats.blocks} blocks, ${stats.links} connections`}>
+                            <Workflow size={12} aria-hidden /> {stats.blocks > 0 ? `${stats.blocks} blocks · ${stats.links} links` : "Blank canvas"}
+                          </span>
+                        </div>
+
                         <div className="mt-auto flex items-center gap-2 pt-4">
                           <Link
-                            href={`/dashboard/project/${proj.id}`}
-                            className="group/btn flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-[#ebe9ff] bg-[#f8f7ff] text-[13.5px] font-bold text-[#5742FF] transition-colors hover:border-[#5742FF] hover:bg-[#5742FF] hover:text-white"
+                            href={`/dashboard/project/${proj.id}`} onClick={onOpen}
+                            className="group/btn flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-[#ebe9ff] bg-[#f8f7ff] text-[13.5px] font-bold text-[#5742FF] transition-colors hover:border-[#5742FF] hover:bg-[#5742FF] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5742FF]/50"
                           >
                             Open <ArrowRight size={15} strokeWidth={2.5} className="transition-transform group-hover/btn:translate-x-0.5" />
                           </Link>
                           {own && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setDeleteId(proj.id); }}
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#ecebf7] bg-white text-[#94a3b8] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                              aria-label="Delete simulation"
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#ecebf7] bg-white text-[#64748b] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                              aria-label={`Delete ${proj.name}`}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -432,7 +547,7 @@ export default function DashboardPage() {
               className="custom-scrollbar relative grid max-h-[92vh] w-full max-w-[1040px] grid-cols-1 overflow-y-auto rounded-[28px] bg-white shadow-[0_24px_70px_-12px_rgba(0,0,0,0.3)] lg:grid-cols-[1fr_440px]"
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => setShowModal(false)} className="absolute right-5 top-5 z-20 rounded-full bg-white/90 p-2 text-[#94a3b8] shadow-sm hover:text-[#161622]" aria-label="Close">
+              <button onClick={() => setShowModal(false)} className="absolute right-5 top-5 z-20 rounded-full bg-white/90 p-2 text-[#64748b] shadow-sm hover:text-[#161622]" aria-label="Close">
                 <X size={18} strokeWidth={2.5} />
               </button>
 
@@ -441,18 +556,18 @@ export default function DashboardPage() {
                 <h2 className="font-space text-[26px] font-bold tracking-[-0.03em] text-[#161622]">New simulation</h2>
                 <p className="mt-1 text-[14px] text-[#64748b]">Name it, pick a domain, and you&apos;re in the editor.</p>
 
-                <label className="mt-7 text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]" htmlFor="new-sim-name">Project name</label>
+                <label className="mt-7 text-[12px] font-bold uppercase tracking-[0.12em] text-[#64748b]" htmlFor="new-sim-name">Project name</label>
                 <input
                   id="new-sim-name"
                   autoFocus
-                  className="mt-2 h-12 w-full rounded-2xl border border-[#e7e5f6] bg-[#fafaff] px-4 text-[15px] font-medium text-[#161622] outline-none transition-shadow placeholder:text-[#94a3b8] focus:border-[#c4b5fd] focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#e7e5f6] bg-[#fafaff] px-4 text-[15px] font-medium text-[#161622] outline-none transition-shadow placeholder:text-[#64748b] focus:border-[#c4b5fd] focus:shadow-[0_0_0_4px_rgba(139,92,246,.12)]"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Bank teller optimisation"
                   onKeyDown={(e) => e.key === "Enter" && newName.trim() && createProject()}
                 />
 
-                <span className="mt-6 text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">Domain</span>
+                <span className="mt-6 text-[12px] font-bold uppercase tracking-[0.12em] text-[#64748b]">Domain</span>
                 <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                   {DOMAINS.map((d) => {
                     const on = newType === d.id;
@@ -460,6 +575,7 @@ export default function DashboardPage() {
                       <button
                         key={d.id}
                         onClick={() => setNewType(d.id)}
+                        aria-pressed={on}
                         className={`relative flex flex-col items-start rounded-2xl border p-3 text-left transition-[border-color,box-shadow,background-color] ${on ? "bg-white shadow-[0_10px_24px_-14px_rgba(16,24,40,.3)]" : "border-[#ecebf7] bg-white hover:border-[#dcd8f3]"}`}
                         style={on ? { borderColor: d.color, boxShadow: `0 0 0 3px ${d.color}22` } : undefined}
                       >
@@ -467,7 +583,7 @@ export default function DashboardPage() {
                           <d.icon size={18} strokeWidth={2.2} />
                         </span>
                         <span className="mt-2.5 text-[13px] font-bold text-[#161622]">{d.label}</span>
-                        <span className="text-[11.5px] leading-snug text-[#94a3b8]">{d.sub}</span>
+                        <span className="text-[11.5px] leading-snug text-[#64748b]">{d.sub}</span>
                         {on && (
                           <motion.span layoutId="domain-check" className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ background: d.color }} transition={spring(20, 0.8)}>
                             <Check size={11} strokeWidth={3} />
@@ -543,5 +659,6 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }

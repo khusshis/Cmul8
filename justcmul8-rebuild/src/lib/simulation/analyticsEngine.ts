@@ -595,7 +595,7 @@ export function generateExecutiveDiagnosis(
   waitStats: PercentileStats
 ): NonNullable<SimResult["aiDiagnosis"]> {
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
-  const config = SIM_TYPE_REGISTRY[simType];
+  const config = SIM_TYPE_REGISTRY[simType] || SIM_TYPE_REGISTRY.human_queue; // legacy / AI-created rows
   const totalArrived = result.totalArrived;
   const totalCompleted = result.totalCompleted;
   const efficiency = totalArrived > 0 ? Math.round((totalCompleted / totalArrived) * 100) : 100;

@@ -35,7 +35,9 @@ export default function WorkspaceLoader() {
       aria-live="polite"
       aria-label="Preparing workspace"
       className="fixed inset-0 z-[90] flex flex-col items-center justify-center overflow-hidden bg-[#F8F9FE]"
-      initial={{ opacity: 0 }}
+      // No fade-in: dashboard click → loading.tsx → page each mount this in turn, and it must
+      // read as one continuous screen (and appear instantly).
+      initial={false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.45, ease: EASE_OUT, delay: 0.15 } }}
     >

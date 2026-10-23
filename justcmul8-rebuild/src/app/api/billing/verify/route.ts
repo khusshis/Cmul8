@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { MOCK_RAZORPAY, adminClient, getBilling, hmacMatches, razorpay, syncSubscription } from "@/lib/billing/server";
+import { MOCK_RAZORPAY, adminClient, getBilling, hmacMatches, isSubscriptionId, razorpay, syncSubscription } from "@/lib/billing/server";
+import { rateLimit } from "@/lib/supabase/rateLimit";
 
 // Called by Checkout's success handler. Verifies the signature, then trusts only
 // what Razorpay's API says about the subscription.
@@ -8,10 +9,12 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await rateLimit(`billing:${user.id}`, 3600, 30);
+  if (limited) return limited;
 
   const body = await req.json().catch(() => ({}));
-  const { razorpay_payment_id: paymentId, razorpay_subscription_id: subId, razorpay_signature: signature } = body;
-  if (typeof paymentId !== "string" || typeof subId !== "string" ||
+  const { razorpay_payment_id: paymentId, razorpay_subscription_id: subId, razorpay_signature: signature } = body ?? {};
+  if (typeof paymentId !== "string" || !/^pay_[A-Za-z0-9_]{1,40}$/.test(paymentId) || !isSubscriptionId(subId) ||
       (!MOCK_RAZORPAY && !hmacMatches(`${paymentId}|${subId}`, signature, process.env.RAZORPAY_KEY_SECRET))) {
     return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
   }

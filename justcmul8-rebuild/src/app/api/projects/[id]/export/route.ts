@@ -4,11 +4,15 @@ import { requirePaid } from "@/lib/billing/server";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const format = req.nextUrl.searchParams.get("format") || "json";
+  if (format !== "json" && format !== "csv") return NextResponse.json({ error: "Unsupported format" }, { status: 400 });
 
   const { data: project, error } = await supabase
     .from("projects")
@@ -47,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "No simulation results yet for this project — run a simulation first." }, { status: 404 });
   }
 
-  const stats = run.result_json.nodeStats as Record<string, any>;
+  const stats = (run.result_json.nodeStats ?? {}) as Record<string, any>;
   const rows = [["Block", "Type", "In", "Out", "Utilization %", "Avg Wait (s)"]];
   for (const s of Object.values(stats)) {
     rows.push([
@@ -59,7 +63,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       s.avgWaitTime != null ? s.avgWaitTime.toFixed(1) : "",
     ]);
   }
-  const csv = rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+  // Labels are collaborator-controlled: a leading = + - @ would run as a
+  // spreadsheet formula (CSV injection), so such cells are prefixed with '.
+  const cellText = (cell: unknown) => String(cell ?? "").replace(/^[=+\-@\t\r]/, "'$&").replace(/"/g, '""');
+  const csv = rows.map((r) => r.map((cell) => `"${cellText(cell)}"`).join(",")).join("\n");
 
   return new NextResponse(csv, {
     headers: {

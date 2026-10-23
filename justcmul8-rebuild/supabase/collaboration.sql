@@ -1,6 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 12. Collaboration: per-email invites, link access, role-aware RLS
 -- Run after schema.sql (also appended there). Safe to re-run.
+-- After running (or re-running) this file, ALSO run security.sql: it hardens the
+-- share-link policy and functions that this file defines in their original form.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Invited people (by email, so invites work before the person signs up).

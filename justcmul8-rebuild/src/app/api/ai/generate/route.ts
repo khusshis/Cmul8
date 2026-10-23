@@ -77,12 +77,15 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "prompt must be 1-4000 characters" }, { status: 400 });
   }
 
-  const domainPrompt = SIM_TYPE_REGISTRY[body?.simType as SimTypeId]?.aiSystemPrompt || "";
+  const domainPrompt =
+    typeof body?.simType === "string" && Object.hasOwn(SIM_TYPE_REGISTRY, body.simType)
+      ? SIM_TYPE_REGISTRY[body.simType as SimTypeId].aiSystemPrompt || ""
+      : "";
   const fullSystemPrompt = `${BASE_SYSTEM_PROMPT}
 
 DOMAIN CONTEXT:
 ${domainPrompt}`;
-  const currentNodesCount = Number(body?.currentNodesCount) || 0;
+  const currentNodesCount = Math.min(10_000, Math.max(0, Math.floor(Number(body?.currentNodesCount) || 0)));
 
   try {
     const generation = await generateJSON({
@@ -103,16 +106,14 @@ ${domainPrompt}`;
     if (!ops.replaceGraph) {
       return NextResponse.json({ error: "The model produced no valid blocks", warnings }, { status: 502 });
     }
+    // Positions come from the validated nodes (numeric or defaulted), never raw model output.
     const applied = applyAIOps([], [], ops);
-    const positions = new Map(
-      (Array.isArray(parsed.nodes) ? parsed.nodes : []).map((n: any) => [n?.id, n?.position])
-    );
     return NextResponse.json({
       nodes: applied.nodes.map((n) => ({
         id: n.id,
         nodeType: n.data.nodeType,
         label: n.data.label,
-        position: positions.get(n.id) ?? n.position,
+        position: n.position,
         params: n.data.params,
       })),
       edges: applied.edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),

@@ -24,13 +24,27 @@ export function generateSimPyScript(
     target: e.target,
   }));
 
+  // SECURITY: labels and params are collaborator-controlled and this script runs
+  // in every member's browser, so nothing may reach the Python source unescaped.
+  //  - Replacements are functions: a string replacement would expand `$'`, `$&`
+  //    and `` $` `` patterns from a label into raw template text, closing the
+  //    r"""...""" literal below and executing whatever follows.
+  //  - JSON.stringify escapes every `"` and `\` inside strings, so its output can
+  //    never contain an unescaped `"""` and cannot terminate the raw literal.
+  //  - Numbers are coerced, so a crafted duration cannot carry code either.
   const python = PYTHON_TEMPLATE
-    .replace("{DURATION}", String(durationSeconds))
-    .replace("{TICK_INTERVAL}", String(tickIntervalSeconds))
-    .replace("{NODE_CONFIG_JSON}", JSON.stringify(nodeConfig))
-    .replace("{EDGES_JSON}", JSON.stringify(edges));
+    .replace("{DURATION}", () => pyNumber(durationSeconds, 3600))
+    .replace("{TICK_INTERVAL}", () => pyNumber(tickIntervalSeconds, 1))
+    .replace("{NODE_CONFIG_JSON}", () => JSON.stringify(nodeConfig))
+    .replace("{EDGES_JSON}", () => JSON.stringify(edges));
 
   return { python };
+}
+
+/** A finite, positive number literal, or the fallback. */
+function pyNumber(v: unknown, fallback: number): string {
+  const n = Number(v);
+  return String(Number.isFinite(n) && n > 0 ? n : fallback);
 }
 
 const PYTHON_TEMPLATE = `
