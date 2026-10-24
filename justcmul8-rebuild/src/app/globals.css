@@ -1,8 +1,9 @@
 @import "tailwindcss";
 @import "./theme-tokens.css";
 
-/* `dark:` follows the .dark class on <html> (set by ThemeToggle / the no-flash script in layout.tsx). */
-@custom-variant dark (&:where(.dark, .dark *));
+/* `dark:` follows the .dark class on <html> (set by ThemeToggle / the no-flash script in layout.tsx).
+   A .theme-light subtree stays light inside dark mode (tokens reset in theme-tokens.css). */
+@custom-variant dark (&:where(.dark, .dark *):not(:where(.theme-light, .theme-light *)));
 
 @theme {
   --color-bg: #f7f7fa;
@@ -306,4 +307,10 @@ html::-webkit-scrollbar {
 }
 .dark .workspace-canvas .react-flow__attribution a {
   color: var(--color-text-secondary);
+}
+/* Light island (canvas snapshot for exported reports): back to the light canvas values. */
+.dark .workspace-canvas.theme-light {
+  --xy-attribution-background-color: initial;
+  --jc-edge-opacity: initial;
+  --jc-icon-dim: initial;
 }

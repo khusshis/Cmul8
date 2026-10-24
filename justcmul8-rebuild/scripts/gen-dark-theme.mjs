@@ -88,8 +88,10 @@ for (const hex of literals) for (const r of Object.keys(roles)) used.set(`${r}-$
 // ─── Tailwind palettes: shades 50–300 are tints (surface role), 400–500 mid, 600+ text ─
 const twTheme = fs.readFileSync(path.join(ROOT, "node_modules/tailwindcss/theme.css"), "utf8");
 const palette = [];
-for (const m of twTheme.matchAll(/--color-([a-z]+)-(\d+):\s*oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\)/g)) {
-  const [, name, shade, L, C, H] = m;
+const paletteLight = [];
+for (const m of twTheme.matchAll(/--color-([a-z]+)-(\d+):\s*(oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\))/g)) {
+  const [, name, shade, original, L, C, H] = m;
+  paletteLight.push(`  --color-${name}-${shade}: ${original};`);
   const c = { L: +L / 100, C: +C, H: +H };
   const n = +shade;
   // 300 is mostly faint text/decoration (text-gray-300): a dim ink that still reads as a border or fill.
@@ -101,6 +103,10 @@ for (const m of twTheme.matchAll(/--color-([a-z]+)-(\d+):\s*oklch\(([\d.]+)%\s+(
 const keys = [...used.keys()].sort();
 const light = keys.map((k) => `  --color-${k}: #${used.get(k)};`);
 const dark = keys.map((k) => `  --color-${k}: ${fmt(roles[k.slice(0, 2)](hexToOklch(used.get(k))))};`);
+// Light island inside dark mode (.theme-light, e.g. the canvas snapshot for exported reports): every token
+// back to its light value, including the semantic ones from globals.css's @theme block.
+const globalsTheme = fs.readFileSync(path.join(SRC, "app", "globals.css"), "utf8").match(/@theme\s*\{([\s\S]*?)\n\}/)[1];
+const semanticLight = [...globalsTheme.matchAll(/(--color-[\w-]+):\s*([^;]+);/g)].map((m) => `  ${m[1]}: ${m[2]};`);
 
 fs.writeFileSync(
   OUT,
@@ -112,6 +118,13 @@ ${light.join("\n")}
 .dark {
 ${dark.join("\n")}
 ${palette.join("\n")}
+}
+
+.dark .theme-light {
+  color-scheme: light;
+${semanticLight.join("\n")}
+${light.join("\n")}
+${paletteLight.join("\n")}
 }
 `
 );

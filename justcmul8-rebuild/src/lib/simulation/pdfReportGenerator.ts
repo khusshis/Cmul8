@@ -72,11 +72,14 @@ export async function generateExecutivePdfReport(
     doc.text("System Architecture & Network Flow", margin, y);
     y += 12;
 
-    const imgHeight = Math.min(180, contentWidth * 0.42);
     try {
-      doc.addImage(canvasSnapshotDataUrl, "PNG", margin, y, contentWidth, imgHeight);
+      // Keep the snapshot's aspect ratio (it used to be stretched into a fixed box).
+      const { width: w, height: h } = doc.getImageProperties(canvasSnapshotDataUrl);
+      const imgHeight = Math.min(180, contentWidth * (h / w));
+      const imgWidth = imgHeight * (w / h);
+      doc.addImage(canvasSnapshotDataUrl, "PNG", margin, y, imgWidth, imgHeight);
       doc.setDrawColor(229, 231, 235);
-      doc.rect(margin, y, contentWidth, imgHeight, "S");
+      doc.rect(margin, y, imgWidth, imgHeight, "S");
       y += imgHeight + 20;
     } catch {
       // ignore image load errors gracefully
@@ -113,7 +116,7 @@ export async function generateExecutivePdfReport(
     ["System Completion Rate", `${efficiency}%`],
     ["Median Delay (p50 Wait Time)", `${(result.waitTimePercentiles?.p50 ?? 0).toFixed(2)}s`],
     ["Worst-Case Delay (p95 / p99)", `${(result.waitTimePercentiles?.p95 ?? 0).toFixed(2)}s / ${(result.waitTimePercentiles?.p99 ?? 0).toFixed(2)}s`],
-    ["Network Stability (Little's Law)", result.littlesLaw?.isStable ? "Stable (L = λW verified)" : "Backlog detected"],
+    ["Network Stability (Little's Law)", result.littlesLaw?.isStable ? "Stable (L = lambda x W verified)" : "Backlog detected"],
   ];
 
   if (result.costAnalysis) {
@@ -153,7 +156,7 @@ export async function generateExecutivePdfReport(
   const telemetryBody = Object.entries(result.nodeStats || {}).map(([id, s]) => {
     const isBottleneck = result.bottleneckNodeId === id;
     return [
-      isBottleneck ? `${s.label} ★ [BOTTLENECK]` : s.label,
+      isBottleneck ? `${s.label} [BOTTLENECK]` : s.label,
       s.nodeType,
       String(s.entitiesIn),
       String(s.entitiesOut),

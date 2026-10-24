@@ -6,6 +6,7 @@ import { motion, useMotionValue, useScroll, useTransform, useReducedMotion } fro
 import { Sparkles, ArrowRight, BarChart3 } from "lucide-react";
 import { splashRevealDelay } from "@/components/SplashScreen";
 import { ScrollCue, SplitWords, VIEW, spring, EASE_OUT } from "@/components/landing/motionKit";
+import { useIsDark } from "@/components/ui/ThemeToggle";
 
 const PROMPTS = [
   "A hospital ER with 2 nurses and 3 doctors…",
@@ -263,6 +264,7 @@ export default function HeroSection() {
   // Start the entrance as the boot splash opens, not underneath it.
   const [d] = useState(() => splashRevealDelay());
   const reduce = useReducedMotion();
+  const reel = useIsDark() ? "justcmul8-showreel-dark" : "justcmul8-showreel";
   const sectionRef = useRef<HTMLElement>(null);
   const reelRef = useRef<HTMLDivElement>(null);
 
@@ -369,9 +371,11 @@ export default function HeroSection() {
             className="relative"
           >
             <div className="relative rounded-[1.25rem] md:rounded-[2rem] p-1.5 md:p-2 bg-surface border border-ln-ecebf7 shadow-[0_1px_2px_rgba(16,24,40,.04),0_40px_80px_-40px_rgba(16,24,40,.25)]">
+              {/* Separate light and dark renders of the same showreel (motion/showreel, `DARK=1 node render.js`). */}
               <video
-                className="w-full aspect-video rounded-[1rem] md:rounded-[1.6rem] bg-sf-fafaff dark:[filter:invert(.93)_hue-rotate(180deg)_saturate(1.15)]"
-                poster="/videos/justcmul8-showreel-poster.jpg"
+                key={reel}
+                className="w-full aspect-video rounded-[1rem] md:rounded-[1.6rem] bg-sf-fafaff"
+                poster={`/videos/${reel}-poster.jpg`}
                 autoPlay
                 muted
                 loop
@@ -379,8 +383,8 @@ export default function HeroSection() {
                 preload="metadata"
                 aria-label="JustCmul8 showreel: describe a system, AI builds the model, run it and analyze the results"
               >
-                <source src="/videos/justcmul8-showreel-4k.mp4" type="video/mp4" media="(min-width: 1800px) and (min-resolution: 2dppx)" />
-                <source src="/videos/justcmul8-showreel-1080p.mp4" type="video/mp4" />
+                <source src={`/videos/${reel}-4k.mp4`} type="video/mp4" media="(min-width: 1800px) and (min-resolution: 2dppx)" />
+                <source src={`/videos/${reel}-1080p.mp4`} type="video/mp4" />
               </video>
             </div>
           </motion.div>

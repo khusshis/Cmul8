@@ -38,7 +38,21 @@ export type Billing = {
   cancel_at_period_end: boolean;
   credits: number;
   credits_reset_at: string;
+  /** Null for a paid plan granted directly (complimentary): nothing is billed and nothing renews. */
+  razorpay_subscription_id?: string | null;
 };
+
+/** A paid plan that isn't billed through Razorpay (granted by an admin). */
+export const isComplimentary = (b: Billing) => b.plan !== "free" && !b.razorpay_subscription_id;
+
+/** Short plan caption, e.g. "Pro · billed monthly", "Pro · 14-day free trial", "Pro · complimentary". */
+export function planCaption(b: Billing) {
+  const name = b.plan === "enterprise" ? "Enterprise" : "Pro";
+  if (b.plan === "free") return "Free plan · free forever";
+  if (isComplimentary(b)) return `${name} · complimentary`;
+  if (b.status === "trialing") return `${name} · ${TRIAL_DAYS}-day free trial`;
+  return b.billing_interval ? `${name} · billed ${b.billing_interval}` : name;
+}
 
 /** Turns a Postgres INSUFFICIENT_CREDITS error into a friendly sentence, else null. */
 export function creditErrorMessage(message: string | undefined | null): string | null {

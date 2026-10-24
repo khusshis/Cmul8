@@ -9,7 +9,7 @@ const CHUNK=50,K=4,TRIES=4;
  const [out,fpsA='60',scA='2',wA='4',t0A='0',t1A='20']=process.argv.slice(2);
  const FPS=+fpsA,SC=+scA,NW=+wA,sub=1/(FPS*2*K),t0=+t0A,t1=+t1A;
  const F0=Math.round(t0*FPS),N=Math.round(t1*FPS)-F0,NC=Math.ceil(N/CHUNK);
- const url=pathToFileURL(path.resolve(__dirname,'scene.html')).href+'?render';
+ const url=pathToFileURL(path.resolve(__dirname,'scene.html')).href+'?render'+(process.env.DARK?'&dark':''); // DARK=1 node render.js … renders the dark variant
  const dir=path.resolve('segs');fs.mkdirSync(dir,{recursive:true});
  const seg=c=>path.join(dir,String(c).padStart(3,'0')+'.mp4');
  const T=Date.now();let next=0,done=0;

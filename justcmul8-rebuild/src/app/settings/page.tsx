@@ -13,7 +13,7 @@ import { setTheme, useIsDark } from "@/components/ui/ThemeToggle";
 import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
-import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, type Billing, type Interval } from "@/lib/billing/plans";
+import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, isComplimentary, planCaption, type Billing, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
 import {
   CreditsScene, FlowField, LineInput, PillChoice, ProfileScene, ROLES, Stage, TEAM_SIZES, Ticker, WorldScene, sceneFor, usePointer,
@@ -111,6 +111,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
   const pct = Math.min(100, (billing.credits / allowance) * 100);
   const statusLine =
     !pro ? "Free plan" :
+    isComplimentary(billing) ? "Complimentary plan · not billed, nothing to renew" :
     billing.status === "trialing" ? `Trial · first charge on ${fmtDate(billing.trial_ends_at)}` :
     billing.status === "past_due" ? "Payment failed, Razorpay is retrying. Update your card from the Razorpay email." :
     billing.cancel_at_period_end ? `Ends on ${fmtDate(billing.current_period_end)}` :
@@ -177,7 +178,11 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
             <>
               <CardHead icon={ShieldCheck} title="Manage subscription" sub="Payments are handled securely by Razorpay." />
               <AnimatePresence mode="wait" initial={false}>
-                {billing.cancel_at_period_end ? (
+                {isComplimentary(billing) ? (
+                  <motion.p key="comp" className="text-[13.5px] text-fg-64748b" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    This plan was added to your account directly, so it isn&apos;t billed and there&apos;s nothing to cancel.
+                  </motion.p>
+                ) : billing.cancel_at_period_end ? (
                   <motion.p key="sched" className="text-[13.5px] text-fg-64748b" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     Cancellation scheduled. You keep Pro until <b className="text-fg-161622">{fmtDate(billing.current_period_end)}</b>.
                   </motion.p>
@@ -722,7 +727,7 @@ function SettingsInner() {
             <Stage pointer={pointer} label={stage.label} domain={defaultSimType} progress={stage.progress} status={stage.status}>
               {tab === "profile" && <ProfileScene name={name} role={role} company={company} teamSize={teamSize} />}
               {tab === "account" && <WorldScene focus={defaultSimType} selected={[defaultSimType]} />}
-              {tab === "billing" && <CreditsScene plan={billing && billing.plan !== "free" ? "pro" : "free"} interval={billing?.billing_interval ?? "monthly"} />}
+              {tab === "billing" && <CreditsScene plan={billing && billing.plan !== "free" ? "pro" : "free"} interval={billing?.billing_interval ?? "monthly"} caption={billing ? planCaption(billing) : undefined} />}
               {tab === "help" && <SupportScene />}
             </Stage>
           </div>

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLenis } from "lenis/react";
 import { LogOut, Plus, Crown, Calendar, Rocket, Sparkles, Coins, User, Settings, CreditCard, HelpCircle, ChevronRight } from "lucide-react";
 import LogoutDialog from "@/components/ui/LogoutDialog";
-import { PLAN_CREDITS, TRIAL_DAYS, type Billing } from "@/lib/billing/plans";
+import { PLAN_CREDITS, TRIAL_DAYS, isComplimentary, type Billing } from "@/lib/billing/plans";
 import { MARK_SRC } from "@/components/brand/CubeMark";
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -234,6 +234,7 @@ export default function Navbar() {
                           const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "");
                           const sub =
                             !pro ? `${allowance} credits a month. Try Pro free for ${TRIAL_DAYS} days.` :
+                            isComplimentary(billing) ? "Complimentary plan. Not billed." :
                             billing.status === "trialing" ? `Trial ends ${day(billing.trial_ends_at)}. Cancel any time.` :
                             billing.status === "past_due" ? "Payment failed. Razorpay is retrying." :
                             billing.cancel_at_period_end ? `Ends ${day(billing.current_period_end)}.` :

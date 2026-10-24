@@ -6,7 +6,8 @@ import {
   ReactFlow, ReactFlowProvider,
   Background, Controls, MiniMap, addEdge, useReactFlow, useViewport, useConnection, useStore,
   Handle, Position, BaseEdge, getBezierPath, getStraightPath, getSmoothStepPath, EdgeLabelRenderer,
-  type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges, SelectionMode
+  type Connection, type Edge, type Node, BackgroundVariant, type NodeTypes, type EdgeTypes, type EdgeProps, type NodeChange, type EdgeChange, applyNodeChanges, applyEdgeChanges, SelectionMode,
+  getNodesBounds, getViewportForBounds,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { SimState } from "@/app/dashboard/project/[id]/page";
@@ -937,6 +938,9 @@ export interface NodeCanvasProps {
 
 const getMiniMapNodeColor = (n: Node) => NODE_BASE_COLORS[(n.data as any)?.nodeType] || "var(--color-info)";
 
+/** Report snapshot size; its 2.86:1 matches the image box in the PDF report. */
+export const SNAPSHOT_SIZE = [1440, 504] as const;
+
 export interface NodeCanvasHandle {
   addNode: (nodeType: string) => void;
   captureSnapshot: () => Promise<string | null>;
@@ -956,7 +960,7 @@ function RemoteCursorsOverlay({
   if (!bounds) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+    <div data-snapshot-skip className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
       {remoteUsers
         .filter((u) => u.cursor && u.cursor.x != null && u.cursor.y != null)
         .map((u) => {
@@ -986,7 +990,7 @@ function NodeCanvasInner({
 }: NodeCanvasProps & { exposedRef?: React.Ref<NodeCanvasHandle> }) {
   const reactFlowWrapper = React.useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
-  const { fitView, setNodes, setEdges, deleteElements, setCenter, getZoom } = useReactFlow();
+  const { fitView, setNodes, setEdges, deleteElements, setCenter, getZoom, getNodes } = useReactFlow();
   const prevNodeCountRef = useRef(0);
   const cursorThrottleRef = useRef(false);
   const canvasKey = useRef({});
@@ -1105,19 +1109,29 @@ function NodeCanvasInner({
       onNodesChange([{ type: "add", item: newNode }]);
     },
     captureSnapshot: async () => {
-      if (!reactFlowWrapper.current) return null;
+      const el = reactFlowWrapper.current;
+      if (!el) return null;
+      // For reports: an off-screen copy of the canvas, always light (.theme-light resets the theme tokens),
+      // without controls/minimap/cursors, with the whole model fitted. The user's own view never changes.
+      const [W, H] = SNAPSHOT_SIZE;
+      const holder = document.createElement("div");
+      holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${W}px;height:${H}px;pointer-events:none`;
+      const copy = el.cloneNode(true) as HTMLElement;
+      copy.classList.add("theme-light");
+      copy.querySelectorAll(".react-flow__panel, [data-snapshot-skip]").forEach((n) => n.remove());
+      const vp = getViewportForBounds(getNodesBounds(getNodes()), W, H, 0.2, 1.5, 0.08);
+      const layer = copy.querySelector<HTMLElement>(".react-flow__viewport");
+      if (layer) layer.style.transform = `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`;
+      holder.appendChild(copy);
+      document.body.appendChild(holder);
       try {
         const { toPng } = await import("html-to-image");
-        return await toPng(reactFlowWrapper.current, {
-          // Dark mode: match the dark canvas so dark node cards don't land on a light page.
-          backgroundColor: document.documentElement.classList.contains("dark")
-            ? getComputedStyle(reactFlowWrapper.current).backgroundColor
-            : "#F9F8FD",
-          quality: 0.95,
-        });
+        return await toPng(copy, { backgroundColor: "#F9F8FD", width: W, height: H, quality: 0.95 });
       } catch (err) {
         console.warn("Failed to capture canvas snapshot:", err);
         return null;
+      } finally {
+        holder.remove();
       }
     },
   }), [reactFlowInstance, nodes, onNodesChange]);

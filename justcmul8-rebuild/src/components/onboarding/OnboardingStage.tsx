@@ -642,7 +642,8 @@ const ORBIT = [
 /** Monthly credits as a charging gauge, with what each action costs orbiting it. */
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interval: Interval }) {
+/** `caption` overrides the plan pill (settings shows the user's real plan; onboarding pitches the trial). */
+export function CreditsScene({ plan, interval, caption }: { plan: "free" | "pro"; interval: Interval; caption?: string }) {
   const credits = PLAN_CREDITS[plan];
   const text = useCountTo(credits);
   const pro = plan === "pro";
@@ -728,11 +729,11 @@ export function CreditsScene({ plan, interval }: { plan: "free" | "pro"; interva
       <div className="flex flex-col items-center gap-2">
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
-            key={`${plan}-${interval}`}
+            key={`${plan}-${interval}-${caption}`}
             className={`rounded-full px-3 py-1 text-[11px] font-bold ${pro ? "bg-sf-5742ff text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" : "bg-sf-f5f3ff text-fg-5742ff"}`}
             initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }} transition={spring(16, 0.7)}
           >
-            {pro ? `Pro · ${TRIAL_DAYS}-day free trial · billed ${interval}` : "Free plan · free forever"}
+            {caption ?? (pro ? `Pro · ${TRIAL_DAYS}-day free trial · billed ${interval}` : "Free plan · free forever")}
           </motion.span>
         </AnimatePresence>
         <p className="text-center text-[12.5px] font-medium text-fg-64748b">
