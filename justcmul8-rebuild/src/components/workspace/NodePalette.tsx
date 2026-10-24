@@ -127,7 +127,7 @@ export default function NodePalette({ simType, onAddNode, onMinimize }: NodePale
                         <div className="min-w-0">
                           <div className="text-[12.5px] font-bold text-fg-111827 leading-tight">{n.label}</div>
                           {(n as any).desc && (
-                            <div className="text-[11px] text-fg-64748b leading-snug mt-0.5 line-clamp-1">{(n as any).desc}</div>
+                            <div className="text-[11px] text-fg-64748b leading-snug mt-0.5">{(n as any).desc}</div>
                           )}
                         </div>
                       </div>

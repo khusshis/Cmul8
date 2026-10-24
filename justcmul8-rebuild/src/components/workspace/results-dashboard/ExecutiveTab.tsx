@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Gauge,
   AlertTriangle,
-  Sparkles,
   Clock,
   Boxes,
   Zap,
@@ -18,6 +17,8 @@ import {
   Loader2,
   ShieldCheck,
   Lightbulb,
+  BrainCircuit,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { OptimizerFix, OptimizerRecommendation } from "@/app/api/ai/optimize/route";
 import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
@@ -159,7 +160,7 @@ export default function ExecutiveTab({
         >
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-f3f1ff text-fg-5742ff"><Sparkles size={15} aria-hidden /></span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-f3f1ff text-fg-5742ff"><BrainCircuit size={15} aria-hidden /></span>
               <span className="text-[11.5px] font-extrabold uppercase tracking-[0.14em] text-fg-4331e0">AI summary</span>
             </div>
             <h2 className="mb-2 text-[19px] font-extrabold tracking-tight text-fg-161622 sm:text-[21px]">
@@ -325,7 +326,7 @@ export default function ExecutiveTab({
               disabled={aiLoading}
               className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {aiLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Sparkles size={13} aria-hidden />}
+              {aiLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <SlidersHorizontal size={13} aria-hidden />}
               {aiLoading ? "Analyzing…" : "Optimize with AI"}
             </button>
           </div>

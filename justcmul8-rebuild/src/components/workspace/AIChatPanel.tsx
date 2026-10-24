@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   Send,
-  Sparkles,
   Zap,
   RotateCcw,
   CheckCircle2,
@@ -679,7 +678,7 @@ export default function AIChatPanel({
           <div className="py-3 space-y-4 animate-in fade-in duration-300">
             <div className="text-center space-y-1.5">
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sf-6366f1 to-sf-8b5cf6 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20">
-                <Sparkles size={20} />
+                <Bot size={20} />
               </div>
               <h3 className="text-[14.5px] font-black text-gray-900 tracking-tight">AI Simulation Architect</h3>
               <p className="text-[11.5px] text-gray-500 max-w-[260px] mx-auto leading-relaxed">
@@ -941,7 +940,7 @@ export default function AIChatPanel({
         {messages.length > 0 && !showClearConfirm && (
           <div className="flex justify-between items-center mb-1.5 px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={11} className="text-fg-6366f1" /> Simulation Co-Pilot
+              <Bot size={11} className="text-fg-6366f1" /> Simulation Co-Pilot
             </span>
             <button
               onClick={handleClearChat}

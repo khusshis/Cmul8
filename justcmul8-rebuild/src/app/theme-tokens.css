@@ -97,6 +97,7 @@
   --color-fg-bcf5d6: #bcf5d6;
   --color-fg-be123c: #be123c;
   --color-fg-c084fc: #c084fc;
+  --color-fg-c4b5fd: #c4b5fd;
   --color-fg-c4bdfb: #c4bdfb;
   --color-fg-c4c2d6: #c4c2d6;
   --color-fg-c4c4d0: #c4c4d0;
@@ -120,6 +121,7 @@
   --color-fg-ddd3ff: #ddd3ff;
   --color-fg-def7ec: #def7ec;
   --color-fg-e0e7ff: #e0e7ff;
+  --color-fg-e11d48: #e11d48;
   --color-fg-e2e2e8: #e2e2e8;
   --color-fg-e2e8f0: #e2e8f0;
   --color-fg-e4e1f3: #e4e1f3;
@@ -241,6 +243,7 @@
   --color-ln-9ca3af: #9ca3af;
   --color-ln-a07850: #a07850;
   --color-ln-a16207: #a16207;
+  --color-ln-a5f3fc: #a5f3fc;
   --color-ln-a78bfa: #a78bfa;
   --color-ln-a7f3d0: #a7f3d0;
   --color-ln-a855f7: #a855f7;
@@ -249,6 +252,7 @@
   --color-ln-b9b6d3: #b9b6d3;
   --color-ln-bcf5d6: #bcf5d6;
   --color-ln-bdebd6: #bdebd6;
+  --color-ln-bfdbfe: #bfdbfe;
   --color-ln-c084fc: #c084fc;
   --color-ln-c4b5fd: #c4b5fd;
   --color-ln-c4bdfb: #c4bdfb;
@@ -335,6 +339,7 @@
   --color-ln-fde68a: #fde68a;
   --color-ln-fde8e8: #fde8e8;
   --color-ln-febc2e: #febc2e;
+  --color-ln-fecdd3: #fecdd3;
   --color-ln-ff5f57: #ff5f57;
   --color-ln-ff61d2: #ff61d2;
   --color-ln-ff6d5a: #ff6d5a;
@@ -359,6 +364,7 @@
   --color-sf-0f1017: #0f1017;
   --color-sf-0f172a: #0f172a;
   --color-sf-10b981: #10b981;
+  --color-sf-110f1f: #110f1f;
   --color-sf-111029: #111029;
   --color-sf-111827: #111827;
   --color-sf-12141c: #12141c;
@@ -367,6 +373,7 @@
   --color-sf-149eca: #149eca;
   --color-sf-161622: #161622;
   --color-sf-181825: #181825;
+  --color-sf-191733: #191733;
   --color-sf-1a1a24: #1a1a24;
   --color-sf-1a1d26: #1a1d26;
   --color-sf-1d1d25: #1d1d25;
@@ -494,6 +501,8 @@
   --color-sf-ece9ff: #ece9ff;
   --color-sf-ecebf7: #ecebf7;
   --color-sf-ecebfa: #ecebfa;
+  --color-sf-ecfdf5: #ecfdf5;
+  --color-sf-ecfeff: #ecfeff;
   --color-sf-ede9fe: #ede9fe;
   --color-sf-eeebff: #eeebff;
   --color-sf-eeecf9: #eeecf9;
@@ -501,6 +510,7 @@
   --color-sf-eef2ff: #eef2ff;
   --color-sf-ef4444: #ef4444;
   --color-sf-efedff: #efedff;
+  --color-sf-eff6ff: #eff6ff;
   --color-sf-f0f0f4: #f0f0f4;
   --color-sf-f1eeff: #f1eeff;
   --color-sf-f1efff: #f1efff;
@@ -558,6 +568,7 @@
   --color-sf-ffebeb: #ffebeb;
   --color-sf-ffecef: #ffecef;
   --color-sf-fff1e6: #fff1e6;
+  --color-sf-fff1f2: #fff1f2;
   --color-sf-fff5f5: #fff5f5;
   --color-sf-fff6ec: #fff6ec;
   --color-sf-fffbeb: #fffbeb;
@@ -662,6 +673,7 @@
   --color-fg-bcf5d6: oklch(92.3% 0.072 160.8);
   --color-fg-be123c: oklch(76.8% 0.162 16.9);
   --color-fg-c084fc: oklch(76.2% 0.145 305.5);
+  --color-fg-c4b5fd: oklch(85.1% 0.083 293.6);
   --color-fg-c4bdfb: oklch(86.0% 0.071 289.5);
   --color-fg-c4c2d6: oklch(50.8% 0.028 290.4);
   --color-fg-c4c4d0: oklch(50.7% 0.017 286.0);
@@ -685,6 +697,7 @@
   --color-fg-ddd3ff: oklch(88.9% 0.061 295.6);
   --color-fg-def7ec: oklch(95.5% 0.030 167.5);
   --color-fg-e0e7ff: oklch(45.1% 0.030 272.8);
+  --color-fg-e11d48: oklch(73.2% 0.182 17.6);
   --color-fg-e2e2e8: oklch(45.9% 0.008 286.2);
   --color-fg-e2e8f0: oklch(45.1% 0.013 255.5);
   --color-fg-e4e1f3: oklch(45.7% 0.024 293.6);
@@ -806,6 +819,7 @@
   --color-ln-9ca3af: oklch(44.3% 0.019 261.3);
   --color-ln-a07850: oklch(60.3% 0.060 65.6);
   --color-ln-a16207: oklch(55.4% 0.097 66.4);
+  --color-ln-a5f3fc: oklch(33.3% 0.040 205.0);
   --color-ln-a78bfa: oklch(70.9% 0.127 293.5);
   --color-ln-a7f3d0: oklch(33.8% 0.040 164.2);
   --color-ln-a855f7: oklch(62.7% 0.186 303.9);
@@ -814,6 +828,7 @@
   --color-ln-b9b6d3: oklch(40.6% 0.040 290.2);
   --color-ln-bcf5d6: oklch(33.1% 0.040 160.8);
   --color-ln-bdebd6: oklch(33.9% 0.040 165.6);
+  --color-ln-bfdbfe: oklch(35.1% 0.040 254.1);
   --color-ln-c084fc: oklch(72.2% 0.141 305.5);
   --color-ln-c4b5fd: oklch(81.1% 0.081 293.6);
   --color-ln-c4bdfb: oklch(82.6% 0.069 289.5);
@@ -900,6 +915,7 @@
   --color-ln-fde68a: oklch(33.0% 0.040 95.7);
   --color-ln-fde8e8: oklch(32.1% 0.023 17.6);
   --color-ln-febc2e: oklch(83.5% 0.129 80.9);
+  --color-ln-fecdd3: oklch(34.5% 0.040 10.0);
   --color-ln-ff5f57: oklch(69.4% 0.157 26.4);
   --color-ln-ff61d2: oklch(73.1% 0.180 340.6);
   --color-ln-ff6d5a: oklch(71.1% 0.146 29.7);
@@ -924,6 +940,7 @@
   --color-sf-0f1017: oklch(30.0% 0.017 278.4);
   --color-sf-0f172a: oklch(30.0% 0.080 265.8);
   --color-sf-10b981: oklch(71.6% 0.128 162.5);
+  --color-sf-110f1f: oklch(30.0% 0.071 288.4);
   --color-sf-111029: oklch(30.0% 0.080 282.4);
   --color-sf-111827: oklch(30.0% 0.070 264.7);
   --color-sf-12141c: oklch(30.0% 0.036 273.8);
@@ -932,6 +949,7 @@
   --color-sf-149eca: oklch(67.3% 0.106 227.2);
   --color-sf-161622: oklch(30.0% 0.052 284.1);
   --color-sf-181825: oklch(30.0% 0.056 284.1);
+  --color-sf-191733: oklch(30.0% 0.080 284.5);
   --color-sf-1a1a24: oklch(30.0% 0.043 284.7);
   --color-sf-1a1d26: oklch(30.0% 0.040 270.5);
   --color-sf-1d1d25: oklch(30.0% 0.034 285.2);
@@ -1059,6 +1077,8 @@
   --color-sf-ece9ff: oklch(25.0% 0.065 292.1);
   --color-sf-ecebf7: oklch(24.8% 0.035 289.9);
   --color-sf-ecebfa: oklch(24.7% 0.044 289.1);
+  --color-sf-ecfdf5: oklch(19.3% 0.045 166.1);
+  --color-sf-ecfeff: oklch(19.7% 0.042 200.9);
   --color-sf-ede9fe: oklch(24.9% 0.062 294.6);
   --color-sf-eeebff: oklch(24.3% 0.059 292.8);
   --color-sf-eeecf9: oklch(24.3% 0.038 293.1);
@@ -1066,6 +1086,7 @@
   --color-sf-eef2ff: oklch(21.9% 0.039 272.3);
   --color-sf-ef4444: oklch(65.7% 0.179 25.3);
   --color-sf-efedff: oklch(23.7% 0.053 291.0);
+  --color-sf-eff6ff: oklch(20.0% 0.017 254.6);
   --color-sf-f0f0f4: oklch(23.2% 0.006 286.3);
   --color-sf-f1eeff: oklch(23.2% 0.050 294.1);
   --color-sf-f1efff: oklch(22.7% 0.047 291.7);
@@ -1123,6 +1144,7 @@
   --color-sf-ffebeb: oklch(23.3% 0.048 17.5);
   --color-sf-ffecef: oklch(22.6% 0.046 6.6);
   --color-sf-fff1e6: oklch(21.0% 0.046 60.8);
+  --color-sf-fff1f2: oklch(20.3% 0.033 12.4);
   --color-sf-fff5f5: oklch(19.2% 0.013 17.3);
   --color-sf-fff6ec: oklch(19.2% 0.036 70.5);
   --color-sf-fffbeb: oklch(19.9% 0.047 95.3);
@@ -1543,6 +1565,7 @@
   --color-fg-bcf5d6: #bcf5d6;
   --color-fg-be123c: #be123c;
   --color-fg-c084fc: #c084fc;
+  --color-fg-c4b5fd: #c4b5fd;
   --color-fg-c4bdfb: #c4bdfb;
   --color-fg-c4c2d6: #c4c2d6;
   --color-fg-c4c4d0: #c4c4d0;
@@ -1566,6 +1589,7 @@
   --color-fg-ddd3ff: #ddd3ff;
   --color-fg-def7ec: #def7ec;
   --color-fg-e0e7ff: #e0e7ff;
+  --color-fg-e11d48: #e11d48;
   --color-fg-e2e2e8: #e2e2e8;
   --color-fg-e2e8f0: #e2e8f0;
   --color-fg-e4e1f3: #e4e1f3;
@@ -1687,6 +1711,7 @@
   --color-ln-9ca3af: #9ca3af;
   --color-ln-a07850: #a07850;
   --color-ln-a16207: #a16207;
+  --color-ln-a5f3fc: #a5f3fc;
   --color-ln-a78bfa: #a78bfa;
   --color-ln-a7f3d0: #a7f3d0;
   --color-ln-a855f7: #a855f7;
@@ -1695,6 +1720,7 @@
   --color-ln-b9b6d3: #b9b6d3;
   --color-ln-bcf5d6: #bcf5d6;
   --color-ln-bdebd6: #bdebd6;
+  --color-ln-bfdbfe: #bfdbfe;
   --color-ln-c084fc: #c084fc;
   --color-ln-c4b5fd: #c4b5fd;
   --color-ln-c4bdfb: #c4bdfb;
@@ -1781,6 +1807,7 @@
   --color-ln-fde68a: #fde68a;
   --color-ln-fde8e8: #fde8e8;
   --color-ln-febc2e: #febc2e;
+  --color-ln-fecdd3: #fecdd3;
   --color-ln-ff5f57: #ff5f57;
   --color-ln-ff61d2: #ff61d2;
   --color-ln-ff6d5a: #ff6d5a;
@@ -1805,6 +1832,7 @@
   --color-sf-0f1017: #0f1017;
   --color-sf-0f172a: #0f172a;
   --color-sf-10b981: #10b981;
+  --color-sf-110f1f: #110f1f;
   --color-sf-111029: #111029;
   --color-sf-111827: #111827;
   --color-sf-12141c: #12141c;
@@ -1813,6 +1841,7 @@
   --color-sf-149eca: #149eca;
   --color-sf-161622: #161622;
   --color-sf-181825: #181825;
+  --color-sf-191733: #191733;
   --color-sf-1a1a24: #1a1a24;
   --color-sf-1a1d26: #1a1d26;
   --color-sf-1d1d25: #1d1d25;
@@ -1940,6 +1969,8 @@
   --color-sf-ece9ff: #ece9ff;
   --color-sf-ecebf7: #ecebf7;
   --color-sf-ecebfa: #ecebfa;
+  --color-sf-ecfdf5: #ecfdf5;
+  --color-sf-ecfeff: #ecfeff;
   --color-sf-ede9fe: #ede9fe;
   --color-sf-eeebff: #eeebff;
   --color-sf-eeecf9: #eeecf9;
@@ -1947,6 +1978,7 @@
   --color-sf-eef2ff: #eef2ff;
   --color-sf-ef4444: #ef4444;
   --color-sf-efedff: #efedff;
+  --color-sf-eff6ff: #eff6ff;
   --color-sf-f0f0f4: #f0f0f4;
   --color-sf-f1eeff: #f1eeff;
   --color-sf-f1efff: #f1efff;
@@ -2004,6 +2036,7 @@
   --color-sf-ffebeb: #ffebeb;
   --color-sf-ffecef: #ffecef;
   --color-sf-fff1e6: #fff1e6;
+  --color-sf-fff1f2: #fff1f2;
   --color-sf-fff5f5: #fff5f5;
   --color-sf-fff6ec: #fff6ec;
   --color-sf-fffbeb: #fffbeb;

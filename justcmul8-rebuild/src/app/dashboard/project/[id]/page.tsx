@@ -5,7 +5,7 @@ import Tooltip from "@/components/ui/Tooltip";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Sparkles, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen, GitCompareArrows } from "lucide-react";
+import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, ChevronDown, Edit2, Check, Settings, X, Share2, Clock, BarChart2, Activity, Code2, Undo2, Redo2, MoreHorizontal, Zap, AlertCircle, Eye, PanelLeftOpen, PanelRightClose, PanelRightOpen, GitCompareArrows, Bot } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
@@ -31,6 +31,8 @@ import ShareExportModal from "@/components/workspace/ShareExportModal";
 import AdvancedResultsDashboard from "@/components/workspace/AdvancedResultsDashboard";
 import MonteCarloPanel from "@/components/workspace/MonteCarloPanel";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import ProfileMenu from "@/components/layout/ProfileMenu";
+import { MARK_SRC } from "@/components/brand/CubeMark";
 import DigitalTwinCanvas, { type TwinViewport, type TwinFrameInfo } from "@/components/workspace/DigitalTwinCanvas";
 import PlaybackControls from "@/components/workspace/PlaybackControls";
 import LiveCursor from "@/components/workspace/LiveCursor";
@@ -852,7 +854,7 @@ export default function WorkspacePage() {
         <div className="flex items-center gap-3 shrink-0 min-w-0 mr-3">
           {/* Logo Section */}
           <Link href="/dashboard" className="flex items-center gap-2 group cursor-pointer shrink-0" title="Go to Dashboard">
-            <img src="/logo-transparent.png" alt="JustCmul8" className="w-8 h-8 object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105" />
+            <img src={MARK_SRC} alt="" className="h-9 w-auto transition-transform duration-300 group-hover:-rotate-6" />
             <div className="flex flex-col">
               <span className="font-extrabold text-[15px] text-fg-111827 group-hover:text-fg-5742ff transition-colors leading-[1.1] tracking-tight whitespace-nowrap">JustCmul8</span>
               <span className="text-[10px] text-fg-5742ff font-medium leading-[1.1] whitespace-nowrap">Model. Simulate. Optimize.</span>
@@ -1248,12 +1250,9 @@ export default function WorkspacePage() {
             <Share2 size={14} strokeWidth={2.2} />
           </button>
 
-          {/* Avatar (Circular) */}
-          <div className="flex items-center gap-1 cursor-pointer group ml-0.5 shrink-0" title={currentUser?.email || "User Profile"}>
-            <div className="w-8 h-8 rounded-full bg-sf-5742ff text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-              {currentUser?.email ? currentUser.email[0].toUpperCase() : "M"}
-            </div>
-            <ChevronDown size={13} className="text-gray-400 group-hover:text-gray-600 transition-colors shrink-0" />
+          {/* Account menu (same as the dashboard navbar) */}
+          <div className="ml-0.5 shrink-0">
+            <ProfileMenu avatarClass="w-8 h-8 text-xs" />
           </div>
 
         </div>
@@ -1409,7 +1408,7 @@ export default function WorkspacePage() {
                     className="absolute inset-0 bg-gradient-to-r from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
                   />
                 )}
-                <Sparkles size={13} className={activeRightPanel === "ai" ? "text-white" : "text-gray-400"} />
+                <Bot size={13} className={activeRightPanel === "ai" ? "text-white" : "text-gray-400"} />
                 AI Assistant
               </button>
 

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Building2, Check, Gift, Minus, Rocket, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, Check, Gift, Minus, Rocket, Star } from "lucide-react";
 import { Reveal, SectionHeader, Stagger, StaggerItem, spring } from "@/components/landing/motionKit";
 import FaqSection from "@/components/landing/FaqSection";
 import { PRO_PRICE, PRO_YEARLY_TOTAL, YEARLY_SAVING_PCT, inr } from "@/lib/billing/plans";
@@ -102,7 +102,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
         </span>
         {f && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-fg-5742ff shadow-[0_6px_16px_-6px_rgba(0,0,0,.35)]">
-            <Sparkles size={12} /> Most popular
+            <Star size={12} /> Most popular
           </span>
         )}
       </div>

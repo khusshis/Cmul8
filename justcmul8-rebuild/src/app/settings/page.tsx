@@ -4,19 +4,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "framer-motion";
 import {
   AlertTriangle, ArrowRight, Bug, Building2, CalendarDays, Check, ChevronDown, CreditCard, HelpCircle, KeyRound, Loader2, Lock, Mail,
-  MessageCircle, Moon, Settings, ShieldCheck, Sparkles, Sun, User, Zap,
+  MessageCircle, Moon, Settings, ShieldCheck, Sun, User, Zap, History, Shapes,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { toast } from "@/components/ui/Toast";
 import { setTheme, useIsDark } from "@/components/ui/ThemeToggle";
-import { Backdrop, SplitWords, spring } from "@/components/landing/motionKit";
+import { Backdrop, SplitWords, WASH, spring } from "@/components/landing/motionKit";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
 import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, isComplimentary, planCaption, type Billing, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
 import {
-  CreditsScene, FlowField, LineInput, PillChoice, ProfileScene, ROLES, Stage, TEAM_SIZES, Ticker, WorldScene, sceneFor, usePointer,
+  CreditsScene, LineInput, PillChoice, ProfileScene, ROLES, Stage, TEAM_SIZES, Ticker, WorldScene, sceneFor, usePointer,
 } from "@/components/onboarding/OnboardingStage";
 
 const TABS = [
@@ -210,7 +210,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
       {/* Activity */}
       <Rise i={2}>
         <div className={card}>
-          <CardHead icon={Sparkles} title="Credit activity" sub={`New simulation ${CREDIT_COSTS.create_simulation} · AI optimize ${CREDIT_COSTS.ai_optimize} · AI chat ${CREDIT_COSTS.ai_chat}. Running simulations is free.`} />
+          <CardHead icon={History} title="Credit activity" sub={`New simulation ${CREDIT_COSTS.create_simulation} · AI optimize ${CREDIT_COSTS.ai_optimize} · AI chat ${CREDIT_COSTS.ai_chat}. Running simulations is free.`} />
           {ledger.length === 0 ? (
             <p className="rounded-2xl bg-sf-fafaff px-4 py-6 text-center text-[13px] text-fg-64748b">No credit activity yet.</p>
           ) : (
@@ -505,7 +505,11 @@ function SettingsInner() {
     <MotionConfig reducedMotion="user">
       <div className="relative flex min-h-screen flex-col overflow-x-clip bg-sf-fafaff">
         <Backdrop tone="a" />
-        <FlowField pointer={pointer} />
+        {/* Two soft glows drifting slowly behind the page (transform-only, so it stays cheap). */}
+        <div aria-hidden className={`pointer-events-none fixed inset-0 overflow-hidden ${WASH}`}>
+          <div className="st-drift absolute -left-[15vw] -top-[20vh] h-[70vh] w-[70vh] rounded-full" style={{ background: "radial-gradient(circle, var(--wash-a), transparent 65%)" }} />
+          <div className="st-drift st-drift-slow absolute -bottom-[25vh] -right-[10vw] h-[80vh] w-[80vh] rounded-full" style={{ background: "radial-gradient(circle, var(--wash-b), transparent 65%)" }} />
+        </div>
         <Navbar />
 
         <main className="relative z-10 mx-auto grid w-full max-w-[1400px] flex-1 gap-8 px-4 pb-16 pt-28 sm:px-8 sm:pt-32 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
@@ -610,7 +614,7 @@ function SettingsInner() {
                     <div className="space-y-4">
                       <Rise i={0}>
                         <div className={card}>
-                          <CardHead icon={Sparkles} title="Default domain" sub="New projects start with these building blocks." />
+                          <CardHead icon={Shapes} title="Default domain" sub="New projects start with these building blocks." />
                           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                             {Object.values(SIM_TYPE_REGISTRY).map((cfg, i) => {
                               const s = sceneFor(cfg.id);

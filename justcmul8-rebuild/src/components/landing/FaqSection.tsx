@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import {
   ArrowRight, BadgePercent, Cpu, CreditCard, GraduationCap, Mail, MessageCircle, Plus, Repeat, Share2,
-  ShieldCheck, Sparkles, Wand2, type LucideIcon,
+  Bot, Info, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { Reveal, spring } from "@/components/landing/motionKit";
 
@@ -14,7 +14,7 @@ const CATEGORIES: { id: string; label: string; items: QA[] }[] = [
   {
     id: "general", label: "General",
     items: [
-      { icon: Sparkles, q: "What is JustCmul8?", a: "A no-code discrete-event simulation platform. You drag blocks onto a canvas (or describe the system to the AI), run it, and get live KPIs like throughput, utilisation and wait time." },
+      { icon: Info, q: "What is JustCmul8?", a: "A no-code discrete-event simulation platform. You drag blocks onto a canvas (or describe the system to the AI), run it, and get live KPIs like throughput, utilisation and wait time." },
       { icon: Cpu, q: "Does anything run on my machine?", a: "Everything runs in your browser. The SimPy engine executes via Pyodide (WebAssembly), so there's nothing to install and your models run at full speed locally." },
       { icon: ShieldCheck, q: "Is my data private?", a: "Yes. Projects are isolated per account with row-level security, and everything is encrypted in transit and at rest." },
       { icon: GraduationCap, q: "Who is it for?", a: "Students learning operations research, analysts testing process changes, and teams planning capacity: anyone who wants answers from a model without writing code." },
@@ -32,7 +32,7 @@ const CATEGORIES: { id: string; label: string; items: QA[] }[] = [
   {
     id: "product", label: "Product",
     items: [
-      { icon: Wand2, q: "Can the AI build a model for me?", a: "Describe your system in plain English (e.g. “an ER with 2 nurses and 3 doctors”) and the Gemini-powered assistant builds the blocks and connections for you." },
+      { icon: Bot, q: "Can the AI build a model for me?", a: "Describe your system in plain English (e.g. “an ER with 2 nurses and 3 doctors”) and the Gemini-powered assistant builds the blocks and connections for you." },
       { icon: Share2, q: "Can I share or collaborate on a model?", a: "Share a read-only link with anyone, or invite teammates by email to edit together in real time." },
       { icon: Repeat, q: "Which industries can I simulate?", a: "Human queues, vehicles, liquids and materials, manufacturing, logistics and networks, each with its own animated entities and sprites." },
     ],
@@ -43,7 +43,7 @@ const CATEGORIES: { id: string; label: string; items: QA[] }[] = [
 const CHAT = [
   { q: "Can I try it without paying?", a: "Yes! The Free plan is free forever 🎉" },
   { q: "Do I need to install Python?", a: "Nope, it all runs in your browser." },
-  { q: "Can the AI build my model?", a: "Just describe it and hit Generate ✨" },
+  { q: "Can the AI build my model?", a: "Just describe it and hit Generate." },
 ];
 
 function ChatDemo() {

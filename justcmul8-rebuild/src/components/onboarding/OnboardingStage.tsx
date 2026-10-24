@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { AnimatePresence, LayoutGroup, animate, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { Briefcase, Building2, Check, ClipboardList, Coins, FlaskConical, GraduationCap, LineChart, Rocket, Wrench, Maximize2, MessageSquare, Minus, Plus, Sparkles, User, Users, Wand2, Zap } from "lucide-react";
+import { Briefcase, Building2, Check, ClipboardList, Coins, FlaskConical, GraduationCap, LineChart, Rocket, Wrench, Maximize2, MessageSquare, Minus, Plus, User, Users, Zap, Workflow, CircleEllipsis, MousePointerClick } from "lucide-react";
 import { CubeMark, MARK_SRC, spring, EASE_OUT } from "@/components/brand/CubeMark";
 import { Diorama, TYPES as SCENES, tintFor } from "@/components/landing/SimTypesSection";
 import { useIsDark } from "@/components/ui/ThemeToggle";
@@ -29,7 +29,7 @@ export const ROLES = [
   { id: "Operations manager", icon: ClipboardList },
   { id: "Researcher", icon: FlaskConical },
   { id: "Founder", icon: Rocket },
-  { id: "Other", icon: Sparkles },
+  { id: "Other", icon: CircleEllipsis },
 ];
 export const TEAM_SIZES = ["Just me", "2–10", "11–50", "51+"];
 
@@ -586,7 +586,7 @@ export function WorldScene({ focus, selected }: { focus: string | null; selected
       {!focus && (
         <motion.div className="absolute inset-0 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="rounded-full border border-ln-ecebf7 bg-surface px-4 py-2 text-[13px] font-bold text-fg-5742ff shadow-lg">
-            <Sparkles size={14} className="mr-1.5 inline" /> Pick a domain to bring it to life
+            <MousePointerClick size={14} className="mr-1.5 inline" /> Pick a domain to bring it to life
           </div>
         </motion.div>
       )}
@@ -635,7 +635,7 @@ function useCountTo(to: number) {
 const ORBIT = [
   { icon: Plus, label: "New sim", cost: CREDIT_COSTS.create_simulation },
   { icon: Zap, label: "Optimize", cost: CREDIT_COSTS.ai_optimize },
-  { icon: Wand2, label: "AI build", cost: CREDIT_COSTS.ai_generate },
+  { icon: Workflow, label: "AI build", cost: CREDIT_COSTS.ai_generate },
   { icon: MessageSquare, label: "AI chat", cost: CREDIT_COSTS.ai_chat },
 ];
 

@@ -314,3 +314,29 @@ html::-webkit-scrollbar {
   --jc-edge-opacity: initial;
   --jc-icon-dim: initial;
 }
+
+/* Legal pages (/terms, /privacy): long-form reading type */
+.legal-prose { color: var(--color-fg-475569); font-size: 15px; line-height: 1.75; }
+.legal-prose > * + * { margin-top: 0.9rem; }
+.legal-prose strong { color: var(--color-fg-161622); font-weight: 650; }
+.legal-prose a { color: var(--color-fg-5742ff); font-weight: 600; text-underline-offset: 3px; }
+.legal-prose a:hover { text-decoration: underline; }
+.legal-prose ul { display: grid; gap: 0.55rem; padding-left: 0; list-style: none; }
+.legal-prose ul > li { position: relative; padding-left: 1.4rem; }
+.legal-prose ul > li::before {
+  content: ""; position: absolute; left: 0.2rem; top: 0.72em; width: 6px; height: 6px; border-radius: 9999px;
+  background: var(--color-sf-8b5cf6);
+}
+.legal-prose .note {
+  border-radius: 16px; border: 1px solid var(--color-ln-e4defd); background: var(--color-sf-f6f4ff);
+  padding: 0.85rem 1rem; font-size: 14px; color: var(--color-fg-334155);
+}
+
+/* Settings background: two soft glows drifting slowly */
+@keyframes st-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(8vw, 6vh, 0) scale(1.08); }
+}
+.st-drift { animation: st-drift 22s ease-in-out infinite; will-change: transform; }
+.st-drift-slow { animation-duration: 30s; animation-direction: reverse; }
+@media (prefers-reduced-motion: reduce) { .st-drift { animation: none; } }

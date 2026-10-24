@@ -10,7 +10,6 @@ import {
   Maximize2,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   Maximize,
   Minimize2,
   ArrowRight,
@@ -24,6 +23,7 @@ import {
   Timer,
   X,
   Info,
+  Lightbulb,
 } from "lucide-react";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
@@ -389,7 +389,7 @@ export default function SimResultsPanel({
                     >
                       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1px, transparent 1.5px)", backgroundSize: "16px 16px", maskImage: "linear-gradient(160deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(160deg,#000,transparent 70%)" }} />
                       <div className="relative flex items-center justify-between">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15"><Sparkles size={16} aria-hidden /></span>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15"><Lightbulb size={16} aria-hidden /></span>
                         <span className="text-[10.5px] font-bold uppercase tracking-wider text-white/80">AI suggestion</span>
                       </div>
                       <h5 className="relative mt-2.5 line-clamp-2 text-[14px] font-black leading-snug">{topRec?.title || "Flow is balanced"}</h5>

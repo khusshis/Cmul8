@@ -32,6 +32,8 @@ const COLUMNS = [
     title: "Company",
     links: [
       { label: "Security", href: "/#security" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
       { label: "Contact", href: "mailto:hello@justcmul8.com" },
     ],
   },
@@ -176,7 +178,8 @@ function Wordmark() {
       className={`inline-block ${
         ink
           ? "transition-colors duration-300 hover:text-fg-5742ff"
-          : "bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-8b5cf6 bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
+          : // px/-mx: the glyphs overhang their boxes (tight tracking) and bg-clip-text would cut the overhang off
+            "px-[0.06em] -mx-[0.06em] bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-8b5cf6 bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
       }`}
       style={slice === undefined ? undefined : ({ ["--p" as string]: `${slice}%` } as React.CSSProperties)}
       variants={{
@@ -191,7 +194,7 @@ function Wordmark() {
   return (
     <div className="group relative select-none overflow-hidden pt-[0.1em]" aria-hidden>
       <motion.div
-        className="flex justify-center font-space font-bold leading-[0.9] tracking-[-0.035em] text-[21vw] xl:text-[16rem] pb-[0.08em]"
+        className="flex justify-center whitespace-nowrap font-space font-bold leading-[0.9] tracking-[-0.035em] text-[18vw] xl:text-[16rem] pb-[0.08em]"
         initial="hidden"
         whileInView="show"
         viewport={VIEW}

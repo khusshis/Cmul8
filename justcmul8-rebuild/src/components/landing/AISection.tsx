@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
-import { Sparkles, BarChart2, Play, Search, Minus, Plus, Maximize, Minimize, Building2, List, Monitor, Flag, Clock, Users, Timer, TrendingUp, PieChart, Wand2, Edit3, SlidersHorizontal, CheckCircle2, Send, Square, RotateCcw } from "lucide-react";
+import { BarChart2, Play, Search, Minus, Plus, Maximize, Minimize, Building2, List, Monitor, Flag, Clock, Users, Timer, TrendingUp, PieChart, Edit3, SlidersHorizontal, CheckCircle2, Send, Square, RotateCcw, Bot, Workflow, FilePlus2 } from "lucide-react";
 import { Backdrop, Reveal, SectionHeader, Stagger, StaggerItem, VIEW, spring, EASE_OUT } from "@/components/landing/motionKit";
 
 const PROMPT = "Create a hospital ER with 2 nurses and 3 doctors. Patients arrive every 5 minutes.";
 
 const capabilities = [
-  { title: "Generate from scratch", desc: "Describe your system in plain English.", icon: Wand2 },
+  { title: "Generate from scratch", desc: "Describe your system in plain English.", icon: FilePlus2 },
   { title: "Modify existing models", desc: "Ask AI to update, extend or refactor.", icon: Edit3 },
   { title: "Explain bottlenecks", desc: "Understand what's slowing your system.", icon: BarChart2 },
   { title: "Optimize parameters", desc: "Let AI suggest the best improvements.", icon: SlidersHorizontal },
@@ -224,7 +224,7 @@ export default function AISection() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center">
-                    <Sparkles size={15} />
+                    <Bot size={15} />
                   </div>
                   <span className="font-bold tracking-tight text-fg-161622 text-[14px]">AI ASSISTANT</span>
                 </div>
@@ -262,7 +262,7 @@ export default function AISection() {
                       className="bg-sf-f6f4ff border border-ln-e4defd text-fg-5742ff p-4 rounded-2xl rounded-tl-sm text-[14px] leading-relaxed self-start w-full origin-top-left"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <Sparkles size={16} />
+                        <Workflow size={16} />
                         <AnimatePresence mode="wait" initial={false}>
                           <motion.span
                             key={phase >= 3 ? "done" : "building"}

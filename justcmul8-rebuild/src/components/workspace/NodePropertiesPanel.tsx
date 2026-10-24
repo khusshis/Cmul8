@@ -16,7 +16,6 @@ import {
   Server,
   ShieldAlert,
   Target,
-  Sparkles,
   Layers,
   CheckCircle2,
   AlertTriangle,

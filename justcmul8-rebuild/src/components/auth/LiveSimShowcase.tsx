@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, ListOrdered, Coffee, Armchair, LogOut, Sparkles } from "lucide-react";
+import { Users, ListOrdered, Coffee, Armchair, LogOut, Bot } from "lucide-react";
 import { spring, EASE_OUT } from "@/components/brand/CubeMark";
 
 // Canvas is drawn in a 460 × 190 space; nodes are positioned in % of it so HTML and SVG line up at any width.
@@ -74,7 +74,7 @@ export default function LiveSimShowcase({ delay = 0 }: { delay?: number }) {
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="font-space font-bold text-[15px] text-fg-161622 truncate">Coffee Shop · Rush Hour</span>
           <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold tracking-wider text-fg-7c3aed bg-sf-f5f3ff rounded-md px-2 py-1 shrink-0">
-            <Sparkles size={11} /> AI GENERATED
+            <Bot size={11} /> AI GENERATED
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-1 shrink-0">

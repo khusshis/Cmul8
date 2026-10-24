@@ -1,6 +1,7 @@
 "use client";
 import { safeRedirect } from "@/lib/safeRedirect";
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -100,6 +101,13 @@ export default function SignupPage() {
       </form>
       <Divider />
       <OAuthButtons onClick={handleOAuth} />
+      <Item>
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-fg-94a3b8">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="font-semibold text-fg-64748b underline-offset-2 hover:text-fg-5742ff hover:underline">Terms of Service</Link> and{" "}
+          <Link href="/privacy" className="font-semibold text-fg-64748b underline-offset-2 hover:text-fg-5742ff hover:underline">Privacy Policy</Link>.
+        </p>
+      </Item>
     </Stagger>
   );
 }

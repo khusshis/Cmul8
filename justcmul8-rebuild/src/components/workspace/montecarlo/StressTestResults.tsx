@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Cpu, Repeat, ShieldAlert, Timer, Sparkles, Target as TargetIcon, BarChart3, Activity } from "lucide-react";
+import { Cpu, Repeat, ShieldAlert, Timer, Target as TargetIcon, BarChart3, Activity, Lightbulb } from "lucide-react";
 import { ResponsiveContainer, ComposedChart, Area, Line, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from "recharts";
 import ChartCard from "@/components/ui/ChartCard";
 import { GRID, AXIS } from "@/components/ui/chartTheme";
@@ -180,7 +180,7 @@ function Chip({ icon: Icon, children }: { icon: React.ElementType; children: Rea
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 rounded-[18px] border border-indigo-100 bg-sf-f4f2ff px-4 py-3 text-[12.5px] font-medium text-indigo-950/80">
-      <Sparkles size={15} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
+      <Lightbulb size={15} className="mt-0.5 shrink-0 text-fg-5742ff" aria-hidden />
       <p>{children}</p>
     </div>
   );

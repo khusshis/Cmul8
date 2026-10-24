@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import { Sparkles, ArrowRight, BarChart3 } from "lucide-react";
+import { ArrowRight, BarChart3, MessageSquareText } from "lucide-react";
 import { splashRevealDelay } from "@/components/SplashScreen";
 import { ScrollCue, SplitWords, VIEW, spring, EASE_OUT } from "@/components/landing/motionKit";
 import { useIsDark } from "@/components/ui/ThemeToggle";
@@ -224,8 +224,8 @@ function PromptBar({ delay }: { delay: number }) {
     >
       <div className={`relative flex flex-col sm:flex-row items-center bg-surface/95 border rounded-[1.75rem] sm:rounded-full p-2 sm:pl-6 gap-2 sm:gap-0 transition-[border-color,box-shadow] duration-300 ${focused ? "border-ln-c4b5fd shadow-[0_0_0_4px_rgba(139,92,246,.12),0_12px_32px_-12px_rgba(16,24,40,.18)]" : "border-ln-ecebf7 shadow-[0_1px_2px_rgba(16,24,40,.04),0_12px_32px_-16px_rgba(16,24,40,.14)]"}`}>
         <label className="relative flex items-center w-full px-3 sm:px-0 py-2 sm:py-0 cursor-text">
-          <motion.span animate={{ rotate: focused ? 90 : 0 }} transition={spring(12, 0.7)} className="mr-3 shrink-0 text-fg-8b5cf6">
-            <Sparkles size={20} />
+          <motion.span animate={{ scale: focused ? 1.12 : 1 }} transition={spring(12, 0.7)} className="mr-3 shrink-0 text-fg-8b5cf6">
+            <MessageSquareText size={20} />
           </motion.span>
           <span className="sr-only">Describe your simulation</span>
           <input
@@ -313,7 +313,6 @@ export default function HeroSection() {
               className="relative scale-[.8] 2xl:scale-100 origin-right"
             >
               <div className="lp-float">
-                <div className="absolute -top-4 -right-4 text-violet-400 opacity-60 pointer-events-none">✦</div>
                 <div className="bg-surface rounded-[2rem] p-6 w-[280px] h-[210px] shadow-[0_25px_50px_rgba(16,24,40,0.056)] flex items-center justify-center border border-surface dark:border-white/[0.07] dark:shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)]">
                   <MiniCanvas />
                 </div>

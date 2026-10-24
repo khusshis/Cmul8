@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { X, Flame, GitBranch, Share2, Plus, ArrowRight, Info, Sparkles } from "lucide-react";
+import { X, Flame, GitBranch, Share2, Plus, ArrowRight, Info } from "lucide-react";
 import { SIM_TYPE_REGISTRY, type StarterGraph } from "@/lib/simulation/simTypeRegistry";
 
 export interface TemplateGalleryProps {

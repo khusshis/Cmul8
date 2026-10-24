@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Copy, FileJson, FileSpreadsheet, Image as ImageIcon, Play, SlidersHorizontal, Sparkles } from "lucide-react";
+import { AlertCircle, Copy, FileJson, FileSpreadsheet, Image as ImageIcon, Play, SlidersHorizontal, FlaskConical } from "lucide-react";
 import type { Node, Edge } from "@xyflow/react";
 import TabStrip, { tabPanelProps } from "@/components/ui/TabStrip";
 import { EmptyState } from "@/components/ui/ChartCard";
@@ -305,7 +305,7 @@ export default function StressTab(p: Props) {
         !p.busy && (
           <div className={`${cardCls} border-dashed`}>
             <EmptyState
-              icon={Sparkles}
+              icon={FlaskConical}
               title="Ready to stress test your system"
               hint={<>Press <strong>Run</strong> for a quick check with sensible defaults. You&apos;ll see the typical result, the realistic best and worst case, and how confident you can be. Open <strong>Customize</strong> to add busier days, targets or a breaking-point search.</>}
             />
@@ -319,7 +319,7 @@ export default function StressTab(p: Props) {
 function NoRunYet() {
   return (
     <div className={`${cardCls} border-dashed`}>
-      <EmptyState icon={Sparkles} title="Run a stress test first" hint="These views fill in after a stress-test batch." compact />
+      <EmptyState icon={FlaskConical} title="Run a stress test first" hint="These views fill in after a stress-test batch." compact />
     </div>
   );
 }
