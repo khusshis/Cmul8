@@ -30,6 +30,25 @@ test.describe("Auth flows (no credentials required)", () => {
     await expect(page).toHaveURL(/\/signup/); // minLength=6 blocks submit
   });
 
+  test("signup needs both consent boxes, for email and for Google/GitHub (never creates an account)", async ({ page }) => {
+    await page.goto("/signup");
+    await page.getByLabel("Email address").fill("new-" + Date.now() + "@example.com");
+    await page.getByLabel(/create a password/i).fill("Str0ng-enough-pass!");
+    const adult = page.getByLabel(/18 years of age or older/i);
+    const terms = page.getByLabel(/consent to my data being processed/i);
+    await expect(adult).not.toBeChecked();
+    await expect(terms).not.toBeChecked();
+    // Only one box ticked: native `required` keeps the form from submitting.
+    await adult.check();
+    await page.getByRole("button", { name: /create account/i }).click();
+    await expect(page).toHaveURL(/\/signup/);
+    await expect(page.getByText(/check your inbox/i)).toHaveCount(0);
+    // OAuth is gated too: an error instead of a redirect to the provider.
+    await page.getByRole("button", { name: "Google" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: /tick both boxes/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/signup/);
+  });
+
   test("forgot-password form submits and shows a neutral confirmation", async ({ page }) => {
     await page.goto("/forgot-password");
     await page.getByLabel("Email address").fill("someone@example.com");

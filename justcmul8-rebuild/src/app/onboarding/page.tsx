@@ -12,6 +12,8 @@ import { CubeMark, TEXT_SRC, TEXT_RATIO } from "@/components/brand/CubeMark";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { CREDIT_COSTS, PLAN_CREDITS, PRO_FEATURES, PRO_PRICE, PRO_YEARLY_TOTAL, TRIAL_DAYS, YEARLY_SAVING_PCT, inr, type Interval } from "@/lib/billing/plans";
 import { startProCheckout } from "@/lib/billing/checkout";
+import { consentRecord, hasConsent } from "@/lib/consent";
+import { ConsentChecks, type Consent } from "@/components/auth/authUi";
 import PageScrollbar from "@/components/PageScrollbar";
 import ThemeToggle, { useIsDark } from "@/components/ui/ThemeToggle";
 import { tintFor } from "@/components/landing/SimTypesSection";
@@ -63,6 +65,9 @@ export default function OnboardingPage() {
   const [referral, setReferral] = React.useState("");
   const [plan, setPlan] = React.useState<"free" | "pro">("free");
   const [interval, setBillingInterval] = React.useState<Interval>("monthly");
+  // Sign-ups that skipped the sign-up page (e.g. Google from the login page) confirm here instead.
+  const [needConsent, setNeedConsent] = React.useState(false);
+  const [consent, setConsent] = React.useState<Consent>({ adult: false, terms: false });
 
   React.useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -77,6 +82,7 @@ export default function OnboardingPage() {
       const meta = user.user_metadata as { full_name?: string; name?: string };
       // Prefill only; never clobber what the user already typed while this loaded.
       setName((typed) => typed || meta?.full_name || meta?.name || "");
+      setNeedConsent(!hasConsent(user.user_metadata));
     });
   }, [supabase, router]);
 
@@ -90,7 +96,7 @@ export default function OnboardingPage() {
   const last = step === questionCount - 1;
 
   const canContinue =
-    step === 0 ? !!(name.trim() && role && teamSize) :
+    step === 0 ? !!(name.trim() && role && teamSize) && (!needConsent || (consent.adult && consent.terms)) :
     step === 1 ? useCases.length > 0 && !!experience : true;
 
   const answered = [name.trim(), role, teamSize, ...(invited ? [] : [useCases.length ? "y" : "", experience, step >= 2 ? "y" : ""])];
@@ -152,9 +158,15 @@ export default function OnboardingPage() {
     }
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canContinue || busy || !userId) return;
+    if (step === 0 && needConsent) {
+      // Record consent before any profile data is saved.
+      const { error } = await supabase.auth.updateUser({ data: { consent: consentRecord() } });
+      if (error) { setError(error.message); return; }
+      setNeedConsent(false);
+    }
     if (!last) go(step + 1);
     else finish(invited ? "free" : plan);
   }
@@ -269,6 +281,7 @@ export default function OnboardingPage() {
                               <PillChoice id="team" options={TEAM_SIZES} value={teamSize} onChange={setTeamSize} />
                             </div>
                           </div>
+                          {needConsent && <ConsentChecks value={consent} onChange={setConsent} />}
                         </div>
                       )}
 

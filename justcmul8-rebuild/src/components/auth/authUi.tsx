@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { spring, EASE_OUT } from "@/components/brand/CubeMark";
@@ -146,6 +147,33 @@ export function OAuthButtons({ onClick }: { onClick: (p: "google" | "github") =>
         </motion.button>
       ))}
     </Item>
+  );
+}
+
+export type Consent = { adult: boolean; terms: boolean };
+
+/** The two DPDP sign-up confirmations: unticked by default, each its own affirmative action. */
+export function ConsentChecks({ value, onChange, required = false }: { value: Consent; onChange: (c: Consent) => void; required?: boolean }) {
+  const link = "font-semibold text-fg-475569 underline underline-offset-2 hover:text-fg-5742ff";
+  const rows: [keyof Consent, React.ReactNode][] = [
+    ["adult", <>I am 18 years of age or older.</>],
+    ["terms", <>I agree to the <Link href="/terms" target="_blank" className={link}>Terms of Service</Link> and consent to my data being processed as described in the <Link href="/privacy" target="_blank" className={link}>Privacy Policy</Link>.</>],
+  ];
+  return (
+    <div className="space-y-2.5">
+      {rows.map(([key, text]) => (
+        <label key={key} className="flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug text-fg-64748b">
+          <input
+            type="checkbox"
+            required={required}
+            checked={value[key]}
+            onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+            className="mt-[1px] h-4 w-4 shrink-0 cursor-pointer accent-sf-5742ff"
+          />
+          <span>{text}</span>
+        </label>
+      ))}
+    </div>
   );
 }
 

@@ -95,7 +95,7 @@ const SECTIONS: LegalSection[] = [
           <li><strong>Supabase</strong>: database, authentication and real-time collaboration.</li>
           <li><strong>Vercel</strong>: website and application hosting.</li>
           <li><strong>Razorpay</strong>: payments and subscriptions.</li>
-          <li><strong>Google</strong>: the Gemini AI models, and Google sign-in if you use it.</li>
+          <li><strong>Google</strong>: the Gemini AI models, Google sign-in if you use it, and Gmail for sending project invitation emails.</li>
           <li><strong>GitHub</strong>: GitHub sign-in, if you use it.</li>
         </ul>
         <p>
@@ -155,6 +155,7 @@ const SECTIONS: LegalSection[] = [
           <li>delete your data, which you can do yourself by deleting your account;</li>
           <li>withdraw consent or object to certain processing.</li>
         </ul>
+        <p>When you sign up, we record that you accepted these terms, the date, and the version of this policy you accepted.</p>
         <p>You can export your results yourself as CSV, HTML or PDF reports. For anything else, email <a href="mailto:hello@justcmul8.com">hello@justcmul8.com</a> and we&apos;ll reply within 30 days.</p>
       </>
     ),
@@ -174,8 +175,8 @@ const SECTIONS: LegalSection[] = [
     title: "Children",
     body: (
       <p>
-        JustCmul8 isn&apos;t meant for children. You need to be 18, or have a parent&apos;s or guardian&apos;s permission, to use it. If you believe a child
-        has given us personal data without that permission, contact us and we&apos;ll delete it.
+        JustCmul8 isn&apos;t meant for children. You must be 18 or older to use it, and you confirm this when you create your account. If you believe
+        someone under 18 has given us personal data, contact us and we&apos;ll delete it.
       </p>
     ),
   },

@@ -1,12 +1,12 @@
 "use client";
 import { safeRedirect } from "@/lib/safeRedirect";
 import React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { consentRecord } from "@/lib/consent";
 import { FloatingInput } from "@/components/ui/FloatingInput";
-import { Stagger, Item, FormTitle, SubmitButton, FormError, Divider, OAuthButtons, SuccessState, StrengthMeter, useIntroDelay } from "@/components/auth/authUi";
+import { Stagger, Item, FormTitle, SubmitButton, FormError, Divider, OAuthButtons, SuccessState, StrengthMeter, ConsentChecks, useIntroDelay, type Consent } from "@/components/auth/authUi";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,14 +26,18 @@ export default function SignupPage() {
     // Plan picked on the pricing page: pre-select it in onboarding.
     else if (q.get("plan") === "pro") setRedirect(`/onboarding?plan=pro&billing=${q.get("billing") === "yearly" ? "yearly" : "monthly"}`);
   }, []);
-  const callbackUrl = () => `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+  const [consent, setConsent] = React.useState<Consent>({ adult: false, terms: false });
+  const consented = consent.adult && consent.terms;
+  // consent=1 lets the callback record consent for OAuth sign-ups, which can't carry metadata.
+  const callbackUrl = () => `${window.location.origin}/auth/callback?consent=1&redirect=${encodeURIComponent(redirect)}`;
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (!consented) return; // the required checkboxes already block submit; this is the backstop
     setLoading(true); setError("");
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: callbackUrl() },
+      options: { emailRedirectTo: callbackUrl(), data: { consent: consentRecord() } },
     });
     if (error) { setError(error.message); setLoading(false); return; }
     // Email confirmation disabled in Supabase → already signed in.
@@ -43,6 +47,7 @@ export default function SignupPage() {
   }
 
   async function handleOAuth(provider: "google" | "github") {
+    if (!consented) { setError("Please tick both boxes above to create your account."); return; }
     await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: callbackUrl() },
@@ -96,18 +101,14 @@ export default function SignupPage() {
           <StrengthMeter password={password} />
         </Item>
         <Item className="pt-1">
+          <ConsentChecks value={consent} onChange={(c) => { setConsent(c); setError(""); }} required />
+        </Item>
+        <Item className="pt-1">
           <SubmitButton loading={loading}>Create account</SubmitButton>
         </Item>
       </form>
       <Divider />
       <OAuthButtons onClick={handleOAuth} />
-      <Item>
-        <p className="mt-5 text-center text-[12px] leading-relaxed text-fg-94a3b8">
-          By creating an account you agree to our{" "}
-          <Link href="/terms" className="font-semibold text-fg-64748b underline-offset-2 hover:text-fg-5742ff hover:underline">Terms of Service</Link> and{" "}
-          <Link href="/privacy" className="font-semibold text-fg-64748b underline-offset-2 hover:text-fg-5742ff hover:underline">Privacy Policy</Link>.
-        </p>
-      </Item>
     </Stagger>
   );
 }

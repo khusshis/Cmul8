@@ -54,8 +54,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          You can sign up with an email and password or with Google or GitHub. You must be at least 18 years old, or have the permission of a parent or
-          guardian, to use the Service.
+          You can sign up with an email and password or with Google or GitHub. You must be at least 18 years old to use the Service.
         </p>
         <ul>
           <li>Keep your login details safe. You&apos;re responsible for activity on your account.</li>
