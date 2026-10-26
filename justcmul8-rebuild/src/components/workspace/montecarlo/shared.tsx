@@ -271,7 +271,7 @@ export function RangeBar({ stat, color = BRAND, domain, target }: { stat: RunSta
 /** Native <details> section, styled. */
 export function Explainer({ title, children, defaultOpen, icon: Icon = Info }: { title: string; children: React.ReactNode; defaultOpen?: boolean; icon?: React.ElementType }) {
   return (
-    <details open={defaultOpen} className="group rounded-[20px] border border-indigo-100/80 bg-gradient-to-br from-surface to-sf-f4f2ff shadow-[0_4px_20px_-6px_rgba(87,66,255,0.08)]">
+    <details open={defaultOpen} className="group rounded-[20px] border border-indigo-100/80 bg-linear-to-br from-surface to-sf-f4f2ff shadow-[0_4px_20px_-6px_rgba(87,66,255,0.08)]">
       <summary className={`flex cursor-pointer list-none items-center gap-2.5 rounded-[20px] px-5 py-3.5 text-[13px] font-extrabold text-gray-900 [&::-webkit-details-marker]:hidden ${focusRing}`}>
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sf-5742ff/10 text-fg-5742ff">
           <Icon size={15} />
@@ -339,7 +339,7 @@ export function ProgressCard({ title, status, completed, total, onCancel }: { ti
         </button>
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-indigo-50" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed} aria-label={title}>
-        <div className="h-full rounded-full bg-gradient-to-r from-sf-5742ff to-sf-9b8cff transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-linear-to-r from-sf-5742ff to-sf-9b8cff transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

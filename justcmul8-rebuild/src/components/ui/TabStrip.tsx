@@ -75,7 +75,7 @@ export default function TabStrip<T extends string>({
             {on && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.3)]"
+                className="absolute inset-0 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.3)]"
                 transition={{ type: "spring", stiffness: 450, damping: 34 }}
               />
             )}

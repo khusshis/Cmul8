@@ -91,7 +91,7 @@ export default function PageScrollbar({ target }: { target?: React.RefObject<HTM
     >
       <div
         ref={thumbRef}
-        className={`absolute right-0 top-0 rounded-full bg-gradient-to-b from-sf-a78bfa to-sf-5742ff cursor-grab active:cursor-grabbing transition-[width,opacity] duration-200 ${active ? "w-2 opacity-100" : "w-1.5 opacity-70"}`}
+        className={`absolute right-0 top-0 rounded-full bg-linear-to-b from-sf-a78bfa to-sf-5742ff cursor-grab active:cursor-grabbing transition-[width,opacity] duration-200 ${active ? "w-2 opacity-100" : "w-1.5 opacity-70"}`}
         style={{ willChange: "transform" }}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);

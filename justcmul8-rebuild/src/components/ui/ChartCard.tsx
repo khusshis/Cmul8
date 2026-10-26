@@ -139,7 +139,7 @@ export default function ChartCard({
         {loading ? (
           <div className="relative h-full min-h-[120px] overflow-hidden rounded-2xl bg-sf-f6f5fc" aria-busy="true" aria-label="Loading chart">
             <motion.div
-              className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-surface/70 to-transparent"
+              className="absolute inset-y-0 -left-1/2 w-1/2 bg-linear-to-r from-transparent via-surface/70 to-transparent"
               animate={{ x: ["0%", "400%"] }}
               transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
             />

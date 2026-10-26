@@ -114,7 +114,7 @@ export function CodeInspectorPanel({
 
             <button
               onClick={handleDownloadNotebook}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-fg-fcd34d border border-amber-500/30 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-linear-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-fg-fcd34d border border-amber-500/30 transition-all shadow-sm"
               title="Export as standalone Jupyter Notebook (.ipynb)"
             >
               <Download className="w-3.5 h-3.5" />

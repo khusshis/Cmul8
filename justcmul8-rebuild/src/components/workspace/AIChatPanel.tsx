@@ -189,7 +189,7 @@ export interface AIChatPanelProps {
 function CustomAIBotAvatar({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <div
-      className={`${className} rounded-full bg-gradient-to-tr from-sf-5742ff via-sf-7b61ff to-sf-00e5ff p-[1.5px] shadow-[0_2px_8px_rgba(87,66,255,0.35)] shrink-0 flex items-center justify-center`}
+      className={`${className} rounded-full bg-linear-to-tr from-sf-5742ff via-sf-7b61ff to-sf-00e5ff p-[1.5px] shadow-[0_2px_8px_rgba(87,66,255,0.35)] shrink-0 flex items-center justify-center`}
     >
       <div className="w-full h-full bg-sf-111029 rounded-full flex items-center justify-center">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5">
@@ -677,7 +677,7 @@ export default function AIChatPanel({
           /* ── Hero Empty State with Interactive Starter Cards ── */
           <div className="py-3 space-y-4 animate-in fade-in duration-300">
             <div className="text-center space-y-1.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sf-6366f1 to-sf-8b5cf6 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20">
+              <div className="w-11 h-11 rounded-2xl bg-linear-to-tr from-sf-6366f1 to-sf-8b5cf6 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-500/20">
                 <Bot size={20} />
               </div>
               <h3 className="text-[14.5px] font-black text-gray-900 tracking-tight">AI Simulation Architect</h3>
@@ -751,7 +751,7 @@ export default function AIChatPanel({
                     <div
                       className={`px-3.5 py-2.5 rounded-2xl text-[12px] leading-relaxed select-text ${
                         isUser
-                          ? "bg-gradient-to-r from-sf-6366f1 to-sf-8b5cf6 text-white rounded-br-xs font-medium shadow-xs"
+                          ? "bg-linear-to-r from-sf-6366f1 to-sf-8b5cf6 text-white rounded-br-xs font-medium shadow-xs"
                           : "bg-surface border border-indigo-100/70 text-gray-800 rounded-bl-xs shadow-2xs"
                       }`}
                     >
@@ -787,7 +787,7 @@ export default function AIChatPanel({
                         {canApply && (
                           <button
                             onClick={() => handleApplyGraphToCanvas(metadata.graph.nodes, metadata.graph.edges || [])}
-                            className="flex-1 py-1.5 text-[11px] font-extrabold bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-sf-5742ff hover:to-sf-7c3aed text-fg-5742ff hover:text-white border border-indigo-200/80 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5"
+                            className="flex-1 py-1.5 text-[11px] font-extrabold bg-linear-to-r from-indigo-50 to-purple-50 hover:from-sf-5742ff hover:to-sf-7c3aed text-fg-5742ff hover:text-white border border-indigo-200/80 rounded-lg shadow-2xs transition-all duration-200 flex items-center justify-center gap-1.5"
                           >
                             <Check size={12} />
                             <span>Apply / Re-Align Canvas</span>
@@ -966,7 +966,7 @@ export default function AIChatPanel({
           <button
             type="submit"
             disabled={!input.trim() || generating}
-            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="w-8 h-8 rounded-xl bg-linear-to-tr from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff text-white flex items-center justify-center shrink-0 shadow-sm hover:opacity-95 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             title="Send prompt"
           >
             {generating ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}

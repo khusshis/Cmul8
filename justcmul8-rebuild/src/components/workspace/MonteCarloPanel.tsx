@@ -239,7 +239,7 @@ export default function MonteCarloPanel({
           {/* ── Header ── */}
           <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-indigo-100/70 bg-surface px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sf-5742ff to-sf-8b5cf6 text-white shadow-[0_6px_16px_-4px_rgba(87,66,255,0.5)]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-sf-5742ff to-sf-8b5cf6 text-white shadow-[0_6px_16px_-4px_rgba(87,66,255,0.5)]">
                 <BarChart2 size={20} strokeWidth={2.4} />
               </div>
               <div className="min-w-0">

@@ -301,7 +301,7 @@ const Card4Speed = () => {
         </div>
         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
-            className="h-full w-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left"
+            className="h-full w-full bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left"
             animate={{ scaleX: progress / 100 }}
             transition={progress === 0 ? { duration: 0 } : spring(20, 1)}
           />

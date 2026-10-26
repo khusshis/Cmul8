@@ -103,7 +103,7 @@ function CompareResults({ comp, meta, ranked, winner, visible, letters, entity, 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         aria-label="Comparison verdict"
-        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-sf-1e1b4b via-sf-3b2fb8 to-sf-5742ff p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
+        className="relative overflow-hidden rounded-[24px] bg-linear-to-br from-sf-1e1b4b via-sf-3b2fb8 to-sf-5742ff p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
       >
         <div aria-hidden className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full bg-sf-e69f00/25 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-2">

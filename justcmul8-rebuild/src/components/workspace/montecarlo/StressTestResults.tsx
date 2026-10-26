@@ -54,7 +54,7 @@ function StressTestResults({ mc, meta, entity, runLength, conditions, targets, p
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         aria-label="Risk summary"
-        className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-sf-5742ff via-sf-6a4cff to-sf-8b5cf6 p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
+        className="relative overflow-hidden rounded-[24px] bg-linear-to-br from-sf-5742ff via-sf-6a4cff to-sf-8b5cf6 p-5 text-white shadow-[0_18px_40px_-14px_rgba(87,66,255,0.55)] sm:p-6"
       >
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
         <div className="relative grid gap-5 md:grid-cols-[1.4fr_1fr]">
@@ -209,7 +209,7 @@ function MetricTile({ stat, meta, active, onSelect, delay, target, share, pinned
           : "border-ln-ecebf7 shadow-[0_4px_20px_-8px_rgba(87,66,255,0.10)] hover:-translate-y-0.5 hover:border-indigo-200 motion-reduce:hover:translate-y-0"
       }`}
     >
-      <div aria-hidden className={`pointer-events-none absolute inset-0 rounded-[20px] bg-gradient-to-br from-sf-5742ff/[0.06] to-transparent transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
+      <div aria-hidden className={`pointer-events-none absolute inset-0 rounded-[20px] bg-linear-to-br from-sf-5742ff/[0.06] to-transparent transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`} />
       {/* Whole card selects the chart metric; the (i) sits above it. */}
       <button type="button" onClick={onSelect} aria-pressed={active} aria-label={`Show distribution of ${meta.label}`} className={`absolute inset-0 z-0 rounded-[20px] ${focusRing}`} />
       <div className="pointer-events-none relative">

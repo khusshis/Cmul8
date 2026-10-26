@@ -87,7 +87,7 @@ export default function ProfileMenu({ avatarClass = "w-9 h-9 text-[14px]" }: { a
                   {/* Header */}
                   <div className="flex items-center gap-4 mb-5 relative z-10">
                     <div className="relative">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center text-white font-semibold text-[28px] shadow-sm">
+                      <div className="w-16 h-16 rounded-full bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center text-white font-semibold text-[28px] shadow-sm">
                         {initial}
                       </div>
                       <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface" />

@@ -367,9 +367,9 @@ export default function OnboardingPage() {
                             <motion.button
                               type="button" role="radio" aria-checked={plan === "pro"} onClick={() => setPlan("pro")}
                               whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} transition={spring(16, 0.75)}
-                              className={`relative overflow-hidden rounded-[26px] bg-gradient-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-5 text-left text-white ${plan === "pro" ? "shadow-[0_0_0_3px_rgba(87,66,255,.3),0_30px_60px_-24px_rgba(87,66,255,.75)]" : "opacity-90"}`}
+                              className={`relative overflow-hidden rounded-[26px] bg-linear-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-5 text-left text-white ${plan === "pro" ? "shadow-[0_0_0_3px_rgba(87,66,255,.3),0_30px_60px_-24px_rgba(87,66,255,.75)]" : "opacity-90"}`}
                             >
-                              <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                              <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-linear-to-r from-transparent via-white/15 to-transparent" />
                               <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 60%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 60%)" }} />
                               <div className="relative flex items-center justify-between">
                                 <p className="flex items-center gap-2 font-space text-[19px] font-bold">Pro <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold text-fg-5742ff">{TRIAL_DAYS} DAYS FREE</span></p>
@@ -439,9 +439,9 @@ export default function OnboardingPage() {
                   disabled={!canContinue || busy || !userId}
                   whileHover={canContinue ? { scale: 1.03 } : undefined}
                   whileTap={canContinue ? { scale: 0.97 } : undefined}
-                  className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
+                  className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
                 >
-                  {canContinue && <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />}
+                  {canContinue && <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-linear-to-r from-transparent via-white/25 to-transparent" />}
                   {busy && <Loader2 size={16} className="animate-spin" />}
                   <span className="relative">{!last ? "Continue" : invited ? "Open project" : plan === "pro" ? "Start free trial" : "Launch workspace"}</span>
                   {!busy && <ArrowRight size={16} className="relative transition-transform group-hover:translate-x-0.5" />}

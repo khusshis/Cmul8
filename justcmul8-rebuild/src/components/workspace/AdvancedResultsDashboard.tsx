@@ -181,7 +181,7 @@ export default function AdvancedResultsDashboard({
                     disabled={pdfGenerating}
                     aria-label="Download PDF report"
                     title="Download the executive PDF report, including a snapshot of your canvas"
-                    className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60 sm:px-3.5"
+                    className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-linear-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60 sm:px-3.5"
                   >
                     {pdfGenerating ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
                     <span className="hidden sm:inline">{pdfGenerating ? "Building PDF…" : "Download PDF"}</span>

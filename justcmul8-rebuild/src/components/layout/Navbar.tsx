@@ -130,7 +130,7 @@ export default function Navbar() {
               <Link href="/" className="flex h-9 items-center rounded-full px-3.5 text-[13px] text-fg-1d1d1f/65 transition-colors hover:text-fg-1d1d1f">
                 Home
               </Link>
-              <span className="flex h-9 items-center rounded-full border border-surface bg-gradient-to-b from-surface to-surface/70 px-3.5 text-[13px] font-medium text-fg-1d1d1f shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]">
+              <span className="flex h-9 items-center rounded-full border border-surface bg-linear-to-b from-surface to-surface/70 px-3.5 text-[13px] font-medium text-fg-1d1d1f shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]">
                 My Simulations
               </span>
             </div>
@@ -140,7 +140,7 @@ export default function Navbar() {
           <div className="flex items-center gap-1.5 sm:gap-2 relative">
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-new-sim-modal'))}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-4 sm:px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-4 sm:px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <Plus size={16} strokeWidth={2.5} />
               <span className="hidden sm:inline">New Simulation</span>
@@ -203,7 +203,7 @@ export default function Navbar() {
                     {on && (
                       <motion.span
                         layoutId="nav-glass-pill"
-                        className="absolute inset-0 rounded-full border border-surface bg-gradient-to-b from-surface to-surface/70 shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),0_0_0_0.5px_rgba(16,24,40,.06),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]"
+                        className="absolute inset-0 rounded-full border border-surface bg-linear-to-b from-surface to-surface/70 shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),0_0_0_0.5px_rgba(16,24,40,.06),inset_0_1px_0_#fff] dark:border-white/[0.06] dark:from-white/[0.13] dark:to-white/[0.07] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,.5),inset_0_1px_0_rgba(255,255,255,.08)]"
                         initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 520, damping: 34, mass: 0.9 }}
@@ -234,7 +234,7 @@ export default function Navbar() {
                 <button onClick={() => { setMobileOpen(false); setShowLogoutConfirm(true); }} className="h-10 rounded-full px-4 text-[13px] text-fg-1d1d1f/70 transition-colors hover:bg-ink/[0.04] hover:text-fg-1d1d1f">
                   Log out
                 </button>
-                <Link href="/dashboard" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+                <Link href="/dashboard" className="inline-flex h-10 items-center rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
                   Dashboard
                 </Link>
               </>
@@ -243,7 +243,7 @@ export default function Navbar() {
                 <Link href="/login" className="inline-flex h-10 items-center rounded-full px-4 text-[13px] text-fg-1d1d1f/70 transition-colors hover:bg-ink/[0.04] hover:text-fg-1d1d1f">
                   Log in
                 </Link>
-                <Link href="/signup" className="inline-flex h-10 items-center rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
+                <Link href="/signup" className="inline-flex h-10 items-center rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13px] font-medium text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]">
                   Get started
                 </Link>
               </>

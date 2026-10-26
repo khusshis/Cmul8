@@ -139,7 +139,7 @@ function LiveResultsCard() {
           </span>
         </div>
 
-        <div className="h-24 w-full mb-6 relative overflow-hidden rounded-2xl bg-gradient-to-b from-sf-f8faff to-surface border border-indigo-50/50">
+        <div className="h-24 w-full mb-6 relative overflow-hidden rounded-2xl bg-linear-to-b from-sf-f8faff to-surface border border-indigo-50/50">
           <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 300 80">
             <defs>
               <linearGradient id="heroChartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -249,9 +249,9 @@ function PromptBar({ delay }: { delay: number }) {
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.97 }}
           transition={spring(22, 0.7)}
-          className="group relative overflow-hidden w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff text-white px-7 py-3.5 rounded-full font-bold shadow-[0_10px_24px_-8px_rgba(87,66,255,.6)] shrink-0 text-sm"
+          className="group relative overflow-hidden w-full sm:w-auto flex items-center justify-center gap-2 bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff text-white px-7 py-3.5 rounded-full font-bold shadow-[0_10px_24px_-8px_rgba(87,66,255,.6)] shrink-0 text-sm"
         >
-          <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/45 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
+          <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-linear-to-r from-transparent via-white/45 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
           Generate with AI
           <ArrowRight size={16} strokeWidth={2.5} className="transition-transform group-hover:translate-x-1" />
         </motion.button>
@@ -398,11 +398,11 @@ export default function HeroSection() {
           className="w-full"
         >
           <div className="mb-6 md:mb-8 flex items-center justify-center gap-4">
-            <span className="h-px w-10 md:w-20 bg-gradient-to-r from-transparent to-sf-dcd9ef" />
+            <span className="h-px w-10 md:w-20 bg-linear-to-r from-transparent to-sf-dcd9ef" />
             <p className="text-[13px] md:text-[14px] font-medium text-fg-64748b">
               Trusted by teams at <span className="text-fg-161622">world-class companies</span>
             </p>
-            <span className="h-px w-10 md:w-20 bg-gradient-to-l from-transparent to-sf-dcd9ef" />
+            <span className="h-px w-10 md:w-20 bg-linear-to-l from-transparent to-sf-dcd9ef" />
           </div>
           <div
             className="lp-pause relative overflow-hidden py-2"

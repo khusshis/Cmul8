@@ -195,7 +195,7 @@ export default function PrivacyContent() {
   return (
     <LegalPage
       current="/privacy"
-      title={<>Privacy <span className="bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff bg-clip-text text-transparent">Policy</span></>}
+      title={<>Privacy <span className="bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff bg-clip-text text-transparent">Policy</span></>}
       intro="What we collect, why we collect it, and the control you have over it. No dark patterns, no small print."
       effective={EFFECTIVE}
       highlights={HIGHLIGHTS}

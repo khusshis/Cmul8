@@ -101,8 +101,8 @@ function ChatDemo() {
 
 function SupportCard() {
   return (
-    <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-7 text-white shadow-[0_40px_80px_-35px_rgba(87,66,255,.7)]">
-      <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+    <div className="relative overflow-hidden rounded-[2rem] bg-linear-to-br from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 p-7 text-white shadow-[0_40px_80px_-35px_rgba(87,66,255,.7)]">
+      <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-linear-to-r from-transparent via-white/12 to-transparent" />
       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 70%)" }} />
       <div className="relative">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">

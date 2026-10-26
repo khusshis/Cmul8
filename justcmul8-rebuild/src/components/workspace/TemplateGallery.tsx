@@ -23,7 +23,7 @@ export default function TemplateGallery({ simType, onLoadScenario, onClose }: Te
         className="w-full max-w-2xl bg-surface rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] relative flex flex-col max-h-[90vh] overflow-hidden border border-gray-100"
       >
         {/* Top accent gradient line */}
-        <div className="absolute top-0 left-8 right-8 h-[3px] rounded-b-full bg-gradient-to-r from-sf-6366f1 via-sf-8b5cf6 to-sf-f97316 opacity-80" />
+        <div className="absolute top-0 left-8 right-8 h-[3px] rounded-b-full bg-linear-to-r from-sf-6366f1 via-sf-8b5cf6 to-sf-f97316 opacity-80" />
 
         {/* Close Button */}
         <button

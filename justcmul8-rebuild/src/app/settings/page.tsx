@@ -40,9 +40,9 @@ function PrimaryButton({ busy, done, children, ...props }: React.ButtonHTMLAttri
       {...(props as React.ComponentProps<typeof motion.button>)}
       whileHover={props.disabled ? undefined : { scale: 1.03 }}
       whileTap={props.disabled ? undefined : { scale: 0.97 }}
-      className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
+      className="group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-7 text-[14.5px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.35)] disabled:opacity-45"
     >
-      {!props.disabled && <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />}
+      {!props.disabled && <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-linear-to-r from-transparent via-white/25 to-transparent" />}
       {busy && <Loader2 size={16} className="animate-spin" />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={done ? "done" : "idle"} className="relative flex items-center gap-2" initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -14, opacity: 0 }} transition={spring(18, 0.8)}>
@@ -122,9 +122,9 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
     <div className="space-y-4">
       {/* Plan hero */}
       <Rise i={0}>
-        <div className={`relative overflow-hidden rounded-[26px] p-6 ${pro ? "bg-gradient-to-br from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 text-white shadow-[0_30px_60px_-24px_rgba(87,66,255,.75)]" : card}`}>
+        <div className={`relative overflow-hidden rounded-[26px] p-6 ${pro ? "bg-linear-to-br from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 text-white shadow-[0_30px_60px_-24px_rgba(87,66,255,.75)]" : card}`}>
           {pro && <>
-            <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-linear-to-r from-transparent via-white/15 to-transparent" />
             <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 70%)" }} />
           </>}
           <div className="relative flex flex-wrap items-start justify-between gap-4">
@@ -145,7 +145,7 @@ function BillingPanel({ billing, ledger, email, name, onChange }: {
             </div>
           </div>
           <div className={`relative mt-5 h-2.5 overflow-hidden rounded-full ${pro ? "bg-white/20" : "bg-sf-f1f0fa"}`}>
-            <motion.div className={`h-full rounded-full ${pro ? "bg-white" : "bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff"}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.35 }} />
+            <motion.div className={`h-full rounded-full ${pro ? "bg-white" : "bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff"}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.35 }} />
           </div>
           <p className={`relative mt-2 text-[12px] font-medium ${pro ? "text-white/70" : "text-fg-64748b"}`}>Refills to {allowance} on {fmtDate(billing.credits_reset_at)}</p>
         </div>
@@ -525,7 +525,7 @@ function SettingsInner() {
           <div className="min-w-0">
             {/* Identity strip */}
             <motion.div className="flex items-center gap-3.5" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={spring(12, 0.85, 0.05)}>
-              <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[22px] font-bold text-white shadow-[0_14px_30px_-12px_rgba(87,66,255,.7)]">
+              <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[22px] font-bold text-white shadow-[0_14px_30px_-12px_rgba(87,66,255,.7)]">
                 {(name || email || "?").trim().charAt(0).toUpperCase()}
                 <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-[3px] border-ln-fafaff bg-emerald-500" />
               </span>
@@ -545,7 +545,7 @@ function SettingsInner() {
                   const on = t.id === tab;
                   return (
                     <button key={t.id} role="tab" aria-selected={on} onClick={() => selectTab(t.id)} className={`relative flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-semibold transition-colors ${on ? "text-white" : "text-fg-64748b hover:text-fg-161622"}`}>
-                      {on && <motion.span layoutId="settings-tab" className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
+                      {on && <motion.span layoutId="settings-tab" className="absolute inset-0 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
                       <t.icon size={15} strokeWidth={2.3} className="relative" />
                       <span className="relative">{t.label}</span>
                     </button>

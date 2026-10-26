@@ -63,7 +63,7 @@ export default function TickerSection() {
   return (
     <div
       aria-hidden="true"
-      className="relative overflow-hidden border-y border-ln-ecebf7 bg-gradient-to-b from-sf-f7f6fe to-surface py-3.5"
+      className="relative overflow-hidden border-y border-ln-ecebf7 bg-linear-to-b from-sf-f7f6fe to-surface py-3.5"
       style={{
         WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
         maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",

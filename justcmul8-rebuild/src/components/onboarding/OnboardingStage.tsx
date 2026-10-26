@@ -54,7 +54,7 @@ export function PillChoice<T extends string>({ id, options, value, onChange, ren
               transition={spring(20, 0.7)}
               className={`relative rounded-full border px-4 py-2.5 text-[13.5px] font-semibold transition-colors ${on ? "border-transparent text-white" : "border-ln-ecebf7 bg-surface/80 text-fg-334155 hover:border-ln-d9d3fb"}`}
             >
-              {on && <motion.span layoutId="pill" className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
+              {on && <motion.span layoutId="pill" className="absolute inset-0 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]" transition={spring(18, 0.8)} />}
               <span className="relative flex items-center gap-1.5">{render ? render(o, on) : o}</span>
             </motion.button>
           );
@@ -73,7 +73,7 @@ export function LineInput({ id, big, ...props }: React.InputHTMLAttributes<HTMLI
         {...props}
         className={`w-full border-0 border-b-2 border-ln-e7e5f6 bg-transparent pb-2 pt-1 font-space font-bold text-fg-161622 outline-none placeholder:text-fg-cfcde0 dark:placeholder:text-white/25 ${big ? "text-[24px] sm:text-[28px] tracking-[-0.02em]" : "text-[17px]"}`}
       />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff transition-transform duration-500 ease-out group-focus-within:scale-x-100" />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff transition-transform duration-500 ease-out group-focus-within:scale-x-100" />
     </div>
   );
 }
@@ -310,7 +310,7 @@ export function Stage({ pointer, label, domain, progress, status, children }: {
         <div className="relative z-10 flex items-center gap-3 border-t border-ln-f1f0fa px-5 py-2.5">
           <span className="whitespace-nowrap text-[11px] font-bold text-fg-94a3b8">{status}</span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-sf-f1f0fa">
-            <motion.div className="h-full rounded-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff" initial={false} animate={{ width: `${Math.round(progress * 100)}%` }} transition={spring(12, 0.9)} />
+            <motion.div className="h-full rounded-full bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff" initial={false} animate={{ width: `${Math.round(progress * 100)}%` }} transition={spring(12, 0.9)} />
           </div>
           <span className="w-9 text-right font-mono text-[11px] font-bold tabular-nums text-fg-5742ff">{Math.round(progress * 100)}%</span>
         </div>
@@ -404,7 +404,7 @@ function ProfileCard({ name, role, company, teamSize }: { name: string; role: st
       initial={{ opacity: 0, y: 20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={spring(12, 0.7, 0.05)}
     >
       <div className="flex items-center gap-2.5">
-        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[14px] font-bold text-white">
+        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[14px] font-bold text-white">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span key={initialsOf(name)} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={spring(16, 0.7)}>
               {initialsOf(name)}
@@ -752,7 +752,7 @@ export function LaunchOverlay({ name, lines }: { name: string; lines: string[] }
   const first = name.trim().split(/\s+/)[0] || "there";
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-br from-sf-7a67ff via-sf-5742ff to-sf-3b2bd1"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-linear-to-br from-sf-7a67ff via-sf-5742ff to-sf-3b2bd1"
       initial={{ clipPath: "circle(0% at 50% 60%)" }}
       animate={{ clipPath: "circle(150% at 50% 60%)" }}
       transition={{ duration: 0.9, ease: EASE_IO }}
@@ -765,7 +765,7 @@ export function LaunchOverlay({ name, lines }: { name: string; lines: string[] }
         <motion.span
           key={i}
           aria-hidden
-          className="absolute h-[2px] rounded-full bg-gradient-to-r from-transparent via-surface/70 dark:via-white/50 to-transparent"
+          className="absolute h-[2px] rounded-full bg-linear-to-r from-transparent via-surface/70 dark:via-white/50 to-transparent"
           style={{ top: `${6 + i * 6.5}%`, width: `${18 + (i % 4) * 8}%`, left: "-30%" }}
           animate={{ x: ["0vw", "160vw"] }}
           transition={{ duration: 1.4 + (i % 5) * 0.25, delay: 0.4 + (i % 7) * 0.12, repeat: Infinity, ease: "easeIn" }}

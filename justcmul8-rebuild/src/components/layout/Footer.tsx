@@ -134,9 +134,9 @@ function CtaPanel() {
           <Magnetic>
             <Link
               href="/signup"
-              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
+              className="group relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center gap-2 h-[52px] px-7 rounded-full bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff font-bold text-[15px] shadow-[0_14px_36px_-10px_rgba(139,92,246,.8)]"
             >
-              <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
+              <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-linear-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-[620%] transition-transform duration-700 ease-out" />
               Start building free
               <ArrowRight size={17} strokeWidth={2.5} className="transition-transform group-hover:translate-x-1" />
             </Link>
@@ -179,7 +179,7 @@ function Wordmark() {
         ink
           ? "transition-colors duration-300 hover:text-fg-5742ff"
           : // px/-mx: the glyphs overhang their boxes (tight tracking) and bg-clip-text would cut the overhang off
-            "px-[0.06em] -mx-[0.06em] bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-8b5cf6 bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
+            "px-[0.06em] -mx-[0.06em] bg-linear-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-8b5cf6 bg-[length:500%_100%] bg-clip-text text-transparent [background-position:var(--p)_50%] transition-[background-position] duration-[1500ms] ease-out group-hover:[background-position:calc(var(--p)+25%)_50%]"
       }`}
       style={slice === undefined ? undefined : ({ ["--p" as string]: `${slice}%` } as React.CSSProperties)}
       variants={{

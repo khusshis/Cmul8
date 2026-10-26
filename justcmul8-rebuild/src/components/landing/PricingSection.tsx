@@ -84,14 +84,14 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       transition={spring(18, 0.8)}
       className={`relative flex h-full flex-col overflow-hidden rounded-[2rem] p-7 sm:p-8 ${
         f
-          ? "bg-gradient-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 text-white shadow-[0_40px_80px_-30px_rgba(87,66,255,.65)] lg:-my-5 lg:py-12"
+          ? "bg-linear-to-b from-sf-7a67ff via-sf-5742ff to-sf-4a36e6 text-white shadow-[0_40px_80px_-30px_rgba(87,66,255,.65)] lg:-my-5 lg:py-12"
           : "border border-ln-ecebf7 bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_16px_40px_-28px_rgba(16,24,40,.25)]"
       }`}
     >
       {f && (
         <>
           {/* Soft light sheen sweeping across the featured card */}
-          <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <span aria-hidden className="lp-sheen pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-linear-to-r from-transparent via-white/15 to-transparent" />
           <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px)", backgroundSize: "18px 18px", maskImage: "linear-gradient(180deg,#000,transparent 60%)", WebkitMaskImage: "linear-gradient(180deg,#000,transparent 60%)" }} />
         </>
       )}

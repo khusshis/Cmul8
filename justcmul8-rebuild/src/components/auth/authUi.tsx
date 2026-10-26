@@ -58,9 +58,9 @@ export function SubmitButton({ loading, children }: { loading: boolean; children
       whileHover={loading ? undefined : { y: -1 }}
       whileTap={loading ? undefined : { scale: 0.98 }}
       transition={spring(22, 0.7)}
-      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
+      className="group relative w-full h-[52px] overflow-hidden rounded-full text-white font-bold text-[15px] bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff border border-ln-8d80ff shadow-[0_12px_30px_-8px_rgba(87,66,255,.55)] hover:shadow-[0_16px_36px_-8px_rgba(87,66,255,.65)] transition-shadow disabled:cursor-wait"
     >
-      <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/45 to-transparent translate-x-0 group-hover:translate-x-[520%] transition-transform duration-700 ease-out" />
+      <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/4 skew-x-[-20deg] bg-linear-to-r from-transparent via-white/45 to-transparent translate-x-0 group-hover:translate-x-[520%] transition-transform duration-700 ease-out" />
       <AnimatePresence mode="wait" initial={false}>
         {loading ? (
           <motion.span key="loading" className="flex items-center justify-center gap-1.5" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
@@ -108,9 +108,9 @@ export function FormError({ message }: { message: string }) {
 export function Divider({ label = "or continue with" }: { label?: string }) {
   return (
     <Item className="flex items-center gap-4 my-5">
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent to-sf-e7e5f6" />
+      <div className="flex-1 h-px bg-linear-to-r from-transparent to-sf-e7e5f6" />
       <span className="text-[12px] font-medium text-fg-94a3b8">{label}</span>
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent to-sf-e7e5f6" />
+      <div className="flex-1 h-px bg-linear-to-l from-transparent to-sf-e7e5f6" />
     </Item>
   );
 }
@@ -154,7 +154,7 @@ export function SuccessState({ title, children, action }: { title: string; child
   return (
     <div className="flex flex-col items-center text-center py-2">
       <motion.div
-        className="relative w-20 h-20 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center shadow-[0_18px_40px_-12px_rgba(87,66,255,.6)] mb-6"
+        className="relative w-20 h-20 rounded-full bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff flex items-center justify-center shadow-[0_18px_40px_-12px_rgba(87,66,255,.6)] mb-6"
         initial={{ scale: 0, rotate: -30 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={spring(12, 0.55)}

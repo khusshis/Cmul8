@@ -333,7 +333,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="hidden sm:inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13.5px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              className="hidden sm:inline-flex h-11 items-center gap-2 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-5 text-[13.5px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <Plus size={16} strokeWidth={2.5} /> New
             </button>
@@ -352,7 +352,7 @@ export default function DashboardPage() {
                 </div>
                 {/* Shimmer sweep */}
                 <motion.div
-                  className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-surface/70 to-transparent"
+                  className="absolute inset-y-0 -left-1/2 w-1/2 bg-linear-to-r from-transparent via-surface/70 to-transparent"
                   animate={{ x: ["0%", "400%"] }}
                   transition={{ duration: 1.4, repeat: Infinity, ease: "linear", delay: i * 0.1 }}
                 />
@@ -377,7 +377,7 @@ export default function DashboardPage() {
             )}
             {!q && view === "mine" && (
               <>
-                <button onClick={() => openNew()} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2">
+                <button onClick={() => openNew()} className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2">
                   <Plus size={17} strokeWidth={2.5} /> Create your first simulation
                 </button>
                 <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.14em] text-fg-64748b">Or start from a domain</p>
@@ -642,7 +642,7 @@ export default function DashboardPage() {
                   <button
                     onClick={createProject}
                     disabled={creating || !newName.trim()}
-                    className="inline-flex h-11 items-center gap-2 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff px-6 text-[14px] font-semibold text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {creating && <Loader2 size={16} className="animate-spin" />}
                     Create project · {CREDIT_COSTS.create_simulation} credits <ArrowRight size={15} strokeWidth={2.5} />

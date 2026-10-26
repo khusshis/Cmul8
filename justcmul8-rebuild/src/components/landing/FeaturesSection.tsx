@@ -41,7 +41,7 @@ function CorePrimitives() {
   return (
     <div ref={ref} className="h-full bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] overflow-hidden flex flex-col">
       <div className="p-6 md:p-8 flex items-start gap-5 border-b border-ln-f1f0fa">
-        <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center shrink-0 shadow-[0_12px_24px_-10px_rgba(16,24,40,0.16)] overflow-hidden">
+        <div className="relative w-14 h-14 rounded-2xl bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center shrink-0 shadow-[0_12px_24px_-10px_rgba(16,24,40,0.16)] overflow-hidden">
           <motion.span key={active} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring(16, 0.85)}>
             <ActiveIcon size={26} strokeWidth={2} />
           </motion.span>

@@ -32,7 +32,7 @@ function Headline({ mode, delay }: { mode: Mode; delay: number }) {
               {i === breakAt && <br />}
               <span className="inline-block overflow-hidden align-bottom pb-[0.12em] -mb-[0.12em] pr-[0.02em]">
                 <motion.span
-                  className={`inline-block ${accent ? "bg-clip-text text-transparent bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-6366f1" : ""}`}
+                  className={`inline-block ${accent ? "bg-clip-text text-transparent bg-linear-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-6366f1" : ""}`}
                   initial={{ y: "110%", rotate: 6, filter: "blur(8px)" }}
                   animate={{ y: "0%", rotate: 0, filter: "blur(0px)" }}
                   transition={{ ...spring(13, 0.62, delay + i * 0.06), filter: { duration: 0.5, delay: delay + i * 0.06 } }}
@@ -197,7 +197,7 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
               transition={{ ...spring(10, 0.8, delay + 0.1), opacity: { duration: 0.35, delay: delay + 0.1 }, layout: spring(14, 0.9) }}
             >
               {/* Card top glow line */}
-              <div className="pointer-events-none absolute inset-x-10 -top-px h-px bg-gradient-to-r from-transparent via-sf-8b5cf6/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-10 -top-px h-px bg-linear-to-r from-transparent via-sf-8b5cf6/60 to-transparent" />
               {(mode === "login" || mode === "signup") && (
                 <Suspense fallback={<div className="h-[46px] mb-7" />}>
                   <ModeSwitch mode={mode} />

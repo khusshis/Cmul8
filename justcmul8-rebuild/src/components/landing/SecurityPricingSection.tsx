@@ -124,7 +124,7 @@ function ModeToggle({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void 
             onClick={() => setMode(m)}
             className={`relative rounded-full px-4 py-2 text-[13px] font-semibold transition-colors sm:px-5 ${mode === m ? "text-white" : "text-fg-64748b hover:text-fg-161622"}`}
           >
-            {mode === m && <motion.span layoutId="security-mode-pill" className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)]" transition={spring(20, 0.85)} />}
+            {mode === m && <motion.span layoutId="security-mode-pill" className="absolute inset-0 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)]" transition={spring(20, 0.85)} />}
             <span className="relative">{label}</span>
           </button>
         ))}
@@ -137,7 +137,7 @@ function ModeToggle({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void 
 function DefenseInDepth({ mode }: { mode: Mode }) {
   const LOOP = 5;
   return (
-    <div className="relative h-full overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-sf-1e1b4b via-sf-191733 to-sf-110f1f p-6 text-white shadow-[0_30px_70px_-30px_rgba(87,66,255,.55)] md:p-8">
+    <div className="relative h-full overflow-hidden rounded-[28px] border border-white/10 bg-linear-to-br from-sf-1e1b4b via-sf-191733 to-sf-110f1f p-6 text-white shadow-[0_30px_70px_-30px_rgba(87,66,255,.55)] md:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sf-5742ff/30 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(255,255,255,.07)_1px,transparent_1.5px)] [background-size:22px_22px] [mask-image:linear-gradient(160deg,#000,transparent_75%)]" />
       <div className="relative">
@@ -158,7 +158,7 @@ function DefenseInDepth({ mode }: { mode: Mode }) {
       <div className="relative mt-7 flex gap-4">
         {/* Rail with the travelling request */}
         <div aria-hidden className="relative w-6 shrink-0">
-          <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-white/5 via-white/25 to-white/5" />
+          <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 bg-linear-to-b from-white/5 via-white/25 to-white/5" />
           <motion.div
             className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-sf-a78bfa shadow-[0_0_0_4px_rgba(167,139,250,.25),0_0_18px_rgba(167,139,250,.9)]"
             animate={{ top: ["4%", "92%", "92%"] }}
@@ -291,7 +291,7 @@ export default function SecurityPricingSection() {
             <motion.article
               whileHover={{ y: -5 }}
               transition={spring(18, 0.8)}
-              className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-ln-e4defd bg-gradient-to-br from-sf-f6f4ff to-surface p-6 md:p-7"
+              className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-ln-e4defd bg-linear-to-br from-sf-f6f4ff to-surface p-6 md:p-7"
             >
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sf-5742ff text-white shadow-[0_8px_20px_-8px_rgba(87,66,255,.7)]">

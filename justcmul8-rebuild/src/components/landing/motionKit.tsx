@@ -95,7 +95,7 @@ export function SplitWords({
           {breakBeforeAccent && accent && i === breakAt && <br />}
           <span aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.14em] -mb-[0.14em] px-[0.02em]">
             <motion.span
-              className={`inline-block ${a ? "bg-clip-text text-transparent bg-gradient-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-6366f1" : ""}`}
+              className={`inline-block ${a ? "bg-clip-text text-transparent bg-linear-to-r from-sf-8b5cf6 via-sf-5742ff to-sf-6366f1" : ""}`}
               variants={{
                 hidden: { y: "110%", rotate: 6 },
                 show: { y: "0%", rotate: 0, transition: spring(13, 0.7, delay + i * 0.06) },

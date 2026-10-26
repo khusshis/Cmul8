@@ -1405,7 +1405,7 @@ export default function WorkspacePage() {
                   <motion.div
                     layoutId="activeRightSidebarTabPill"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    className="absolute inset-0 bg-gradient-to-r from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
+                    className="absolute inset-0 bg-linear-to-r from-sf-6366f1 to-sf-8b5cf6 border border-ln-8d80ff rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.35)] -z-10"
                   />
                 )}
                 <Bot size={13} className={activeRightPanel === "ai" ? "text-white" : "text-gray-400"} />

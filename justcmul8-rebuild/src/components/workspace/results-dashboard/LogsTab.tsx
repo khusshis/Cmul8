@@ -112,7 +112,7 @@ export default function LogsTab({ result }: { result: SimResult }) {
           <button
             onClick={downloadCsv}
             disabled={filteredLogs.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-linear-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12.5px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             <Download size={14} aria-hidden />
             Export CSV

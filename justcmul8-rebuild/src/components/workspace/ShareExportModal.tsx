@@ -166,7 +166,7 @@ function SharePanel({ projectId, onAccessChanged }: { projectId: string; onAcces
           <button
             type="submit"
             disabled={busy || !email}
-            className="flex h-9 items-center gap-1.5 px-4 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff text-white font-semibold text-[13px] shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:hover:scale-100 transition-transform"
+            className="flex h-9 items-center gap-1.5 px-4 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff border border-ln-8d80ff text-white font-semibold text-[13px] shadow-[0_8px_20px_-8px_rgba(87,66,255,.7),inset_0_1px_0_rgba(255,255,255,.35)] hover:scale-[1.03] active:scale-[0.97] disabled:opacity-50 disabled:hover:scale-100 transition-transform"
           >
             {busy ? <Loader2 size={13} className="animate-spin" /> : <UserPlus size={13} />} Invite
           </button>
@@ -178,7 +178,7 @@ function SharePanel({ projectId, onAccessChanged }: { projectId: string; onAcces
         <ul className="space-y-1 max-h-[240px] overflow-y-auto custom-scrollbar -mx-2">
           {people.map((p) => (
             <li key={p.email} className="flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-sf-fafaff transition-colors">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-[13px] shrink-0 ${p.role === "owner" ? "bg-gradient-to-b from-sf-6a57ff to-sf-5742ff text-white" : "bg-sf-f5f3ff text-fg-5742ff"}`}>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-[13px] shrink-0 ${p.role === "owner" ? "bg-linear-to-b from-sf-6a57ff to-sf-5742ff text-white" : "bg-sf-f5f3ff text-fg-5742ff"}`}>
                 {(p.display_name || p.email)[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

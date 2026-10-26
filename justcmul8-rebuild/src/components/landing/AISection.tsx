@@ -223,7 +223,7 @@ export default function AISection() {
             <div className="h-full bg-surface rounded-[2rem] border border-ln-ecebf7 shadow-[0_30px_60px_-30px_rgba(16,24,40,0.1)] p-5 sm:p-6 flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff text-white flex items-center justify-center">
                     <Bot size={15} />
                   </div>
                   <span className="font-bold tracking-tight text-fg-161622 text-[14px]">AI ASSISTANT</span>
@@ -245,7 +245,7 @@ export default function AISection() {
                       initial={{ opacity: 0, y: 12, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={spring(14, 0.8)}
-                      className="bg-gradient-to-br from-sf-6d5bff to-sf-5742ff text-white p-4 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-[0_12px_24px_-12px_rgba(16,24,40,0.16)] self-end max-w-[95%] origin-bottom-right"
+                      className="bg-linear-to-br from-sf-6d5bff to-sf-5742ff text-white p-4 rounded-2xl rounded-tr-sm text-[14px] leading-relaxed shadow-[0_12px_24px_-12px_rgba(16,24,40,0.16)] self-end max-w-[95%] origin-bottom-right"
                     >
                       {PROMPT.slice(0, typed)}
                       {typed < PROMPT.length && <span className="inline-block w-[2px] h-[1em] -mb-[2px] ml-0.5 bg-surface/80 animate-pulse" />}
@@ -278,7 +278,7 @@ export default function AISection() {
                         <span className="ml-auto text-[11px] font-bold tabular-nums">{Math.round(progress * 100)}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-sf-e4defd rounded-full overflow-hidden">
-                        <motion.div className="h-full bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left" animate={{ scaleX: progress }} initial={{ scaleX: 0 }} transition={spring(10, 0.9)} />
+                        <motion.div className="h-full bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff rounded-full origin-left" animate={{ scaleX: progress }} initial={{ scaleX: 0 }} transition={spring(10, 0.9)} />
                       </div>
                     </motion.div>
                   )}

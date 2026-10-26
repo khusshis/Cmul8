@@ -81,7 +81,7 @@ export default function LogoutDialog({
 
               {/* Your block slides down the link into Exit when confirmed */}
               <motion.div
-                className="absolute left-1/2 top-1/2 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[18px] font-bold text-white shadow-[0_12px_24px_-10px_rgba(87,66,255,.8)]"
+                className="absolute left-1/2 top-1/2 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-sf-8b5cf6 to-sf-5742ff font-space text-[18px] font-bold text-white shadow-[0_12px_24px_-10px_rgba(87,66,255,.8)]"
                 style={{ marginLeft: -24, marginTop: -24 }}
                 initial={{ x: -96, scale: 0.6, opacity: 0 }}
                 animate={leaving ? { x: 96, scale: 0.35, opacity: 0 } : { x: -96, scale: 1, opacity: 1 }}

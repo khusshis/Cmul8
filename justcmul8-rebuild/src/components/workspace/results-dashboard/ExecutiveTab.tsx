@@ -108,7 +108,7 @@ export default function ExecutiveTab({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           aria-label="System health score"
-          className="relative flex flex-col overflow-hidden rounded-[24px] border border-ln-e7e3ff bg-gradient-to-br from-surface to-sf-f4f2ff p-5 shadow-[0_14px_36px_-24px_rgba(87,66,255,.35)] sm:p-6 lg:col-span-4"
+          className="relative flex flex-col overflow-hidden rounded-[24px] border border-ln-e7e3ff bg-linear-to-br from-surface to-sf-f4f2ff p-5 shadow-[0_14px_36px_-24px_rgba(87,66,255,.35)] sm:p-6 lg:col-span-4"
         >
           <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl dark:opacity-[.16] dark:![background:var(--solid)]" style={{ background: healthTone.tint, ["--solid" as string]: healthTone.solid }} />
           <div className="relative flex items-center justify-between gap-2">
@@ -299,7 +299,7 @@ export default function ExecutiveTab({
                           <li key={sIdx} className="flex items-center gap-2 text-[11px]">
                             <span className="w-[72px] shrink-0 truncate font-semibold text-slate-600" title={item.name}>{item.name}</span>
                             <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                              <span className="block h-full rounded-full bg-gradient-to-r from-sf-8b7bff to-sf-5742ff" style={{ width: `${Math.min(100, (item.value / seriesMax) * 100)}%` }} />
+                              <span className="block h-full rounded-full bg-linear-to-r from-sf-8b7bff to-sf-5742ff" style={{ width: `${Math.min(100, (item.value / seriesMax) * 100)}%` }} />
                             </span>
                             <span className="shrink-0 font-bold tabular-nums text-fg-161622">
                               {isNum(item.value) ? item.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"}
@@ -324,7 +324,7 @@ export default function ExecutiveTab({
             <button
               onClick={runAiOptimizer}
               disabled={aiLoading}
-              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60"
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-linear-to-b from-sf-6a57ff to-sf-5742ff px-3 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
               {aiLoading ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <SlidersHorizontal size={13} aria-hidden />}
               {aiLoading ? "Analyzing…" : "Optimize with AI"}

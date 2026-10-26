@@ -228,7 +228,7 @@ export default function TermsContent() {
   return (
     <LegalPage
       current="/terms"
-      title={<>Terms of <span className="bg-gradient-to-r from-sf-8b5cf6 to-sf-5742ff bg-clip-text text-transparent">Service</span></>}
+      title={<>Terms of <span className="bg-linear-to-r from-sf-8b5cf6 to-sf-5742ff bg-clip-text text-transparent">Service</span></>}
       intro="The rules for using JustCmul8, written to be read. Here's what you can expect from us, and what we ask of you."
       effective={EFFECTIVE}
       highlights={HIGHLIGHTS}

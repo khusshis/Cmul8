@@ -269,7 +269,7 @@ export default function SimResultsPanel({
             <button
               onClick={onExpand}
               aria-label="Open full analytics"
-              className="flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 sm:px-3.5"
+              className="flex h-8 items-center gap-1.5 rounded-xl border border-ln-8d80ff bg-linear-to-b from-sf-6a57ff to-sf-5742ff px-2.5 text-[12px] font-bold text-white shadow-[0_6px_16px_-8px_rgba(87,66,255,.8)] transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 focus-visible:ring-offset-2 sm:px-3.5"
             >
               <Maximize2 size={13} aria-hidden />
               <span className="hidden sm:inline">Full analytics</span>
@@ -297,7 +297,7 @@ export default function SimResultsPanel({
         {/* ── Content ── */}
         {!collapsed && (
           <div
-            className="custom-scrollbar min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-sf-faf9ff to-sf-f3f2fc p-3 sm:p-5"
+            className="custom-scrollbar min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-linear-to-b from-sf-faf9ff to-sf-f3f2fc p-3 sm:p-5"
             style={{ overscrollBehavior: "contain" }}
             {...tabPanelProps("results-panel-tabs", activeTab)}
           >
@@ -385,7 +385,7 @@ export default function SimResultsPanel({
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.12, duration: 0.4 }}
-                      className="relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-ln-8d80ff bg-gradient-to-br from-sf-6a57ff via-sf-5742ff to-sf-4531e5 p-3.5 text-white shadow-[0_18px_40px_-22px_rgba(87,66,255,.9)]"
+                      className="relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-ln-8d80ff bg-linear-to-br from-sf-6a57ff via-sf-5742ff to-sf-4531e5 p-3.5 text-white shadow-[0_18px_40px_-22px_rgba(87,66,255,.9)]"
                     >
                       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1px, transparent 1.5px)", backgroundSize: "16px 16px", maskImage: "linear-gradient(160deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(160deg,#000,transparent 70%)" }} />
                       <div className="relative flex items-center justify-between">

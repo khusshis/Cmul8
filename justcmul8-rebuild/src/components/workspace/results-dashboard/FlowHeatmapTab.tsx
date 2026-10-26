@@ -54,7 +54,7 @@ export default function FlowHeatmapTab({
   return (
     <div className="space-y-5">
       {/* ── Legend banner ── */}
-      <div className="flex flex-col gap-3 rounded-[22px] border border-ln-e7e3ff bg-gradient-to-r from-sf-f4f2ff via-surface to-sf-fff6ec p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-[22px] border border-ln-e7e3ff bg-linear-to-r from-sf-f4f2ff via-surface to-sf-fff6ec p-4 sm:p-5 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-start gap-2.5">
           <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface text-fg-d55e00 shadow-sm"><Flame size={16} aria-hidden /></span>
           <div className="min-w-0">

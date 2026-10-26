@@ -98,7 +98,7 @@ function Body({ current, title, intro, effective, highlights, sections }: React.
                 aria-current={d.href === current ? "page" : undefined}
                 className={`relative rounded-full px-4 py-2 text-[13px] font-semibold transition-colors sm:px-5 ${d.href === current ? "text-white" : "text-fg-64748b hover:text-fg-161622"}`}
               >
-                {d.href === current && <motion.span layoutId="legal-pill" className="absolute inset-0 rounded-full bg-gradient-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)]" transition={spring(20, 0.85)} />}
+                {d.href === current && <motion.span layoutId="legal-pill" className="absolute inset-0 rounded-full bg-linear-to-b from-sf-6a57ff to-sf-5742ff shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)]" transition={spring(20, 0.85)} />}
                 <span className="relative">{d.label}</span>
               </Link>
             ))}
@@ -161,14 +161,14 @@ function Body({ current, title, intro, effective, highlights, sections }: React.
             </section>
           ))}
 
-          <div className="mt-10 flex flex-col items-start gap-4 rounded-[24px] border border-ln-e4defd bg-gradient-to-br from-sf-f6f4ff to-surface p-6 sm:flex-row sm:items-center sm:justify-between md:p-8">
+          <div className="mt-10 flex flex-col items-start gap-4 rounded-[24px] border border-ln-e4defd bg-linear-to-br from-sf-f6f4ff to-surface p-6 sm:flex-row sm:items-center sm:justify-between md:p-8">
             <div>
               <h2 className="font-space text-[20px] font-bold tracking-[-0.02em] text-fg-161622">Questions about this page?</h2>
               <p className="mt-1 text-[14px] text-fg-64748b">Write to us and a real person will reply, usually within a working day.</p>
             </div>
             <a
               href="mailto:hello@justcmul8.com"
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-ln-8d80ff bg-gradient-to-b from-sf-6a57ff to-sf-5742ff px-5 text-[14px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-ln-8d80ff bg-linear-to-b from-sf-6a57ff to-sf-5742ff px-5 text-[14px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(87,66,255,.7)] transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <Mail size={16} aria-hidden /> hello@justcmul8.com
             </a>
