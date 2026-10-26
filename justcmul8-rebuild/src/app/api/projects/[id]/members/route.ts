@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
 import { requirePaid } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
+import { audit } from "@/lib/audit";
 
 const EMAIL_RE = /^[^\s@<>",;]{1,64}@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     url: `${process.env.APP_URL || req.nextUrl.origin}/dashboard/project/${id}`,
   });
   if (!mail.sent) console.warn("[members] invite email not sent:", mail.error);
+  await audit(auth.user.id, "member.invite", { projectId: id, email, role });
 
   return NextResponse.json({ ok: true, emailSent: mail.sent, emailError: mail.error });
 }
@@ -133,6 +135,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq("project_id", id)
     .eq("email", email);
   if (error) return NextResponse.json({ error: "Failed to change role" }, { status: 500 });
+  await audit(auth.user.id, "member.role", { projectId: id, email, role });
   return NextResponse.json({ ok: true });
 }
 
@@ -146,5 +149,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!email) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   const { error } = await supabase.from("project_members").delete().eq("project_id", id).eq("email", email);
   if (error) return NextResponse.json({ error: "Failed to remove person" }, { status: 500 });
+  await audit(auth.user.id, "member.remove", { projectId: id, email });
   return NextResponse.json({ ok: true });
 }

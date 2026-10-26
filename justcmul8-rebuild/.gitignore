@@ -44,3 +44,6 @@ next-env.d.ts
 /test-results/
 /tests/e2e/.auth/
 /tests/e2e/.report/
+
+# Pyodide runtime copied from node_modules by scripts/copy-pyodide.mjs
+/public/pyodide/

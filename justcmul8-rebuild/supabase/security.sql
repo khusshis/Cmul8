@@ -201,3 +201,61 @@ NOTIFY pgrst, 'reload schema';
 --   project_shares, profiles, project_members, subscriptions, credit_ledger,
 --   rate_limits, webhook_events. No storage buckets are used.
 -- Share tokens: encode(gen_random_bytes(16), 'hex') = 128 bits.
+
+-- ─── 7. Indexes for growth (2026-10-27) ──────────────────────────────────────
+-- Run history and share links are looked up by project; without these, both
+-- become sequential scans as the tables grow.
+CREATE INDEX IF NOT EXISTS idx_simulation_runs_project_id ON public.simulation_runs(project_id);
+CREATE INDEX IF NOT EXISTS idx_simulation_runs_user_id ON public.simulation_runs(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_shares_project_id ON public.project_shares(project_id);
+
+-- ─── 8. Audit log (2026-10-27) ───────────────────────────────────────────────
+-- Security-relevant actions (billing, sharing, members, data export, consent,
+-- account deletion), written only by the server (service role) via
+-- src/lib/audit.ts and kept about one year (DPDP processing logs). No foreign
+-- key on user_id, so the trail survives a deleted account.
+CREATE TABLE IF NOT EXISTS public.audit_log (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id uuid,
+  action text NOT NULL,
+  details jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS audit_log_user_idx ON public.audit_log (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_log_created_idx ON public.audit_log (created_at);
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.audit_log FROM anon, authenticated;
+GRANT SELECT ON public.audit_log TO authenticated;
+DROP POLICY IF EXISTS "Users read their own audit entries" ON public.audit_log;
+CREATE POLICY "Users read their own audit entries" ON public.audit_log
+  FOR SELECT USING (user_id = auth.uid());
+
+NOTIFY pgrst, 'reload schema';
+
+-- ─── 9. Two-factor enforcement (2026-10-27) ──────────────────────────────────
+-- Once a user has a verified TOTP factor, their data needs an aal2 session (code
+-- entered). Without this, a stolen password alone could still call the REST API
+-- directly. Accounts without two-factor are unaffected. The share functions are
+-- SECURITY DEFINER and keep working; src/proxy.ts applies the same rule to pages.
+CREATE OR REPLACE FUNCTION public.mfa_satisfied()
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$
+  SELECT coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+      OR NOT EXISTS (SELECT 1 FROM auth.mfa_factors f WHERE f.user_id = auth.uid() AND f.status = 'verified');
+$$;
+REVOKE EXECUTE ON FUNCTION public.mfa_satisfied() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.mfa_satisfied() TO authenticated;
+
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['projects', 'simulation_runs', 'chat_history', 'project_shares', 'profiles',
+                           'project_members', 'subscriptions', 'credit_ledger', 'audit_log'] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "Require two-factor when enrolled" ON public.%I', t);
+    EXECUTE format('CREATE POLICY "Require two-factor when enrolled" ON public.%I AS RESTRICTIVE FOR ALL TO authenticated '
+                   'USING ((SELECT public.mfa_satisfied())) WITH CHECK ((SELECT public.mfa_satisfied()))', t);
+  END LOOP;
+END $$;
+
+NOTIFY pgrst, 'reload schema';

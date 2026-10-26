@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import { Mail, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Turnstile, captchaEnabled } from "@/components/auth/Turnstile";
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { Stagger, Item, FormTitle, SubmitButton, FormError, SuccessState, useIntroDelay } from "@/components/auth/authUi";
 
@@ -21,13 +22,19 @@ export default function ForgotPasswordPage() {
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
   const delay = useIntroDelay();
+  const [captcha, setCaptcha] = React.useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = React.useState(0); // re-mount = fresh single-use token
+  const nextCaptcha = () => { setCaptcha(null); setCaptchaKey((k) => k + 1); };
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaEnabled && !captcha) { setError("Please complete the security check."); return; }
     setLoading(true); setError("");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent("/update-password")}`,
+      captchaToken: captcha ?? undefined,
     });
+    nextCaptcha();
     if (error) {
       setError(
         error.message.toLowerCase().includes("rate limit")
@@ -65,6 +72,9 @@ export default function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             icon={<Mail size={18} strokeWidth={1.8} />}
           />
+        </Item>
+        <Item>
+          <Turnstile key={captchaKey} onToken={setCaptcha} />
         </Item>
         <Item className="pt-1">
           <SubmitButton loading={loading}>Send reset link</SubmitButton>

@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requirePaid } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
+import { audit } from "@/lib/audit";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const notFound = () => NextResponse.json({ error: "Project not found" }, { status: 404 });
+// Link lifetimes the owner can pick; null = never expires. Expiry is enforced in the database (security.sql §2).
+const EXPIRY_DAYS = [1, 7, 30];
+type LinkRow = { share_token: string; link_access: string; link_role: string; expires_at: string | null };
+const LINK_COLS = "share_token, link_access, link_role, expires_at";
 
 async function getRole(supabase: Supabase, id: string) {
   const { data } = await supabase.rpc("project_role", { pid: id });
@@ -16,15 +21,15 @@ async function getRole(supabase: Supabase, id: string) {
 async function activeLink(supabase: Supabase, id: string) {
   const { data } = await supabase
     .from("project_shares")
-    .select("share_token, link_access, link_role")
+    .select(LINK_COLS)
     .eq("project_id", id)
     .is("revoked_at", null)
     .maybeSingle();
-  return data;
+  return data as LinkRow | null;
 }
 
-function linkJson(row: { share_token: string; link_access: string; link_role: string } | null) {
-  return row ? { url: `/share/${row.share_token}`, access: row.link_access, role: row.link_role } : null;
+function linkJson(row: LinkRow | null) {
+  return row ? { url: `/share/${row.share_token}`, access: row.link_access, role: row.link_role, expiresAt: row.expires_at } : null;
 }
 
 // Role, people with access, and (owner only) the share link. The owner's link is created
@@ -50,9 +55,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       const { data } = await supabase
         .from("project_shares")
         .insert({ project_id: id, created_by: user.id, link_access: "restricted", link_role: "viewer" })
-        .select("share_token, link_access, link_role")
+        .select(LINK_COLS)
         .single();
-      row = data;
+      row = data as LinkRow | null;
     }
     link = linkJson(row);
   }
@@ -60,7 +65,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json({ role, people: people || [], link });
 }
 
-// Owner changes "General access": { access: 'restricted'|'anyone', role: 'viewer'|'editor' }.
+// Owner changes "General access": { access: 'restricted'|'anyone', role: 'viewer'|'editor',
+// expiresInDays?: 1|7|30|null }. Omitting expiresInDays keeps the current expiry.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!UUID_RE.test(id)) return notFound();
@@ -77,6 +83,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!["restricted", "anyone"].includes(access) || !["viewer", "editor"].includes(linkRole)) {
     return NextResponse.json({ error: "Invalid access settings" }, { status: 400 });
   }
+  const expiry = body.expiresInDays;
+  if (expiry !== undefined && expiry !== null && !EXPIRY_DAYS.includes(expiry)) {
+    return NextResponse.json({ error: "Invalid link expiry" }, { status: 400 });
+  }
   // Turning the link off stays allowed, so a downgraded owner can still lock things down.
   if (access === "anyone") {
     const locked = await requirePaid(supabase, "Link sharing");
@@ -85,10 +95,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { data: row, error } = await supabase
     .from("project_shares")
-    .update({ link_access: access, link_role: linkRole })
+    .update({
+      link_access: access,
+      link_role: linkRole,
+      ...(expiry === undefined ? {} : { expires_at: expiry === null ? null : new Date(Date.now() + expiry * 86_400_000).toISOString() }),
+    })
     .eq("project_id", id)
     .is("revoked_at", null)
-    .select("share_token, link_access, link_role")
+    .select(LINK_COLS)
     .single();
   if (error || !row) return NextResponse.json({ error: "Failed to update link" }, { status: 500 });
 
@@ -98,8 +112,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ? await members.delete().eq("project_id", id).eq("source", "link")
     : await members.update({ role: linkRole }).eq("project_id", id).eq("source", "link");
   if (memberError) return NextResponse.json({ error: "Failed to update link members" }, { status: 500 });
+  await audit(user.id, "share.update", { projectId: id, access, role: linkRole, expiresAt: (row as LinkRow).expires_at });
 
-  return NextResponse.json({ link: linkJson(row) });
+  return NextResponse.json({ link: linkJson(row as LinkRow) });
 }
 
 // Owner resets the link: old URL stops working and everyone who joined through it loses access.
@@ -120,6 +135,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     .is("revoked_at", null);
   if (error) return NextResponse.json({ error: "Failed to revoke" }, { status: 500 });
   await supabase.from("project_members").delete().eq("project_id", id).eq("source", "link");
+  await audit(user.id, "share.reset", { projectId: id });
 
   return NextResponse.json({ ok: true });
 }

@@ -33,4 +33,23 @@ test.describe("Settings", () => {
     await expect(input).toBeHidden();
     // Intentionally stop here — we never trigger the real deletion.
   });
+
+  test("account tab offers two-factor setup and the DPDP privacy controls", async ({ page }) => {
+    await page.goto("/settings?tab=account");
+    await expect(page.getByText(/two-factor authentication/i)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/your data & privacy/i)).toBeVisible();
+    await expect(page.getByRole("switch", { name: /allow ai processing/i })).toBeVisible();
+    await expect(page.getByText(/grievance officer/i)).toBeVisible();
+  });
+
+  test("'Download my data' returns the signed-in user's data as JSON (read-only)", async ({ page }) => {
+    await page.goto("/settings?tab=account");
+    const res = await page.request.get("/api/account/export");
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-disposition"]).toMatch(/attachment; filename="justcmul8-my-data-/);
+    const body = await res.json();
+    expect(body.account.email).toBeTruthy();
+    expect(Array.isArray(body.projects)).toBe(true);
+    expect(body).toHaveProperty("activityLog");
+  });
 });

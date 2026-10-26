@@ -10,6 +10,10 @@
 import { generateSimPyScript } from "./codeGenerator";
 import type { SimParams } from "./types";
 
+// Keep in sync with the pyodide devDependency and scripts/vendor (copied by scripts/copy-pyodide.mjs).
+const PYODIDE_BASE = "/pyodide/v0.24.1/";
+const SIMPY_WHEEL = "simpy-4.1.2-py3-none-any.whl";
+
 let pyodide: any = null;
 let pyodideLoading: Promise<void> | null = null;
 let stopped = false;
@@ -25,14 +29,12 @@ async function ensurePyodide(): Promise<void> {
   pyodideLoading = (async () => {
     emit({ type: "status", phase: "loading_runtime", message: "Loading Pyodide WASM runtime..." });
 
-    // Import Pyodide from CDN
-    (self as any).importScripts("https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js");
-    pyodide = await (self as any).loadPyodide();
+    // Served from our own origin (scripts/copy-pyodide.mjs), so a CDN or PyPI outage can't stop simulations.
+    (self as any).importScripts(`${PYODIDE_BASE}pyodide.js`);
+    pyodide = await (self as any).loadPyodide({ indexURL: PYODIDE_BASE });
 
     emit({ type: "status", phase: "loading_simpy", message: "Installing SimPy..." });
-    await pyodide.loadPackage("micropip");
-    const micropip = pyodide.pyimport("micropip");
-    await micropip.install("simpy");
+    await pyodide.loadPackage(`${PYODIDE_BASE}${SIMPY_WHEEL}`);
 
     emit({ type: "status", phase: "ready", message: "Pyodide + SimPy ready" });
   })();

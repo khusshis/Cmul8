@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { adminClient, cancelSubscription, isSubscriptionId } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
+import { audit } from "@/lib/audit";
 
 // Deleting an account is irreversible, so a stolen or forgotten-open session is
 // not enough: the user must have signed in within this window.
@@ -50,6 +51,7 @@ export async function POST() {
     console.error("[account/delete] deleteUser failed", user.id, error.message);
     return NextResponse.json({ error: "Couldn't delete your account. Please try again." }, { status: 500 });
   }
+  await audit(user.id, "account.delete");
 
   return NextResponse.json({ ok: true });
 }

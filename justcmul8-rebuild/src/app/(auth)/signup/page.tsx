@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { consentRecord } from "@/lib/consent";
+import { Turnstile, captchaEnabled } from "@/components/auth/Turnstile";
 import { FloatingInput } from "@/components/ui/FloatingInput";
 import { Stagger, Item, FormTitle, SubmitButton, FormError, Divider, OAuthButtons, SuccessState, StrengthMeter, ConsentChecks, useIntroDelay, type Consent } from "@/components/auth/authUi";
 
@@ -17,6 +18,9 @@ export default function SignupPage() {
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
   const delay = useIntroDelay();
+  const [captcha, setCaptcha] = React.useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = React.useState(0); // re-mount = fresh single-use token
+  const nextCaptcha = () => { setCaptcha(null); setCaptchaKey((k) => k + 1); };
   // Where to land after confirming (e.g. an invited project). Same-origin paths only.
   const [redirect, setRedirect] = React.useState("/dashboard");
   React.useEffect(() => {
@@ -34,11 +38,13 @@ export default function SignupPage() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     if (!consented) return; // the required checkboxes already block submit; this is the backstop
+    if (captchaEnabled && !captcha) { setError("Please complete the security check."); return; }
     setLoading(true); setError("");
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: callbackUrl(), data: { consent: consentRecord() } },
+      options: { emailRedirectTo: callbackUrl(), data: { consent: consentRecord() }, captchaToken: captcha ?? undefined },
     });
+    nextCaptcha();
     if (error) { setError(error.message); setLoading(false); return; }
     // Email confirmation disabled in Supabase → already signed in.
     if (data.session) { router.push(redirect); router.refresh(); return; }
@@ -102,6 +108,9 @@ export default function SignupPage() {
         </Item>
         <Item className="pt-1">
           <ConsentChecks value={consent} onChange={(c) => { setConsent(c); setError(""); }} required />
+        </Item>
+        <Item>
+          <Turnstile key={captchaKey} onToken={setCaptcha} />
         </Item>
         <Item className="pt-1">
           <SubmitButton loading={loading}>Create account</SubmitButton>

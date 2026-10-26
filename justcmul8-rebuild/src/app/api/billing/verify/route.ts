@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { MOCK_RAZORPAY, adminClient, getBilling, hmacMatches, isSubscriptionId, razorpay, syncSubscription } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
+import { audit } from "@/lib/audit";
 
 // Called by Checkout's success handler. Verifies the signature, then trusts only
 // what Razorpay's API says about the subscription.
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
       sub = await razorpay(`/subscriptions/${subId}`);
     }
     await syncSubscription(adminClient(), user.id, sub);
+    await audit(user.id, "billing.verify", { subscriptionId: subId, status: sub.status });
     return NextResponse.json(await getBilling(supabase));
   } catch (err) {
     console.error("[billing] verify failed", err);

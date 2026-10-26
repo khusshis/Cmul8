@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Download, Link2, Check, Loader2, FileJson, FileSpreadsheet, Lock, Globe, UserPlus, X, RotateCcw, Share2 } from "lucide-react";
+import { Download, Link2, Check, Loader2, FileJson, FileSpreadsheet, Lock, Globe, UserPlus, X, RotateCcw, Share2, Clock } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { toast } from "@/components/ui/Toast";
 
 type Role = "owner" | "editor" | "viewer";
 interface Person { user_id: string | null; email: string; role: Role; display_name: string | null }
-interface LinkSettings { url: string; access: "restricted" | "anyone"; role: "viewer" | "editor" }
+interface LinkSettings { url: string; access: "restricted" | "anyone"; role: "viewer" | "editor"; expiresAt?: string | null }
 
 const selectCls = "h-8 text-[12px] font-bold text-fg-475569 bg-surface border border-ln-ecebf7 rounded-full pl-3 pr-2 hover:border-ln-c4b5fd focus:border-ln-c4b5fd focus:shadow-[0_0_0_3px_rgba(139,92,246,.12)] outline-none cursor-pointer transition-shadow disabled:opacity-50";
 const sectionLabel = "text-[12px] font-bold uppercase tracking-[0.12em] text-fg-94a3b8 mb-2.5";
@@ -252,6 +252,29 @@ function SharePanel({ projectId, onAccessChanged }: { projectId: string; onAcces
               </select>
             )}
           </div>
+          {link.access === "anyone" && (
+            <div className="mt-2 flex items-center gap-2 px-1 text-[12px] text-fg-64748b">
+              <Clock size={12} className="shrink-0" />
+              <span className="flex-1">
+                {!link.expiresAt ? "Link never expires"
+                  : new Date(link.expiresAt) > new Date() ? `Link expires ${new Date(link.expiresAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`
+                  : "Link has expired"}
+              </span>
+              <select
+                aria-label="Link expiry"
+                value=""
+                disabled={busy}
+                onChange={(e) => mutate(`/api/projects/${projectId}/share`, "PATCH", { access: link.access, role: link.role, expiresInDays: e.target.value === "never" ? null : Number(e.target.value) })}
+                className={selectCls}
+              >
+                <option value="" disabled>Set expiry</option>
+                <option value="1">1 day</option>
+                <option value="7">7 days</option>
+                <option value="30">30 days</option>
+                <option value="never">Never</option>
+              </select>
+            </div>
+          )}
         </div>
       )}
 

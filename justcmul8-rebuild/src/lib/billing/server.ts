@@ -172,6 +172,12 @@ export async function withCredits(action: CreditAction, req: Request, handler: (
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return handler(req); // the handler returns its own 401
 
+  // DPDP: the user withdrew consent for AI processing in Settings → Account; nothing is sent to Gemini.
+  if (user.user_metadata?.ai_opt_out === true) {
+    const msg = "You've turned off AI processing in Settings → Account. Turn it back on to use the assistant.";
+    return NextResponse.json({ ok: false, errorCode: "AI_CONSENT_WITHDRAWN", text: msg, error: msg }, { status: 403 });
+  }
+
   // Limits run before charging, so throttled calls cost nothing. The global key is
   // a circuit breaker on total Gemini spend across all users and instances.
   const limited =

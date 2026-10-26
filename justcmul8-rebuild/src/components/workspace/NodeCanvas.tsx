@@ -992,7 +992,8 @@ function NodeCanvasInner({
   const [reactFlowInstance, setReactFlowInstance] = React.useState<any>(null);
   const { fitView, setNodes, setEdges, deleteElements, setCenter, getZoom, getNodes } = useReactFlow();
   const prevNodeCountRef = useRef(0);
-  const cursorThrottleRef = useRef(false);
+  // Last cursor broadcast time. ~12/s per user keeps a busy room under Supabase's per-second message limit.
+  const lastCursorSentRef = useRef(0);
   const canvasKey = useRef({});
   const edgesRef = useRef(edges);
   edgesRef.current = edges;
@@ -1066,19 +1067,13 @@ function NodeCanvasInner({
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!onBroadcastCursor || !reactFlowInstance || !reactFlowWrapper.current) return;
-    if (cursorThrottleRef.current) return;
-    cursorThrottleRef.current = true;
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    requestAnimationFrame(() => {
-      if (reactFlowInstance) {
-        // screenToFlowPosition takes viewport (client) coords and subtracts the canvas offset itself.
-        const flowPos = reactFlowInstance.screenToFlowPosition({ x: clientX, y: clientY });
-        onBroadcastCursor(flowPos);
-      }
-      cursorThrottleRef.current = false;
-    });
-  }, [onBroadcastCursor, reactFlowInstance]);
+    if (remoteUsers.length === 0) return; // nobody else here to see it
+    const now = performance.now();
+    if (now - lastCursorSentRef.current < 80) return;
+    lastCursorSentRef.current = now;
+    // screenToFlowPosition takes viewport (client) coords and subtracts the canvas offset itself.
+    onBroadcastCursor(reactFlowInstance.screenToFlowPosition({ x: e.clientX, y: e.clientY }));
+  }, [onBroadcastCursor, reactFlowInstance, remoteUsers.length]);
 
   const handlePointerLeave = useCallback(() => {
     if (onBroadcastCursor) {

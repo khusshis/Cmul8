@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: justcmul8-rebuild
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: justcmul8-rebuild/package-lock.json
+
+      # The engine tests run the generated SimPy script; same SimPy as the browser (scripts/vendor).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install simpy==4.1.2
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p .
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Node tests
+        run: node tests/run-node-tests.mjs
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high

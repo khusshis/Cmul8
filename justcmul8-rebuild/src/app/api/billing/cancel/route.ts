@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient, cancelSubscription, getBilling, isSubscriptionId, syncSubscription } from "@/lib/billing/server";
 import { rateLimit } from "@/lib/supabase/rateLimit";
+import { audit } from "@/lib/audit";
 
 // Trial: cancel now (no charge, back to Free). Paid: keep Pro until the period ends.
 export async function POST() {
@@ -23,6 +24,7 @@ export async function POST() {
     const admin = adminClient();
     if (trialing || sub.status === "cancelled") await syncSubscription(admin, user.id, sub);
     else await admin.from("subscriptions").update({ cancel_at_period_end: true }).eq("user_id", user.id);
+    await audit(user.id, "billing.cancel", { subscriptionId: subId, trialing });
     return NextResponse.json(await getBilling(supabase));
   } catch (err) {
     console.error("[billing] cancel failed", err);

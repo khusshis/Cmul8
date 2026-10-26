@@ -8,6 +8,7 @@ import {
   MessageCircle, Moon, Settings, ShieldCheck, Sun, User, Zap, History, Shapes, Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { PrivacyCard, TwoFactorCard } from "@/components/settings/AccountCards";
 import Navbar from "@/components/layout/Navbar";
 import { toast } from "@/components/ui/Toast";
 import { setTheme, useIsDark } from "@/components/ui/ThemeToggle";
@@ -706,6 +707,14 @@ function SettingsInner() {
                       </Rise>
 
                       <Rise i={3}>
+                        <TwoFactorCard card={card} label={label} Head={CardHead} />
+                      </Rise>
+
+                      <Rise i={4}>
+                        <PrivacyCard card={card} label={label} Head={CardHead} />
+                      </Rise>
+
+                      <Rise i={5}>
                         <div className={`${card} !border-red-100`}>
                           <CardHead icon={AlertTriangle} danger title="Delete account" sub="Permanently removes all your projects, simulation history and chat history." />
                           <button

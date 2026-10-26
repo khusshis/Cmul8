@@ -194,7 +194,8 @@ export default function DashboardPage() {
       const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
       const meta = user.user_metadata as { full_name?: string; name?: string } | undefined;
       setUserName((profile?.display_name || meta?.full_name || meta?.name || user.email?.split("@")[0] || "").split(" ")[0]);
-      const { data } = await supabase.from("projects").select("*").order("updated_at", { ascending: false });
+      // ponytail: loads every project's graph for the card previews; paginate (or fetch previews per visible card) once accounts hold hundreds of projects.
+      const { data } = await supabase.from("projects").select("id, name, sim_type, updated_at, user_id, graph_json").order("updated_at", { ascending: false });
       setProjects(data || []);
       setLoading(false);
       if (data?.length) {

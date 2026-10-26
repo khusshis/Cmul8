@@ -69,6 +69,11 @@ export async function proxy(request: NextRequest) {
   // Every matched route needs a session.
   if (!user) return redirectTo("/login", { redirect: path });
 
+  // Two-factor: an account with a verified TOTP factor must enter its code before any page.
+  // (The database enforces the same rule for direct API calls: security.sql §9.)
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") return redirectTo("/login", { mfa: "1", redirect: path });
+
   // New accounts finish onboarding before anything else. The flag lives in
   // user_metadata (no extra query); it is a UX gate, not a security boundary.
   const onboarded = user.user_metadata?.onboarded === true;

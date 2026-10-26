@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pyodide.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-pyodide.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -47,6 +49,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "pyodide": "0.24.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"

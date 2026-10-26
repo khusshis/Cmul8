@@ -128,7 +128,8 @@ const SECTIONS: LegalSection[] = [
       <p>
         We keep your data while your account is open. When you delete your account under <Link href="/settings?tab=account">Settings → Account</Link>,
         we permanently delete your profile, projects, simulation history and chat history. We keep billing records for as long as tax and accounting
-        laws require, and server logs for a short period for security.
+        laws require, and a log of security-relevant actions (sign-in protection, billing, sharing, data exports and consent changes) for about one
+        year, as the law requires.
       </p>
     ),
   },
@@ -137,8 +138,9 @@ const SECTIONS: LegalSection[] = [
     title: "How we protect it",
     body: (
       <p>
-        Data is encrypted in transit. Every database table has row-level security, so you can only reach your own data and the projects shared with
-        you. Sensitive actions such as deleting your account need a recent sign-in, and our APIs are rate-limited. No system is perfectly secure, so
+        Data is encrypted in transit and at rest. Every database table has row-level security, so you can only reach your own data and the projects
+        shared with you. You can turn on two-factor sign-in in Settings → Account; once it is on, your data can&apos;t be reached without your code.
+        Sensitive actions such as deleting your account need a recent sign-in, and our APIs are rate-limited. No system is perfectly secure, so
         if you notice anything suspicious, tell us at <a href="mailto:hello@justcmul8.com">hello@justcmul8.com</a>.
       </p>
     ),
@@ -156,7 +158,15 @@ const SECTIONS: LegalSection[] = [
           <li>withdraw consent or object to certain processing.</li>
         </ul>
         <p>When you sign up, we record that you accepted these terms, the date, and the version of this policy you accepted.</p>
-        <p>You can export your results yourself as CSV, HTML or PDF reports. For anything else, email <a href="mailto:hello@justcmul8.com">hello@justcmul8.com</a> and we&apos;ll reply within 30 days.</p>
+        <p>
+          In <Link href="/settings?tab=account">Settings → Account</Link> you can download all your data as one file, and turn AI processing off
+          at any time (nothing is then sent to the AI assistant). You can also export results as CSV, HTML or PDF reports.
+        </p>
+        <p>
+          <strong>Grievance Officer.</strong> For any question or complaint about your personal data, email{" "}
+          <a href="mailto:hello@justcmul8.com">hello@justcmul8.com</a>. We reply within 30 days. If you are not satisfied with our answer, you can
+          complain to the Data Protection Board of India.
+        </p>
       </>
     ),
   },

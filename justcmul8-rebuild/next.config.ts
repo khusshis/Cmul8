@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
+// Cloudflare Turnstile (sign-up/login bot check) is allowed only once its site key is configured.
+const turnstile = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? " https://challenges.cloudflare.com" : "";
 
 // Supabase REST/Auth (https) and Realtime (wss) for this project only.
 const supabaseHost = (() => {
@@ -12,8 +14,7 @@ const supabaseHost = (() => {
 })();
 
 // Every external host the app really loads (grep for https:// before adding more):
-//  - cdn.jsdelivr.net: Pyodide runtime, wasm and packages (pyodideWorker.ts)
-//  - pypi.org / files.pythonhosted.org: micropip.install("simpy")
+//  (Pyodide and the SimPy wheel are self-hosted under /pyodide, see scripts/copy-pyodide.mjs)
 //  - checkout.razorpay.com + *.razorpay.com: Checkout script, iframe and its API calls
 //  - fonts.googleapis.com / fonts.gstatic.com: the printable HTML report (reportGenerator.ts)
 // 'unsafe-eval' is required by Pyodide's dynamic linker (EM_ASM eval in pyodide.asm.js,
@@ -21,12 +22,12 @@ const supabaseHost = (() => {
 // Digital Twin. 'unsafe-inline' scripts: Next's inline bootstrap without nonces.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://*.razorpay.com",
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://*.razorpay.com${turnstile}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.razorpay.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost} https://cdn.jsdelivr.net https://pypi.org https://files.pythonhosted.org https://*.razorpay.com data: blob:${isDev ? " ws:" : ""}`,
-  "frame-src https://*.razorpay.com",
+  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost} https://*.razorpay.com data: blob:${isDev ? " ws:" : ""}`,
+  `frame-src https://*.razorpay.com${turnstile}`,
   "worker-src 'self' blob:",
   "media-src 'self' blob:",
   "object-src 'none'",
