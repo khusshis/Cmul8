@@ -172,6 +172,18 @@ export default function Navbar() {
     lenis.start(); // the mobile sheet stops Lenis; a stopped instance ignores scrollTo
     lenis.scrollTo(`#${id}`, { offset: -84, duration: 1.2 });
   };
+  // Logo on the landing page: glide back to the top instead of re-navigating to "/".
+  const goTop = (e: React.MouseEvent) => {
+    setMobileOpen(false);
+    if (!isLanding) return;
+    e.preventDefault();
+    if (lenis) {
+      lenis.start();
+      lenis.scrollTo(0, { duration: 1.2 });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   const pillOn = hoverId ?? activeId;
 
   return (
@@ -185,7 +197,7 @@ export default function Navbar() {
           }`}
           style={{ backdropFilter: "saturate(180%) blur(24px)", WebkitBackdropFilter: "saturate(180%) blur(24px)" }}
         >
-          <Link href="/" aria-label="JustCmul8 home" className="group flex shrink-0 items-center gap-2">
+          <Link href="/" onClick={goTop} aria-label="JustCmul8 home" className="group flex shrink-0 items-center gap-2">
             <img src={MARK_SRC} alt="" className="h-[24px] w-auto transition-transform duration-300 group-hover:-rotate-6" />
             <span className="font-space text-[16px] font-bold tracking-tight text-fg-1d1d1f">JustCmul8</span>
           </Link>

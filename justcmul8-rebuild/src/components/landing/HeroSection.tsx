@@ -15,10 +15,11 @@ const PROMPTS = [
   "A warehouse dock loading 40 trucks a day…",
 ];
 
-// "Trusted by" row (college demo). Logos: Simple Icons. Brand colour shows on hover.
+// "Trusted by" row (college demo). Logos: Simple Icons, always shown in the brand colour.
 // wordmark: the logo already spells the name, so it's shown wide and alone.
-const COMPANIES: { name: string; logo: string; color: string; wordmark?: boolean }[] = [
-  { name: "Google", logo: "google", color: "#4285f4" },
+// multicolor: the SVG carries its own fills, so it's drawn as an <img> instead of a mask.
+const COMPANIES: { name: string; logo: string; color: string; wordmark?: boolean; multicolor?: boolean }[] = [
+  { name: "Google", logo: "google-color", color: "#4285f4", multicolor: true },
   { name: "Siemens", logo: "siemens", color: "#009999", wordmark: true },
   { name: "Amazon", logo: "amazon", color: "#ff9900" },
   { name: "DHL", logo: "dhl", color: "#d40511", wordmark: true },
@@ -30,16 +31,21 @@ const COMPANIES: { name: string; logo: string; color: string; wordmark?: boolean
   { name: "Uber", logo: "uber", color: "var(--color-fg-000000)", wordmark: true },
 ];
 
-function CompanyChip({ name, logo, color, wordmark }: (typeof COMPANIES)[number]) {
+function CompanyChip({ name, logo, color, wordmark, multicolor }: (typeof COMPANIES)[number]) {
   const src = `url(/logos/${logo}.svg) center / ${wordmark ? "cover" : "contain"} no-repeat`;
   return (
     <span
-      className="group/chip mr-3 md:mr-4 inline-flex h-14 shrink-0 items-center gap-2.5 rounded-2xl border border-ln-ecebf7 bg-surface px-5 text-fg-64748b shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[color,transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:text-[var(--brand)] hover:shadow-[0_10px_24px_-12px_rgba(16,24,40,.25)] dark:hover:text-[color-mix(in_oklab,var(--brand)_70%,white)] dark:hover:shadow-[0_10px_24px_-12px_rgba(0,0,0,.6)]"
+      className="group/chip mr-3 md:mr-4 inline-flex h-14 shrink-0 items-center gap-2.5 rounded-2xl border border-ln-ecebf7 bg-surface px-5 text-[var(--brand)] shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(16,24,40,.25)] dark:text-[color-mix(in_oklab,var(--brand)_70%,white)] dark:hover:shadow-[0_10px_24px_-12px_rgba(0,0,0,.6)]"
       style={{ ["--brand" as string]: color }}
       title={name}
     >
-      {/* SVG used as a mask so it takes the text colour. Wordmarks: wide box + cover crops the empty viewBox space. */}
-      <span aria-hidden className={`bg-current ${wordmark ? "h-6 w-[88px]" : "h-6 w-6"}`} style={{ WebkitMask: src, mask: src }} />
+      {/* Single-colour SVGs are masks filled with the brand colour. Wordmarks: wide box + cover crops the empty viewBox space. */}
+      {multicolor ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img aria-hidden alt="" src={`/logos/${logo}.svg`} className="h-6 w-6" />
+      ) : (
+        <span aria-hidden className={`bg-current ${wordmark ? "h-6 w-[88px]" : "h-6 w-6"}`} style={{ WebkitMask: src, mask: src }} />
+      )}
       {wordmark ? (
         <span className="sr-only">{name}</span>
       ) : (

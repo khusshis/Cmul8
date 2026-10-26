@@ -24,11 +24,11 @@ const TONES = {
   cyan: { tile: "bg-sf-ecfeff text-fg-0891b2", check: "text-fg-0891b2", glow: "rgba(8,145,178,.14)", ring: "group-hover:border-ln-a5f3fc" },
 };
 
-const LAYERS: { icon: LucideIcon; name: string; check: Line }[] = [
-  { icon: Globe, name: "Your browser", check: { plain: "Strict rules on what the page may load or embed", tech: "CSP · X-Frame-Options DENY · nosniff · Permissions-Policy" } },
-  { icon: Lock, name: "Network", check: { plain: "Every connection is encrypted, always", tech: "TLS everywhere · HSTS 2 years, includeSubDomains" } },
-  { icon: Network, name: "API", check: { plain: "Each request is checked before it does anything", tech: "CSRF origin check · per-user rate limits · input validation" } },
-  { icon: Database, name: "Database", check: { plain: "Your data is walled off from everyone else's", tech: "Postgres Row-Level Security on every table" } },
+const LAYERS: { icon: LucideIcon; tone: keyof typeof TONES; name: string; check: Line }[] = [
+  { icon: Globe, tone: "violet", name: "Your browser", check: { plain: "Strict rules on what the page may load or embed", tech: "CSP · X-Frame-Options DENY · nosniff · Permissions-Policy" } },
+  { icon: Lock, tone: "blue", name: "Network", check: { plain: "Every connection is encrypted, always", tech: "TLS everywhere · HSTS 2 years, includeSubDomains" } },
+  { icon: Network, tone: "amber", name: "API", check: { plain: "Each request is checked before it does anything", tech: "CSRF origin check · per-user rate limits · input validation" } },
+  { icon: Database, tone: "emerald", name: "Database", check: { plain: "Your data is walled off from everyone else's", tech: "Postgres Row-Level Security on every table" } },
 ];
 
 const FEATURES: Feature[] = [
@@ -133,21 +133,24 @@ function ModeToggle({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void 
   );
 }
 
-/** Dark hero card: a request travelling through the four layers, checked at each one. */
+/** Hero card: a request travelling through the four layers, checked at each one. */
 function DefenseInDepth({ mode }: { mode: Mode }) {
   const LOOP = 5;
   return (
-    <div className="relative h-full overflow-hidden rounded-[28px] border border-white/10 bg-linear-to-br from-sf-1e1b4b via-sf-191733 to-sf-110f1f p-6 text-white shadow-[0_30px_70px_-30px_rgba(87,66,255,.55)] md:p-8">
-      <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sf-5742ff/30 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(255,255,255,.07)_1px,transparent_1.5px)] [background-size:22px_22px] [mask-image:linear-gradient(160deg,#000,transparent_75%)]" />
+    <div className="relative h-full overflow-hidden rounded-[28px] border border-ln-ecebf7 bg-linear-to-br from-sf-f5f3ff via-surface to-sf-eef2ff p-6 text-fg-161622 shadow-[0_30px_70px_-34px_rgba(87,66,255,.35)] md:p-8">
+      <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sf-5742ff/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-sf-34d399/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(87,66,255,.09)_1px,transparent_1.5px)] [background-size:22px_22px] [mask-image:linear-gradient(160deg,#000,transparent_75%)]" />
       <div className="relative">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white/80 ring-1 ring-white/15">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-sf-f3f1ff px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-fg-5742ff ring-1 ring-ln-c4b5fd/60">
           <ShieldCheck size={13} aria-hidden /> Defense in depth
         </span>
-        <h3 className="mt-4 font-space text-[24px] font-bold leading-tight tracking-[-0.02em] md:text-[28px]">Four checkpoints. Every request.</h3>
+        <h3 className="mt-4 font-space text-[24px] font-bold leading-tight tracking-[-0.02em] md:text-[28px]">
+          Four checkpoints. <span className="bg-linear-to-r from-sf-6a57ff to-sf-5742ff bg-clip-text text-transparent">Every request.</span>
+        </h3>
         <Swap
           mode={mode}
-          className="mt-2 max-w-md text-[13.5px] leading-relaxed text-white/70"
+          className="mt-2 max-w-md text-[13.5px] leading-relaxed text-fg-64748b"
           line={{
             plain: "Before anything reaches your data it has to pass four independent locks. If one were ever bypassed, the next still holds.",
             tech: "Independent controls at the client, transport, application and data layers, so no single failure exposes tenant data.",
@@ -158,9 +161,9 @@ function DefenseInDepth({ mode }: { mode: Mode }) {
       <div className="relative mt-7 flex gap-4">
         {/* Rail with the travelling request */}
         <div aria-hidden className="relative w-6 shrink-0">
-          <div className="absolute inset-y-3 left-1/2 w-px -translate-x-1/2 bg-linear-to-b from-white/5 via-white/25 to-white/5" />
+          <div className="absolute inset-y-3 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-linear-to-b from-ln-c4b5fd via-ln-bfdbfe to-ln-a7f3d0" />
           <motion.div
-            className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-sf-a78bfa shadow-[0_0_0_4px_rgba(167,139,250,.25),0_0_18px_rgba(167,139,250,.9)]"
+            className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-sf-5742ff shadow-[0_0_0_4px_rgba(87,66,255,.18),0_0_16px_rgba(87,66,255,.55)]"
             animate={{ top: ["4%", "92%", "92%"] }}
             transition={{ duration: LOOP, times: [0, 0.88, 1], ease: "easeInOut", repeat: Infinity }}
           />
@@ -168,18 +171,19 @@ function DefenseInDepth({ mode }: { mode: Mode }) {
         <ol className="flex-1 space-y-2.5">
           {LAYERS.map((l, i) => {
             const peak = i * 0.22 + 0.1;
+            const t = TONES[l.tone];
             return (
-              <li key={l.name} className="flex items-start gap-3 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-white/10 backdrop-blur-sm sm:items-center">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-fg-c4b5fd">
+              <li key={l.name} className="flex items-start gap-3 rounded-2xl border border-ln-ecebf7 bg-surface/80 p-3 backdrop-blur-sm transition-colors sm:items-center" style={{ boxShadow: `0 10px 24px -18px ${t.glow}` }}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${t.tile}`}>
                   <l.icon size={17} aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[12.5px] font-bold">{i + 1}. {l.name}</div>
-                  <Swap mode={mode} line={l.check} className="text-[12px] leading-snug text-white/65" />
+                  <div className="text-[12.5px] font-bold"><span className={t.check}>{i + 1}.</span> {l.name}</div>
+                  <Swap mode={mode} line={l.check} className="text-[12px] leading-snug text-fg-64748b" />
                 </div>
                 <motion.span
                   aria-hidden
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sf-34d399/20 text-fg-6ee7b7"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sf-ecfdf5 text-fg-059669"
                   animate={{ opacity: [0.35, 0.35, 1, 0.35, 0.35], scale: [1, 1, 1.2, 1, 1] }}
                   transition={{ duration: LOOP, times: [0, peak - 0.05, peak, peak + 0.12, 1], repeat: Infinity }}
                 >
