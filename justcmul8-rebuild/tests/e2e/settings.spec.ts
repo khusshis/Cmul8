@@ -20,12 +20,17 @@ test.describe("Settings", () => {
     await page.goto("/settings?tab=account");
     const del = page.getByText(/delete account/i).first();
     if (!(await del.count())) { test.info().annotations.push({ type: "note", description: "Account tab/delete not found." }); return; }
+    // The card button only opens the confirmation popup.
+    await page.getByRole("button", { name: /delete my account/i }).click();
     const input = page.locator("#st-del");
     await expect(input).toBeVisible({ timeout: 20_000 });
+    const confirm = page.getByRole("button", { name: /delete forever/i });
+    await expect(confirm).toBeDisabled();
     // Type the confirmation but DO NOT click the destructive button.
     await input.fill("DELETE");
-    const confirm = page.getByRole("button", { name: /delete (my )?account|delete forever|confirm/i }).first();
     await expect(confirm).toBeEnabled();
+    await page.keyboard.press("Escape");
+    await expect(input).toBeHidden();
     // Intentionally stop here — we never trigger the real deletion.
   });
 });

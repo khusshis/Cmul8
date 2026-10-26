@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import {
   Plus, Trash2, ExternalLink, Clock, X, Edit2, Check, ArrowRight, FolderPlus, MoreHorizontal, Loader2,
-  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, Coins, ArrowUpDown, Workflow, type LucideIcon,
+  Users, Car, Droplets, Factory, Package, RadioTower, Search, Share2, Layers, Coins, ArrowUpDown, ArrowDownAZ, ChevronDown, Workflow, type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -51,10 +51,10 @@ function timeAgo(iso: string) {
 }
 
 type SortKey = "recent" | "name" | "domain";
-const SORTS: { id: SortKey; label: string }[] = [
-  { id: "recent", label: "Last edited" },
-  { id: "name", label: "Name A–Z" },
-  { id: "domain", label: "Domain" },
+const SORTS: { id: SortKey; label: string; icon: LucideIcon }[] = [
+  { id: "recent", label: "Last edited", icon: Clock },
+  { id: "name", label: "Name A–Z", icon: ArrowDownAZ },
+  { id: "domain", label: "Domain", icon: Layers },
 ];
 
 // Stable avatar colour per email.
@@ -121,6 +121,7 @@ export default function DashboardPage() {
   const [view, setView] = React.useState<"mine" | "shared">("mine");
   const [billing, setBilling] = React.useState<Billing | null>(null);
   const [sort, setSort] = React.useState<SortKey>("recent");
+  const [sortOpen, setSortOpen] = React.useState(false);
   // project id → invited collaborator emails (RLS only returns rows for projects you can see)
   const [members, setMembers] = React.useState<Record<string, string[]>>({});
 
@@ -209,12 +210,13 @@ export default function DashboardPage() {
     // The navbar's "New Simulation" button opens the modal through this event.
     const handleOpenModal = () => setShowModal(true);
     window.addEventListener("open-new-sim-modal", handleOpenModal);
-    const handleOutsideClick = () => setMenuOpenId(null);
+    const handleOutsideClick = () => { setMenuOpenId(null); setSortOpen(false); };
     window.addEventListener("click", handleOutsideClick);
     // Escape closes whatever is open on top.
     const handleKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setMenuOpenId(null);
+      setSortOpen(false);
       setShowModal(false);
       setDeleteId(null);
     };
@@ -272,24 +274,59 @@ export default function DashboardPage() {
                 <button onClick={() => setQuery("")} aria-label="Clear search" className="text-fg-64748b hover:text-fg-161622"><X size={14} /></button>
               )}
             </label>
-            {/* Sort */}
-            <label className="relative flex h-11 items-center gap-1.5 rounded-full border border-ln-ecebf7 bg-surface pl-3.5 pr-2 shadow-[0_1px_2px_rgba(16,24,40,.04)] focus-within:border-ln-c4b5fd focus-within:shadow-[0_0_0_4px_rgba(139,92,246,.12)] sm:w-auto">
-              <ArrowUpDown size={14} className="shrink-0 text-fg-64748b" aria-hidden />
-              <span className="sr-only">Sort simulations</span>
-              <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="h-full w-full cursor-pointer bg-transparent pr-1 text-[13px] font-semibold text-fg-334155 outline-none sm:w-auto">
-                {SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-            </label>
+            {/* Sort: custom menu (a native <select> opens an unstyled OS list, glaring in dark mode) */}
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setSortOpen((o) => !o)}
+                aria-haspopup="listbox"
+                aria-expanded={sortOpen}
+                aria-label={`Sort simulations: ${SORTS.find((o) => o.id === sort)!.label}`}
+                className={`flex h-11 w-full items-center gap-2 rounded-full border bg-surface pl-3.5 pr-3 text-[13px] font-semibold text-fg-334155 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:shadow-[0_0_0_4px_rgba(139,92,246,.12)] sm:w-auto ${sortOpen ? "border-ln-c4b5fd shadow-[0_0_0_4px_rgba(139,92,246,.12)]" : "border-ln-ecebf7 hover:border-ln-dcd8f3"}`}
+              >
+                <ArrowUpDown size={14} className="shrink-0 text-fg-5742ff" aria-hidden />
+                <span className="flex-1 text-left">{SORTS.find((o) => o.id === sort)!.label}</span>
+                <ChevronDown size={15} className={`text-fg-64748b transition-transform duration-200 ${sortOpen ? "rotate-180" : ""}`} aria-hidden />
+              </button>
+              <AnimatePresence>
+                {sortOpen && (
+                  <motion.ul
+                    role="listbox"
+                    aria-label="Sort simulations"
+                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 top-[52px] z-30 w-full min-w-[200px] origin-top-left rounded-2xl border border-ln-ecebf7 bg-surface p-1.5 shadow-[0_16px_40px_-12px_rgba(16,24,40,.25)] dark:shadow-[0_16px_40px_-12px_rgba(0,0,0,.7)]"
+                  >
+                    {SORTS.map((o) => (
+                      <li key={o.id} role="option" aria-selected={sort === o.id}>
+                        <button
+                          autoFocus={sort === o.id}
+                          onClick={() => { setSort(o.id); setSortOpen(false); }}
+                          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:bg-sf-f6f4ff ${sort === o.id ? "bg-sf-f6f4ff text-fg-5742ff" : "text-fg-334155 hover:bg-sf-f6f4ff hover:text-fg-5742ff"}`}
+                        >
+                          <o.icon size={14} className="shrink-0" />
+                          <span className="flex-1">{o.label}</span>
+                          {sort === o.id && <Check size={14} strokeWidth={2.75} />}
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
             {/* Mine / shared: sliding pill */}
-            <div className="relative sm:ml-auto flex h-11 items-center rounded-full bg-ink/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist" aria-label="Which simulations">
+            <div className="relative sm:ml-auto flex h-11 items-center rounded-full border border-ln-ecebf7 bg-ink/[0.04] p-1 shadow-[inset_0_1px_2px_rgba(16,24,40,.06)]" role="tablist" aria-label="Which simulations">
               {([["mine", "My simulations", mine.length], ["shared", "Shared with me", shared.length]] as const).map(([key, label, n]) => (
                 <button key={key} role="tab" aria-selected={view === key} onClick={() => setView(key)} className="relative h-9 flex-1 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 sm:flex-none">
                   {view === key && (
-                    <motion.span layoutId="dash-view-pill" className="absolute inset-0 rounded-full bg-surface shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_var(--color-sf-ffffff)]" transition={spring(20, 0.85)} />
+                    <motion.span layoutId="dash-view-pill" className="absolute inset-0 rounded-full bg-surface shadow-[0_2px_8px_-2px_rgba(16,24,40,.18),inset_0_1px_0_var(--color-sf-ffffff)] dark:bg-sf-5742ff dark:shadow-[0_6px_16px_-6px_rgba(87,66,255,.8),inset_0_1px_0_rgba(255,255,255,.2)]" transition={spring(20, 0.85)} />
                   )}
-                  <span className={`relative transition-colors ${view === key ? "text-fg-161622" : "text-fg-64748b hover:text-fg-161622"}`}>
+                  <span className={`relative inline-flex items-center transition-colors ${view === key ? "text-fg-161622 dark:text-white" : "text-fg-64748b hover:text-fg-161622"}`}>
                     {label}
-                    {n > 0 && <span className="ml-1.5 text-[11px] text-fg-64748b">{n}</span>}
+                    {n > 0 && (
+                      <span className={`ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-bold ${view === key ? "bg-sf-f1f0fa text-fg-5742ff dark:bg-white/20 dark:text-white" : "bg-ink/[0.06] text-fg-64748b"}`}>{n}</span>
+                    )}
                   </span>
                 </button>
               ))}

@@ -1,10 +1,11 @@
 "use client";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "framer-motion";
 import {
   AlertTriangle, ArrowRight, Bug, Building2, CalendarDays, Check, ChevronDown, CreditCard, HelpCircle, KeyRound, Loader2, Lock, Mail,
-  MessageCircle, Moon, Settings, ShieldCheck, Sun, User, Zap, History, Shapes,
+  MessageCircle, Moon, Settings, ShieldCheck, Sun, User, Zap, History, Shapes, Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -412,7 +413,14 @@ function SettingsInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [deleteText, setDeleteText] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  useEffect(() => {
+    if (!deleteOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !deleting) setDeleteOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deleteOpen, deleting]);
   const [billing, setBilling] = useState<Billing | null>(null);
   const [ledger, setLedger] = useState<{ id: number; delta: number; reason: string; created_at: string }[]>([]);
 
@@ -700,21 +708,63 @@ function SettingsInner() {
                       <Rise i={3}>
                         <div className={`${card} !border-red-100`}>
                           <CardHead icon={AlertTriangle} danger title="Delete account" sub="Permanently removes all your projects, simulation history and chat history." />
-                          <label className={label} htmlFor="st-del">Type <span className="font-mono text-red-500">DELETE</span> to confirm</label>
-                          <div className="mt-2 flex flex-wrap items-center gap-3">
-                            <input id="st-del" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder="DELETE" className="h-11 w-40 rounded-full border border-red-100 bg-red-50/50 px-4 font-mono text-[14px] font-bold text-red-600 outline-none placeholder:text-red-200 focus:border-red-300 focus:shadow-[0_0_0_4px_rgba(239,68,68,.12)]" />
-                            <motion.button
-                              onClick={deleteAccount}
-                              disabled={deleteText !== "DELETE" || deleting}
-                              animate={{ opacity: deleteText === "DELETE" ? 1 : 0.4, scale: deleteText === "DELETE" ? 1 : 0.97 }}
-                              transition={spring(16, 0.7)}
-                              className="inline-flex h-11 items-center gap-2 rounded-full bg-red-500 border border-red-400 px-5 text-[14px] font-semibold text-white hover:bg-red-600"
-                            >
-                              {deleting && <Loader2 size={15} className="animate-spin" />} Permanently delete
-                            </motion.button>
-                          </div>
+                          <button
+                            onClick={() => { setDeleteText(""); setDeleteOpen(true); }}
+                            className="mt-1 inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-red-50/60 px-5 text-[14px] font-semibold text-red-600 transition-colors hover:border-red-400 hover:bg-red-500 hover:text-white dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white"
+                          >
+                            <Trash2 size={15} /> Delete my account
+                          </button>
                         </div>
                       </Rise>
+
+                      {/* Confirmation popup: the account only goes after typing DELETE here.
+                          Portalled to <body>: the animated tab panel's transform would otherwise trap it under the navbar. */}
+                      {typeof document !== "undefined" && createPortal(<AnimatePresence>
+                        {deleteOpen && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-sf-161622/40 p-4 backdrop-blur-sm dark:bg-black/60" onClick={() => !deleting && setDeleteOpen(false)}>
+                            <motion.div
+                              role="alertdialog" aria-modal="true" aria-labelledby="del-title" aria-describedby="del-desc"
+                              initial={{ scale: 0.94, y: 14, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.96, y: 10, opacity: 0 }}
+                              transition={spring(16, 0.85)}
+                              className="w-full max-w-[420px] rounded-[28px] bg-surface p-6 shadow-[0_24px_60px_-12px_rgba(0,0,0,.35)]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <motion.div initial={{ scale: 0.6, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={spring(14, 0.5, 0.1)} className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-500/15">
+                                <AlertTriangle size={24} />
+                              </motion.div>
+                              <h3 id="del-title" className="mt-4 text-center font-space text-[21px] font-bold tracking-[-0.02em] text-fg-161622">Delete your account?</h3>
+                              <p id="del-desc" className="mx-auto mt-1.5 max-w-[320px] text-center text-[13.5px] leading-relaxed text-fg-64748b">
+                                This permanently removes everything below. It can&apos;t be undone.
+                              </p>
+                              <ul className="mt-4 space-y-1.5 rounded-2xl border border-red-100 bg-red-50/50 p-3.5 text-[13px] font-medium text-fg-475569 dark:border-red-500/20 dark:bg-red-500/[0.07]">
+                                {["All your simulations and their results", "Chat history with the AI assistant", "Remaining credits", ...(billing && billing.plan !== "free" && !isComplimentary(billing) ? ["Your Pro subscription (it is cancelled)"] : [])].map((t) => (
+                                  <li key={t} className="flex items-center gap-2"><span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" /> {t}</li>
+                                ))}
+                              </ul>
+                              <label className={`${label} mt-5 block`} htmlFor="st-del">Type <span className="font-mono text-red-500">DELETE</span> to confirm</label>
+                              <input
+                                id="st-del" autoFocus autoComplete="off" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} placeholder="DELETE"
+                                onKeyDown={(e) => e.key === "Enter" && deleteText === "DELETE" && !deleting && deleteAccount()}
+                                className="mt-2 h-11 w-full rounded-full border border-red-100 bg-red-50/50 px-4 font-mono text-[14px] font-bold text-red-600 outline-none placeholder:text-red-200 focus:border-red-300 focus:shadow-[0_0_0_4px_rgba(239,68,68,.12)] dark:border-red-500/25 dark:bg-red-500/[0.07] dark:text-red-400 dark:placeholder:text-red-400/30"
+                              />
+                              <div className="mt-6 grid grid-cols-2 gap-2.5">
+                                <button onClick={() => setDeleteOpen(false)} disabled={deleting} className="h-11 rounded-full border border-ln-e7e5f6 bg-surface text-[14px] font-semibold text-fg-334155 transition-colors hover:border-ln-5742ff hover:text-fg-5742ff disabled:opacity-50">
+                                  Keep my account
+                                </button>
+                                <motion.button
+                                  onClick={deleteAccount}
+                                  disabled={deleteText !== "DELETE" || deleting}
+                                  animate={{ opacity: deleteText === "DELETE" ? 1 : 0.4, scale: deleteText === "DELETE" ? 1 : 0.97 }}
+                                  transition={spring(16, 0.7)}
+                                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-red-400 bg-red-500 text-[14px] font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed"
+                                >
+                                  {deleting && <Loader2 size={15} className="animate-spin" />} Delete forever
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>, document.body)}
                     </div>
                   ) : tab === "billing" ? (
                     <BillingPanel billing={billing} ledger={ledger} email={email} name={name} onChange={refreshBilling} />
