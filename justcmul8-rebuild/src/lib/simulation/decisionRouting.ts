@@ -34,3 +34,20 @@ export function effectiveShares(choices: DecisionRoute[]): Map<string, number> {
   if (choices.length && cum < 1) out.set(choices[0].targetId, (out.get(choices[0].targetId) ?? 0) + 1 - cum);
   return out;
 }
+
+/**
+ * A warning when a Decision's chances don't make sense, shown in its panel and before a run:
+ * with every arrow given a chance they must total 100%, and set chances above 100% leave
+ * the Auto arrows nothing. null when the routing is fine.
+ */
+export function routingWarning(routes: DecisionRoute[] | undefined, edgeTargets: string[], isNode: (id: string) => boolean): string | null {
+  const valid = (routes ?? []).filter((r) => r && isNode(r.targetId) && edgeTargets.includes(r.targetId));
+  const total = valid.reduce((a, r) => a + (Number(r.probability) || 0), 0);
+  const covered = new Set(valid.map((r) => r.targetId));
+  const autoArrows = [...new Set(edgeTargets)].filter((t) => !covered.has(t)).length;
+  const pct = `${Math.round(total * 100)}%`;
+  if (!valid.length) return null;
+  if (!autoArrows && Math.abs(total - 1) > 0.005) return `Path chances add up to ${pct}, not 100%.`;
+  if (autoArrows && total > 1.005) return `Set chances already add up to ${pct}, so paths left on Auto get nothing.`;
+  return null;
+}

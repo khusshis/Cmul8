@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { hasCreds } from "../../playwright.config";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -47,6 +48,18 @@ test.describe("Auth flows (no credentials required)", () => {
     await page.getByRole("button", { name: "Google" }).click();
     await expect(page.getByRole("alert").filter({ hasText: /tick both boxes/i })).toBeVisible();
     await expect(page).toHaveURL(/\/signup/);
+  });
+
+  test("signup with an already-registered email is refused with a clear message (TC-02)", async ({ page }) => {
+    test.skip(!hasCreds, "needs E2E_EMAIL (an existing account)");
+    await page.goto("/signup");
+    await page.getByLabel("Email address").fill(process.env.E2E_EMAIL!);
+    await page.getByLabel(/create a password/i).fill("Str0ng-enough-pass!");
+    await page.getByLabel(/18 years of age or older/i).check();
+    await page.getByLabel(/consent to my data being processed/i).check();
+    await page.getByRole("button", { name: /create account/i }).click();
+    await expect(page.getByRole("alert").filter({ hasText: /already exists/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/check your inbox/i)).toHaveCount(0);
   });
 
   test("forgot-password form submits and shows a neutral confirmation", async ({ page }) => {

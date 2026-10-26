@@ -46,6 +46,12 @@ export default function SignupPage() {
     });
     nextCaptcha();
     if (error) { setError(error.message); setLoading(false); return; }
+    // Supabase answers a sign-up for an existing account with an empty user (no identities) instead of an error.
+    if (data.user && data.user.identities?.length === 0) {
+      setError("An account with this email already exists. Log in instead, or reset your password.");
+      setLoading(false);
+      return;
+    }
     // Email confirmation disabled in Supabase → already signed in.
     if (data.session) { router.push(redirect); router.refresh(); return; }
     setLoading(false);

@@ -28,7 +28,9 @@ import {
 } from "lucide-react";
 import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
-import { decisionChoices, effectiveShares } from "@/lib/simulation/decisionRouting";
+import { decisionChoices, effectiveShares, routingWarning } from "@/lib/simulation/decisionRouting";
+import { invalidParamsChange } from "@/lib/simulation/paramRules";
+import { toast } from "@/components/ui/Toast";
 
 interface NodePropertiesPanelProps {
   node: Node;
@@ -889,6 +891,7 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
     decisionChoices(routes, connected.map((t) => t.id), (id) => nodeIds.includes(id))
   );
   const pct = (id: string) => `${Math.round((shares.get(id) ?? 0) * 100)}%`;
+  const warning = routingWarning(routes, connected.map((t) => t.id), (id) => nodeIds.includes(id));
   const setChance = (targetId: string, raw: string) => {
     const next = { targetId, probability: Number(raw) };
     const has = routes.some((r) => r.targetId === targetId);
@@ -983,6 +986,11 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
       {connected.length > 0 && (
         <p className="text-[11px] text-gray-400">
           Paths left on Auto share whatever chance the others leave, evenly.
+        </p>
+      )}
+      {warning && (
+        <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+          {warning}
         </p>
       )}
     </div>
@@ -1095,6 +1103,12 @@ export default function NodePropertiesPanel({ node, simType, onUpdate, nodes = [
   const data = node.data || {};
   const { nodeType, label, params } = data as any;
   const theme = NODE_THEMES[nodeType] || NODE_THEMES.service;
+  // Every settings edit passes through here: an invalid value (capacity 0, a negative time…) is refused with a message.
+  const guardedUpdate = (id: string, patch: { params?: Record<string, unknown> }) => {
+    const msg = patch?.params ? invalidParamsChange(nodeType, params || {}, patch.params) : null;
+    if (msg) { toast.warning(msg, "Invalid value"); return; }
+    onUpdate(id, patch);
+  };
   const IconComp = theme.icon;
 
   return (
@@ -1135,16 +1149,16 @@ export default function NodePropertiesPanel({ node, simType, onUpdate, nodes = [
       {/* ── 2. Scrollable Configuration Sections ── */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 pb-20 space-y-4">
         {nodeType === "source" && (
-          <SourceProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <SourceProperties params={params || {}} nodeId={node.id} onUpdate={guardedUpdate} theme={theme} />
         )}
         {nodeType === "queue" && (
-          <QueueProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <QueueProperties params={params || {}} nodeId={node.id} onUpdate={guardedUpdate} theme={theme} />
         )}
         {nodeType === "resource" && (
           <ResourceProperties
             params={params || {}}
             nodeId={node.id}
-            onUpdate={onUpdate}
+            onUpdate={guardedUpdate}
             isPriorityNode={false}
             theme={theme}
           />
@@ -1153,19 +1167,19 @@ export default function NodePropertiesPanel({ node, simType, onUpdate, nodes = [
           <ResourceProperties
             params={params || {}}
             nodeId={node.id}
-            onUpdate={onUpdate}
+            onUpdate={guardedUpdate}
             isPriorityNode={true}
             theme={theme}
           />
         )}
         {nodeType === "service" && (
-          <ServiceProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <ServiceProperties params={params || {}} nodeId={node.id} onUpdate={guardedUpdate} theme={theme} />
         )}
         {nodeType === "decision" && (
           <DecisionProperties
             params={params || {}}
             nodeId={node.id}
-            onUpdate={onUpdate}
+            onUpdate={guardedUpdate}
             theme={theme}
             nodeIds={nodes.map((n) => n.id)}
             targets={[...new Set(edges.filter((e) => e.source === node.id).map((e) => e.target))].map((id) => ({
@@ -1175,10 +1189,10 @@ export default function NodePropertiesPanel({ node, simType, onUpdate, nodes = [
           />
         )}
         {nodeType === "container" && (
-          <ContainerProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <ContainerProperties params={params || {}} nodeId={node.id} onUpdate={guardedUpdate} theme={theme} />
         )}
         {nodeType === "sink" && (
-          <SinkProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <SinkProperties params={params || {}} nodeId={node.id} onUpdate={guardedUpdate} theme={theme} />
         )}
       </div>
 

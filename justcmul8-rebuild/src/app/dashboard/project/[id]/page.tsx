@@ -9,6 +9,7 @@ import { ArrowLeft, Play, Pause, Square, Save, Loader2, Home, ChevronRight, Chev
 import { createClient } from "@/lib/supabase/client";
 import { JustCmul8Icon } from "@/components/ui/JustCmul8Icon";
 import { toast } from "@/components/ui/Toast";
+import { routingWarning, type DecisionRoute } from "@/lib/simulation/decisionRouting";
 import type { StarterGraph } from "@/lib/simulation/simTypeRegistry";
 import type { SimTick, SimResult, SimTypeId, PyodideStatus, SimGraph, SimulationEngine } from "@/lib/simulation/types";
 import { toSimulationRunRow } from "@/lib/simulation/resultPersistence";
@@ -769,6 +770,14 @@ export default function WorkspacePage() {
     if (!validation.valid) {
       toast.warning(validation.message, "Incomplete Network");
       return;
+    }
+    // Routing chances that don't add up still run (the engine fills the gap), but the user is told first.
+    const ids = new Set(nodes.map((n) => n.id));
+    for (const n of nodes) {
+      const d = n.data as { nodeType?: string; label?: string; params?: { routes?: DecisionRoute[] } } | undefined;
+      if (d?.nodeType !== "decision") continue;
+      const warning = routingWarning(d.params?.routes, edges.filter((e) => e.source === n.id).map((e) => e.target), (id) => ids.has(id));
+      if (warning) toast.warning(`${d.label || "Decision"}: ${warning}`, "Check routing");
     }
 
     const unitMultipliers: Record<string, number> = {
