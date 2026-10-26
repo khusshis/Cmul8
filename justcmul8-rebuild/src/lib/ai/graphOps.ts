@@ -218,7 +218,7 @@ export function sanitizeParams(
     case "source":
       // 0 is legal: the engine treats it as "source disabled".
       nonNegative("arrivalRate", 1);
-      enumOr("distribution", DISTRIBUTIONS, "exponential");
+      enumOr("distribution", [...DISTRIBUTIONS, "burst"], "exponential");
       if (p.maxEntities !== undefined) {
         const n = num(p.maxEntities);
         if (n === undefined || n < 1) delete p.maxEntities;
@@ -250,6 +250,7 @@ export function sanitizeParams(
       positive("capacity", 1000);
       nonNegative("initialLevel", 0);
       positive("fillRate", 1);
+      nonNegative("drainRate", 0);
       if (num(p.capacity) !== undefined && num(p.initialLevel) !== undefined && p.initialLevel > p.capacity) {
         warn(`initialLevel exceeds capacity, clamped to ${p.capacity}`);
         p.initialLevel = p.capacity;

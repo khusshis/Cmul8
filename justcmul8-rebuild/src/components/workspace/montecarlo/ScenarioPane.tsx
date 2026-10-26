@@ -206,7 +206,7 @@ export default function ScenarioPane({
                   <X size={13} />
                 </button>
                 <div className="min-h-0 flex-1 overflow-y-auto">
-                  <NodePropertiesPanel node={selectedNode} simType={simType} onUpdate={updateNode} />
+                  <NodePropertiesPanel node={selectedNode} nodes={scenario.nodes} edges={scenario.edges} simType={simType} onUpdate={updateNode} />
                 </div>
               </div>
             )}

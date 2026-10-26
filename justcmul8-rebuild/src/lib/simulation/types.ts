@@ -36,7 +36,8 @@ export type DistributionType =
   | "uniform"
   | "normal"
   | "deterministic"
-  | "poisson";
+  | "poisson"
+  | "burst";          // arrivals only: groups of ~burstSize arriving together (Rush Hour)
 
 export type QueueDiscipline = "FIFO" | "LIFO" | "PRIORITY";
 
@@ -55,6 +56,8 @@ export interface SourceParams {
   // ── Arrival Timing ─────────────────────────────────────────────────────────
   arrivalRate: number;              // entities per sim-time unit (inter-arrival mean = 1/rate)
   distribution: DistributionType;  // distribution for inter-arrival sampling
+  /** Mean group size when distribution is "burst" (default 5). */
+  burstSize?: number;
 
   // ── Cap / Infinite ─────────────────────────────────────────────────────────
   maxEntities?: number;             // hard cap on total entities spawned; omit = infinite
@@ -147,6 +150,8 @@ export interface ContainerParams {
   capacity: number;
   initialLevel: number;
   fillRate: number;
+  /** Units drained per second by downstream demand; 0/unset = never drains. */
+  drainRate?: number;
 
   // ── Cost & ROI ────────────────────────────────────────────────────────────
   /** Cost per unit sim-time for holding fluid/inventory in this container. */

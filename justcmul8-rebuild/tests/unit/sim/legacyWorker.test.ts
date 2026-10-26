@@ -102,6 +102,26 @@ describe("legacyWorker (fallback engine)", () => {
     expect(result.totalCompleted).toBe(result.nodeStats.a.entitiesIn + result.nodeStats.b.entitiesIn);
   });
 
+  it("decision block with arrows but no routes splits evenly over its arrows", async () => {
+    const graph: SimGraph = {
+      nodes: [
+        { id: "src", nodeType: "source", label: "S", params: { arrivalRate: 2, distribution: "exponential" } },
+        { id: "d", nodeType: "decision", label: "D", params: {} },
+        { id: "a", nodeType: "sink", label: "A", params: {} },
+        { id: "b", nodeType: "sink", label: "B", params: {} },
+      ],
+      edges: [
+        { id: "e1", source: "src", target: "d" },
+        { id: "e2", source: "d", target: "a" },
+        { id: "e3", source: "d", target: "b" },
+      ],
+    };
+    const { result } = await runLegacy(graph, 5000, 3);
+    const share = result.nodeStats.a.entitiesIn / result.totalCompleted;
+    expect(share).toBeGreaterThan(0.47);
+    expect(share).toBeLessThan(0.53);
+  });
+
   it("source maxEntities caps arrivals", async () => {
     const g = queueGraph(5, 0.01);
     (g.nodes[0].params as any).maxEntities = 25;

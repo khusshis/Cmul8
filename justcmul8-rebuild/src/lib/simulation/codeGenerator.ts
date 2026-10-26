@@ -54,6 +54,17 @@ import random
 import json
 import logging
 import copy
+import bisect
+
+# SimPy's SortedQueue re-sorts the whole line on every arrival (n key calls each), which
+# crawls once tens of thousands wait at a priority server. Insert in place instead;
+# insort_right keeps arrival order among equal keys, exactly like the stable re-sort.
+class _InsortQueue(simpy.resources.resource.SortedQueue):
+    def append(self, item):
+        if self.maxlen is not None and len(self) >= self.maxlen:
+            raise RuntimeError("Cannot append event. Queue is full.")
+        bisect.insort(self, item, key=lambda e: e.key)
+simpy.PriorityResource.PutQueue = _InsortQueue
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 DURATION = {DURATION}
@@ -66,6 +77,7 @@ log_buffer = []
 all_logs = []
 timeline_history = []
 entity_counter = [0]
+lifo_seq = [0]
 stats = {}
 active_processes_by_node = {}
 global_events = {}
@@ -163,12 +175,24 @@ def get_next_target(node_id):
     return targets[0] if targets else None
 
 def get_target_for_decision(node_id):
+    # Mirrored by decisionChoices() in decisionRouting.ts (legacy engine + properties panel).
+    # Routes to a real block keep their probabilities exactly. Arrows drawn out of the
+    # block that have no route share whatever probability is left (all of it when no
+    # routes are set), so a Decision wired only with arrows still splits its traffic.
     cfg = NODE_CONFIG[node_id]
-    routes = cfg["params"].get("routes", [])
+    routes = [rt for rt in cfg["params"].get("routes", []) if rt.get("targetId") in NODE_CONFIG]
+    covered = set(rt["targetId"] for rt in routes)
+    extra = []
+    for t in out_edges.get(node_id, []):
+        if t not in covered and t not in extra:
+            extra.append(t)
+    if extra:
+        left = max(0.0, 1.0 - sum(rt.get("probability", 0) for rt in routes))
+        routes = routes + [{"targetId": t, "probability": left / len(extra)} for t in extra]
     r = random.random()
     cum = 0.0
     for route in routes:
-        cum += route["probability"]
+        cum += route.get("probability", 0)
         if r <= cum:
             return route["targetId"]
     return routes[0]["targetId"] if routes else None
@@ -240,28 +264,77 @@ def snapshot_stats(env):
         }
         if s["latencies"]:
             snap[nid]["avgLatency"] = sum(s["latencies"]) / len(s["latencies"])
+        if "breakdownCount" in s:
+            snap[nid]["breakdownCount"] = s["breakdownCount"]
+            snap[nid]["totalDowntime"] = s["totalDowntime"]
     return snap
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_stats=None):
+def breaks_down(params):
+    mtbf = params.get("meanTimeBetweenFailures")
+    return isinstance(mtbf, (int, float)) and mtbf > 0
+
+def request_server(env, res, res_cfg, entity_attrs, discipline="FIFO", resume=False):
+    """A plain FIFO request unless this server orders its line (priority, LIFO, preemption).
+    resume=True is a job that lost its server: it goes back to the head of its own class."""
+    if not isinstance(res, simpy.PriorityResource):
+        return res.request()
+    if discipline == "LIFO":
+        lifo_seq[0] += 1
+        prio = -lifo_seq[0]          # newest arrival first
+    elif (discipline == "PRIORITY" or res_cfg["nodeType"] == "priority_resource"
+          or res_cfg["params"].get("isPreemptive", False)):
+        prio = entity_attrs.get("priority", 3)   # lower = served sooner
+    else:
+        prio = 3  # a FIFO line into a server that is ordered only for breakdowns ignores tiers
+    if resume:
+        prio -= 0.5
+    if isinstance(res, simpy.PreemptiveResource):
+        return res.request(priority=prio, preempt=bool(res_cfg["params"].get("isPreemptive", False)) and not resume)
+    return res.request(priority=prio)
+
+def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_stats=None, job=None):
     params = cfg["params"]
     label = cfg["label"]
-    wait_time = env.now - queued_at
-    s["waits"].append(wait_time)
-    # The wait is spent in the upstream queue, so credit it there too (queue KPIs read it).
-    if queue_stats is not None:
-        queue_stats["waits"].append(wait_time)
+    # job is only passed on a PreemptiveResource; it carries the unfinished work of a
+    # job that lost its server, so the second call resumes instead of starting over.
+    resumed = job is not None and "left" in job
+    if not resumed:
+        wait_time = env.now - queued_at
+        s["waits"].append(wait_time)
+        # The wait is spent in the upstream queue, so credit it there too (queue KPIs read it).
+        if queue_stats is not None:
+            queue_stats["waits"].append(wait_time)
     # G19 fix: accumulate busy-time before changing busyCount
     if s["busyCount"] > 0:
         s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
     s["last_busy_change"] = env.now
     s["busyCount"] += 1
-    svc_time = sample(
-        params.get("serviceDistribution", "exponential"),
-        params.get("serviceTimeMean", 1)
-    )
-    log_event(env.now, eid, node_id, label, "service_start")
-    yield env.timeout(svc_time)
+    if resumed:
+        svc_time = job["left"]
+    else:
+        svc_time = sample(
+            params.get("serviceDistribution", "exponential"),
+            params.get("serviceTimeMean", 1)
+        )
+        log_event(env.now, eid, node_id, label, "service_start")
+    if job is None:
+        yield env.timeout(svc_time)
+    else:
+        job.setdefault("total", svc_time)
+        started = env.now
+        try:
+            yield env.timeout(svc_time)
+        except simpy.Interrupt:
+            s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
+            s["last_busy_change"] = env.now
+            s["busyCount"] -= 1
+            job["left"] = svc_time - (env.now - started)
+            job["preempted"] = True
+            log_event(env.now, eid, node_id, label, "preempted")
+            return None
+        job["preempted"] = False
+        svc_time = job["total"]
     s["services"].append(svc_time)
     # G19 fix: accumulate busy-time before decrementing
     s["busy_seconds"] += (env.now - s["last_busy_change"]) * s["busyCount"]
@@ -275,6 +348,64 @@ def do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_s
     # seized for the entity's entire remaining journey (blocking-after-service).
     # Hand the next hop back instead and let the caller release first.
     return get_next_target(node_id)
+
+def serve_on(env, eid, node_id, cfg, s, resources, queued_at, queue_stats, entity_attrs, discipline="FIFO"):
+    """Runs the job on a request the caller already holds and returns the next hop.
+    On a PreemptiveResource the job can lose its server (a breakdown, or a
+    higher-priority arrival on a preemptive server); it then waits for a server
+    again and resumes the remaining work."""
+    res = resources[node_id]
+    if not isinstance(res, simpy.PreemptiveResource):
+        svc = env.process(do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_stats))
+        yield svc
+        return svc.value
+    job = {}
+    held = None  # a re-acquired request; the caller's "with" releases only the first one
+    try:
+        while True:
+            svc = env.process(do_resource_service(env, eid, node_id, cfg, s, resources, queued_at, queue_stats, job))
+            try:
+                yield svc
+            except simpy.Interrupt:
+                # SimPy interrupts the process that made the request; pause the job itself.
+                if svc.is_alive:
+                    svc.interrupt()
+                    yield svc
+            if not job.get("preempted"):
+                return svc.value
+            if held is not None:
+                res.release(held)
+            held = request_server(env, res, cfg, entity_attrs, discipline, resume=True)
+            yield held
+    finally:
+        if held is not None:
+            res.release(held)
+
+def breakdown_process(env, node_id, res):
+    """SimPy machine-shop pattern, one failure clock per server: after an exponential
+    time-to-failure the failure seizes a server ahead of every job (preempting the job
+    on it, which resumes after the repair) and holds it for the repair time."""
+    cfg = NODE_CONFIG[node_id]
+    params = cfg["params"]
+    s = stats[node_id]
+    while True:
+        yield env.timeout(random.expovariate(1.0 / params["meanTimeBetweenFailures"]))
+        with res.request(priority=float("-inf"), preempt=True) as req:
+            yield req
+            s["breakdownCount"] += 1
+            log_event(env.now, 0, node_id, cfg["label"], "breakdown")
+            down_at = env.now
+            yield env.timeout(sample(params.get("repairDistribution", "exponential"), params.get("repairTimeMean", 1)))
+            s["totalDowntime"] += env.now - down_at
+            log_event(env.now, 0, node_id, cfg["label"], "repaired")
+
+def drain_process(env, con, rate):
+    # ponytail: drains in 1-second steps; move to an exact level-on-read model if sub-second tanks matter.
+    while True:
+        yield env.timeout(1)
+        amount = min(con.level, rate)
+        if amount > 0:
+            yield con.get(amount)
 
 # ── SimPy Processes ────────────────────────────────────────────────────────────
 def entity_process(env, eid, node_id, resources, entity_attrs=None):
@@ -299,6 +430,13 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             yield env.process(entity_process(env, eid, next_id, resources, entity_attrs))
 
     elif node_type == "queue":
+        q_cap = cfg["params"].get("capacity", -1)
+        if isinstance(q_cap, (int, float)) and q_cap > 0 and s["currentDepth"] > q_cap:
+            # The line is full: turn the arrival away, like a full store or channel does.
+            s["currentDepth"] -= 1
+            s["droppedCount"] += 1
+            log_event(env.now, eid, node_id, label, "dropped")
+            return
         log_event(env.now, eid, node_id, label, "queued")
         next_id = get_next_target(node_id)
         
@@ -323,8 +461,9 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             # Incrementing the resource depth here as well double-counts WIP and
             # breaks Little's Law, so the resource is credited at service start.
             next_after_service = None
+            discipline = params.get("discipline", "FIFO")
 
-            with res.request() as req:
+            with request_server(env, res, res_cfg, entity_attrs, discipline) as req:
                 if dist != "none":
                     if dist == "uniform":
                         p_min = params.get("patienceMin", 1)
@@ -344,9 +483,7 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
                         s["currentDepth"] -= 1
                         s["entitiesOut"] += 1
                         res_s["currentDepth"] += 1
-                        svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s))
-                        yield svc
-                        next_after_service = svc.value
+                        next_after_service = yield from serve_on(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s, entity_attrs, discipline)
                     else:
                         log_event(env.now, eid, node_id, label, "reneged")
                         s["currentDepth"] -= 1
@@ -358,9 +495,7 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
                     s["currentDepth"] -= 1
                     s["entitiesOut"] += 1
                     res_s["currentDepth"] += 1
-                    svc = env.process(do_resource_service(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s))
-                    yield svc
-                    next_after_service = svc.value
+                    next_after_service = yield from serve_on(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s, entity_attrs, discipline)
             # Server released here -- only now do we move downstream (F-5),
             # carrying the entity attributes with us (F-11).
             if next_after_service:
@@ -376,11 +511,9 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
         queued_at = env.now
         log_event(env.now, eid, node_id, label, "queued")
         next_after_service = None
-        with res.request() as req:
+        with request_server(env, res, cfg, entity_attrs) as req:
             yield req
-            svc = env.process(do_resource_service(env, eid, node_id, cfg, s, resources, queued_at))
-            yield svc
-            next_after_service = svc.value
+            next_after_service = yield from serve_on(env, eid, node_id, cfg, s, resources, queued_at, None, entity_attrs)
         # Server released here before routing downstream (F-5).
         if next_after_service:
             yield env.process(entity_process(env, eid, next_after_service, resources, entity_attrs))
@@ -660,15 +793,23 @@ def source_process(env, node_id, resources, total_arrived):
         # F-7: a rate of zero means "this source is off", not "one per second".
         if arrival_rate <= 0:
             return
+        # "burst" (Rush Hour): groups of 1..2B-1 arrivals (mean B) land together, with
+        # exponential gaps between groups, so the long-run rate is still arrival_rate.
+        burst = distribution == "burst"
+        batch_mean = max(1, int(round(params.get("burstSize", 5)))) if burst else 1
         while True:
-            inter_arrival = sample(distribution, 1.0 / arrival_rate)
+            if burst:
+                inter_arrival = random.expovariate(arrival_rate / batch_mean)
+            else:
+                inter_arrival = sample(distribution, 1.0 / arrival_rate)
             yield env.timeout(inter_arrival)
             if env.now > DURATION:
                 break
-            if max_entities and count >= max_entities:
-                break
-            spawn_entity()
-            count += 1
+            for _ in range(random.randint(1, 2 * batch_mean - 1) if burst else 1):
+                if max_entities and count >= max_entities:
+                    return
+                spawn_entity()
+                count += 1
 
 def tick_emitter(env, resources, total_arrived):
     while True:
@@ -717,15 +858,28 @@ def run_simulation():
 
     init_stats()
 
+    # Servers fed by a LIFO or "VIP & Urgent First" line have to order their waiters.
+    ordered_lines = set(
+        e["target"] for e in EDGES
+        if NODE_CONFIG.get(e["source"], {}).get("nodeType") == "queue"
+        and NODE_CONFIG[e["source"]]["params"].get("discipline") in ("LIFO", "PRIORITY")
+    )
+
     for nid, cfg in NODE_CONFIG.items():
         n_type = cfg["nodeType"]
         if n_type in ("resource", "priority_resource"):
             cap = cfg["params"].get("capacity", 1)
-            is_pre = cfg["params"].get("isPreemptive", False)
-            if n_type == "priority_resource" or is_pre:
+            if cfg["params"].get("isPreemptive", False) or breaks_down(cfg["params"]):
+                resources[nid] = simpy.PreemptiveResource(env, capacity=max(1, cap))
+            elif n_type == "priority_resource" or nid in ordered_lines:
                 resources[nid] = simpy.PriorityResource(env, capacity=max(1, cap))
             else:
                 resources[nid] = simpy.Resource(env, capacity=max(1, cap))
+            if breaks_down(cfg["params"]):
+                stats[nid]["breakdownCount"] = 0
+                stats[nid]["totalDowntime"] = 0.0
+                for _ in range(max(1, cap)):
+                    env.process(breakdown_process(env, nid, resources[nid]))
         elif n_type == "store":
             cap = cfg["params"].get("capacity", -1)
             c = max(1, cap) if cap > 0 else float('inf')
@@ -743,6 +897,9 @@ def run_simulation():
             cap = cfg["params"].get("capacity", 1000)
             init_level = cfg["params"].get("initialLevel", 0)
             resources[nid] = simpy.Container(env, capacity=cap, init=init_level)
+            drain_rate = cfg["params"].get("drainRate", 0)
+            if isinstance(drain_rate, (int, float)) and drain_rate > 0:
+                env.process(drain_process(env, resources[nid], drain_rate))
         elif n_type in ("event_trigger", "any_of", "all_of"):
             global_events[nid] = env.event()
 

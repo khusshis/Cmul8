@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Node } from "@xyflow/react";
+import type { Node, Edge } from "@xyflow/react";
 import {
   Settings,
   Type,
@@ -28,11 +28,15 @@ import {
 } from "lucide-react";
 import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
+import { decisionChoices, effectiveShares } from "@/lib/simulation/decisionRouting";
 
 interface NodePropertiesPanelProps {
   node: Node;
   simType: string;
   onUpdate: (id: string, partialData: any) => void;
+  /** Canvas graph, so a Decision block can list the blocks its arrows lead to. */
+  nodes?: Node[];
+  edges?: Edge[];
 }
 
 // ─── Theme Mapping for Node Categories ─────────────────────────
@@ -359,6 +363,12 @@ const ARRIVAL_DISTRIBUTIONS: DropdownOption[] = [
   },
   {
     value: "poisson",
+    emoji: "🎲",
+    label: "Poisson Process",
+    desc: "Same as random arrivals: independent arrivals at a steady average rate",
+  },
+  {
+    value: "burst",
     emoji: "⚡",
     label: "Rush Hour / Burst Spikes",
     desc: "Sudden bunches of people arriving in bursts",
@@ -531,6 +541,19 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
                 options={ARRIVAL_DISTRIBUTIONS}
               />
             </div>
+            {params.distribution === "burst" && (
+              <div>
+                <label className={labelCls}>Average Group Size (people per burst)</label>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={params.burstSize ?? 5}
+                  onChange={(e) => setParam("burstSize", Number(e.target.value))}
+                  className={modernInputCls}
+                />
+              </div>
+            )}
             <div>
               <label className={labelCls}>Arrival Speed (People per second)</label>
               <input
@@ -858,8 +881,23 @@ function ServiceProperties({ params, nodeId, onUpdate, theme }: any) {
 }
 
 // ─── 5. Decision (Split Path) ───────────────────────────────────
-function DecisionProperties({ params, nodeId, onUpdate, theme }: any) {
+function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nodeIds = [] }: any) {
   const routes: { targetId: string; probability: number }[] = params.routes || [];
+  const connected: { id: string; label: string }[] = targets;
+  // Same rule the engine uses, so the % shown is the split the run will produce.
+  const shares = effectiveShares(
+    decisionChoices(routes, connected.map((t) => t.id), (id) => nodeIds.includes(id))
+  );
+  const pct = (id: string) => `${Math.round((shares.get(id) ?? 0) * 100)}%`;
+  const setChance = (targetId: string, raw: string) => {
+    const next = { targetId, probability: Number(raw) };
+    const has = routes.some((r) => r.targetId === targetId);
+    const updated =
+      raw === "" ? routes.filter((r) => r.targetId !== targetId)
+      : has ? routes.map((r) => (r.targetId === targetId ? next : r))
+      : [...routes, next];
+    onUpdate(nodeId, { params: { ...params, routes: updated } });
+  };
   return (
     <div className={sectionCls}>
       <SectionHeading icon={Route} accent={theme.accent} iconBg={theme.iconBg} iconColor={theme.iconColor}>
@@ -878,7 +916,29 @@ function DecisionProperties({ params, nodeId, onUpdate, theme }: any) {
           <Plus size={12} /> Add Path
         </button>
       </div>
-      {routes.map((route, idx) => (
+      {connected.map((t) => {
+        const route = routes.find((r) => r.targetId === t.id);
+        return (
+          <div key={t.id} className="flex gap-2 mb-2 items-center">
+            <span className="flex-1 min-w-0 truncate text-[12.5px] font-bold text-gray-800" title={t.id}>
+              {t.label}
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={1}
+              step={0.1}
+              value={route ? route.probability : ""}
+              onChange={(e) => setChance(t.id, e.target.value)}
+              placeholder="Auto"
+              aria-label={`Chance of going to ${t.label} (0-1)`}
+              className={`${modernInputCls} w-24`}
+            />
+            <span className="w-10 text-right text-[11.5px] font-bold text-gray-500">{pct(t.id)}</span>
+          </div>
+        );
+      })}
+      {routes.map((route, idx) => connected.some((t) => t.id === route.targetId) ? null : (
         <div key={idx} className="flex gap-2 mb-2 items-center">
           <input
             type="text"
@@ -915,9 +975,14 @@ function DecisionProperties({ params, nodeId, onUpdate, theme }: any) {
           </button>
         </div>
       ))}
-      {routes.length === 0 && (
+      {routes.length === 0 && connected.length === 0 && (
         <p className="text-[11.5px] text-gray-400 p-2.5 text-center bg-gray-50 rounded-xl">
           Connect outgoing arrows from this node on the canvas to set split percentages.
+        </p>
+      )}
+      {connected.length > 0 && (
+        <p className="text-[11px] text-gray-400">
+          Paths left on Auto share whatever chance the others leave, evenly.
         </p>
       )}
     </div>
@@ -987,6 +1052,17 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
           className={modernInputCls}
         />
       </div>
+      <div>
+        <label className={labelCls}>Drain Rate (units/sec, 0 = never drains)</label>
+        <input
+          type="number"
+          min={0}
+          step={0.1}
+          value={params.drainRate ?? 0}
+          onChange={(e) => setParam("drainRate", Number(e.target.value))}
+          className={modernInputCls}
+        />
+      </div>
 
       <div className="pt-3 border-t border-gray-100 space-y-3">
         <label className="text-[12px] font-extrabold text-gray-800 flex items-center gap-1.5">
@@ -1013,7 +1089,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
 }
 
 // ─── Main Configuration Panel ───────────────────────────────────
-export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePropertiesPanelProps) {
+export default function NodePropertiesPanel({ node, simType, onUpdate, nodes = [], edges = [] }: NodePropertiesPanelProps) {
   if (!node) return null;
 
   const data = node.data || {};
@@ -1086,7 +1162,17 @@ export default function NodePropertiesPanel({ node, simType, onUpdate }: NodePro
           <ServiceProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
         )}
         {nodeType === "decision" && (
-          <DecisionProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />
+          <DecisionProperties
+            params={params || {}}
+            nodeId={node.id}
+            onUpdate={onUpdate}
+            theme={theme}
+            nodeIds={nodes.map((n) => n.id)}
+            targets={[...new Set(edges.filter((e) => e.source === node.id).map((e) => e.target))].map((id) => ({
+              id,
+              label: String(nodes.find((n) => n.id === id)?.data?.label || id),
+            }))}
+          />
         )}
         {nodeType === "container" && (
           <ContainerProperties params={params || {}} nodeId={node.id} onUpdate={onUpdate} theme={theme} />

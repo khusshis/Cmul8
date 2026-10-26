@@ -326,7 +326,7 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
       const dist =
         params.distribution === "deterministic"
           ? "Fixed"
-          : params.distribution === "poisson"
+          : params.distribution === "burst"
           ? "Bursts"
           : params.distribution === "normal"
           ? "Average"
@@ -408,7 +408,7 @@ function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): 
       const rate = Number(p.arrivalRate ?? 1);
       return [
         { icon: Users, label: "Arrivals", value: `${rate}/sec · ${perMinute(rate)}/min` },
-        { icon: Shuffle, label: "Timing", value: p.distribution === "deterministic" ? "Evenly spaced" : p.distribution === "poisson" ? "In bursts" : p.distribution === "normal" ? "Near average" : "Random" },
+        { icon: Shuffle, label: "Timing", value: p.distribution === "deterministic" ? "Evenly spaced" : p.distribution === "burst" ? "In bursts" : p.distribution === "normal" ? "Near average" : "Random" },
         ...(p.priorityLevel && p.priorityLevel !== "standard"
           ? [{ icon: Star, label: "Priority", value: p.priorityLevel === "urgent" ? "Urgent" : "Fast-track" }]
           : []),

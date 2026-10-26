@@ -21,6 +21,7 @@ import type {
   DecisionParams, ContainerParams, ChannelParams,
 } from "./types";
 import { sampleDistribution } from "./distributions";
+import { decisionChoices } from "./decisionRouting";
 
 // ─── Message Types ────────────────────────────────────────────────────────────
 type InMsg  = { type:"start";params:SimParams }|{type:"pause"}|{type:"resume"}|{type:"stop"}|{type:"set_speed";multiplier:number};
@@ -261,8 +262,9 @@ class GraphSimulator {
 
     if(node.nodeType==="decision"){
       const dp=node.params as DecisionParams;
+      const choices=decisionChoices(dp.routes,edges.map(e=>e.target),id=>this.nodeMap.has(id));
       const r=Math.random(); let cum=0;
-      for(const route of dp.routes){
+      for(const route of choices){
         cum+=route.probability;
         if(r<=cum){
           const target=this.nodeMap.get(route.targetId);

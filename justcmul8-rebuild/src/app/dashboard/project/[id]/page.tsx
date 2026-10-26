@@ -1450,6 +1450,8 @@ export default function WorkspacePage() {
               selectedNodeId && nodes.find((n) => n.id === selectedNodeId) ? (
                 <NodePropertiesPanel
                   node={nodes.find((n) => n.id === selectedNodeId)!}
+                  nodes={nodes}
+                  edges={edges}
                   simType={project?.sim_type || "human_queue"}
                   onUpdate={(id, partialData) => {
                     const updatedNodes = nodesRef.current.map((n) =>
