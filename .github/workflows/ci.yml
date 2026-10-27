@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: justcmul8-rebuild/package-lock.json
 
       # The engine tests run the generated SimPy script; same SimPy as the browser (scripts/vendor).
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: pip install simpy==4.1.2
