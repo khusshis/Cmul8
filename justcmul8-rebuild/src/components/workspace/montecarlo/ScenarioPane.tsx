@@ -10,6 +10,7 @@ import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimTypeId } from "@/lib/simulation/types";
 import { describeConditions, isNeutral, type StressConditions } from "@/lib/simulation/stressTransforms";
 import { diffGraphs, KEY_PARAMS, sanitizeParam, type Change } from "@/lib/simulation/scenarioDiff";
+import { TIME_UNITS, bestRateUnit, bestTimeUnit, fmtDuration, fmtPerTime, paramKind, tidy, unitSeconds } from "@/lib/simulation/units";
 import { ConditionsEditor } from "./StressCustomize";
 import { themeColor } from "@/components/ui/chartTheme";
 import { Chips, HelpTip, LetterSwatch, NumberField, SCENARIO_COLORS, focusRing, inputCls } from "./shared";
@@ -29,7 +30,12 @@ export interface LabScenario {
 type PaneView = "canvas" | "tweak" | "stress" | "changes";
 type NodeData = Record<string, unknown> & { params?: Record<string, unknown>; label?: string; nodeType?: string };
 
-const fmtVal = (v: unknown) => (v === undefined ? "not set" : typeof v === "number" ? (v === -1 ? "unlimited" : String(Number(v.toFixed(4)))) : typeof v === "object" ? "changed" : String(v));
+const fmtVal = (v: unknown, key = "") => {
+  if (v === undefined) return "not set";
+  if (typeof v !== "number") return typeof v === "object" ? "changed" : String(v);
+  const kind = paramKind(key);
+  return kind === "time" ? fmtDuration(v) : kind === "rate" ? fmtPerTime(v) : v === -1 ? "unlimited" : String(Number(v.toFixed(4)));
+};
 
 /** One line of plain English per change. */
 export function changeText(c: Change): string {
@@ -37,7 +43,7 @@ export function changeText(c: Change): string {
     case "block-added": return `Added block "${c.label}"`;
     case "block-removed": return `Removed block "${c.label}"`;
     case "renamed": return `Renamed "${c.from}" to "${c.to}"`;
-    case "param": return `${c.label}: ${c.key} ${fmtVal(c.from)} → ${fmtVal(c.to)}`;
+    case "param": return `${c.label}: ${c.key} ${fmtVal(c.from, c.key)} → ${fmtVal(c.to, c.key)}`;
     case "link-added": return `New link ${c.from} → ${c.to}`;
     case "link-removed": return `Removed link ${c.from} → ${c.to}`;
   }
@@ -238,6 +244,11 @@ export default function ScenarioPane({
                               const v = typeof params[spec.key] === "number" ? (params[spec.key] as number) : spec.fallback;
                               const bv = base ? (typeof base[spec.key] === "number" ? (base[spec.key] as number) : spec.fallback) : undefined;
                               const changed = !isBaseline && bv !== undefined && bv !== v;
+                              // Times and rates are edited in the unit that fits the original value (min, per hour…).
+                              const kind = paramKind(spec.key);
+                              const unit = kind === "time" ? bestTimeUnit(bv ?? v) : kind === "rate" ? bestRateUnit(bv ?? v) : null;
+                              const k = unit ? unitSeconds(unit) : 1;
+                              const short = unit ? TIME_UNITS.find((u) => u.id === unit)!.short : "";
                               return (
                                 <div key={spec.key} className={`rounded-lg px-1.5 py-1 ${changed ? "bg-amber-50 ring-1 ring-amber-300" : ""}`}>
                                   <div className="mb-0.5 flex items-center gap-0.5 text-[10.5px] font-bold text-gray-500">
@@ -246,16 +257,17 @@ export default function ScenarioPane({
                                   </div>
                                   <NumberField
                                     label={`${String(d.label ?? n.id)} ${spec.label}`}
-                                    value={v}
+                                    value={kind === "time" ? tidy(v / k) : kind === "rate" ? tidy(v * k) : v}
                                     step={spec.integer ? 1 : 0.1}
                                     width="w-20"
+                                    suffix={kind === "time" ? short : kind === "rate" ? `/${short}` : undefined}
                                     disabled={disabled}
                                     onCommit={(raw) => {
-                                      const clean = sanitizeParam(spec, raw);
+                                      const clean = sanitizeParam(spec, kind === "time" ? raw * k : kind === "rate" ? raw / k : raw);
                                       if (clean !== null) updateNode(n.id, { params: { [spec.key]: clean } });
                                     }}
                                   />
-                                  {changed && <p className="mt-0.5 text-[10px] font-semibold text-amber-800">was {fmtVal(bv)}</p>}
+                                  {changed && <p className="mt-0.5 text-[10px] font-semibold text-amber-800">was {fmtVal(bv, spec.key)}</p>}
                                 </div>
                               );
                             })}

@@ -8,7 +8,8 @@ import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import MetricCard, { HelpTip } from "@/components/ui/MetricCard";
 import ChartCard, { EmptyState, StatRow } from "@/components/ui/ChartCard";
 import ChartTooltip from "@/components/ui/ChartTooltip";
-import { AXIS, GRID, STATE_COLORS, TONES, axisLabel, fmtRate, fmtSeconds, isNum, niceMaxFloat } from "@/components/ui/chartTheme";
+import { AXIS, GRID, STATE_COLORS, TONES, axisLabel, fmtSeconds, isNum, niceMaxFloat } from "@/components/ui/chartTheme";
+import { perTimeParts } from "@/lib/simulation/units";
 
 const PCT_ROWS = [
   { key: "p50", short: "Typical", long: "Typical visit: half of everyone was faster" },
@@ -104,9 +105,9 @@ export default function DeepAnalyticsTab({
               icon={Activity}
               tone="info"
               label="Arrival speed"
-              value={fmtRate(littlesLaw.lambdaArrivalRate)}
-              unit="/ s"
-              caption="arrivals per second"
+              value={perTimeParts(littlesLaw.lambdaArrivalRate).value}
+              unit={`/ ${perTimeParts(littlesLaw.lambdaArrivalRate).short}`}
+              caption={`arrivals ${perTimeParts(littlesLaw.lambdaArrivalRate).per}`}
               help="How fast new work came in, on average."
               delay={0.04}
             />

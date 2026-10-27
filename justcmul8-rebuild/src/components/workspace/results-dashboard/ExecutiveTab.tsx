@@ -27,7 +27,8 @@ import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { resolveKpiMetrics } from "@/lib/simulation/resolveKpiMetrics";
 import MetricCard from "@/components/ui/MetricCard";
 import { EmptyState } from "@/components/ui/ChartCard";
-import { TONES, downsample, fmtMoney, fmtRate, fmtSeconds, isNum, maxOf } from "@/components/ui/chartTheme";
+import { TONES, downsample, fmtMoney, fmtSeconds, isNum, maxOf } from "@/components/ui/chartTheme";
+import { fmtPerTime } from "@/lib/simulation/units";
 
 function kpiIcon(key: string) {
   const k = key.toLowerCase();
@@ -211,7 +212,7 @@ export default function ExecutiveTab({
           tone="info"
           label={`${entity}s arrived`}
           value={result.totalArrived}
-          caption={`${fmtRate(result.totalArrived / simSecs)} per second on average`}
+          caption={`${fmtPerTime(result.totalArrived / simSecs)} on average`}
           help={`How many ${entity.toLowerCase()}s entered the system during the run.`}
           delay={0.08}
         />
@@ -220,7 +221,7 @@ export default function ExecutiveTab({
           tone="good"
           label={`${entity}s finished`}
           value={result.totalCompleted}
-          caption={`${fmtRate(result.totalCompleted / simSecs)} per second leaving`}
+          caption={`${fmtPerTime(result.totalCompleted / simSecs)} leaving`}
           trend={finishedTrend.length > 1 ? finishedTrend : undefined}
           trendLabel="Finished count over the run"
           help={`How many ${entity.toLowerCase()}s made it all the way through. The line shows the running total over time.`}

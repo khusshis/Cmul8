@@ -15,26 +15,26 @@ export interface ParamSpec {
   allowUnlimited?: boolean;
 }
 
-const SERVICE_TIME: ParamSpec = { key: "serviceTimeMean", label: "Service time", help: "Average time one server spends on one item (simulated seconds).", fallback: 1, min: 0 };
+const SERVICE_TIME: ParamSpec = { key: "serviceTimeMean", label: "Service time", help: "Average time one server spends on one item.", fallback: 1, min: 0 };
 const SERVERS: ParamSpec = { key: "capacity", label: "Servers", help: "How many items this station can work on at the same time.", fallback: 1, integer: true, min: 1 };
-const HOURLY: ParamSpec = { key: "hourlyCost", label: "Cost / time", help: "Cost per simulated time unit this station is busy.", fallback: 0, min: 0 };
+const HOURLY: ParamSpec = { key: "hourlyCost", label: "Cost / hour", help: "Cost per hour while this station is busy.", fallback: 0, min: 0 };
 
 export const KEY_PARAMS: Partial<Record<SimNode["nodeType"], ParamSpec[]>> = {
-  source: [{ key: "arrivalRate", label: "Arrivals / s", help: "Average number of new items per simulated second. Higher = busier.", fallback: 1, min: 0 }],
+  source: [{ key: "arrivalRate", label: "Arrivals", help: "Average number of new items arriving. Higher = busier.", fallback: 1, min: 0 }],
   resource: [SERVERS, SERVICE_TIME, HOURLY],
   priority_resource: [SERVERS, SERVICE_TIME, HOURLY],
-  service: [{ key: "durationMean", label: "Duration", help: "Average processing delay (simulated seconds). Everyone is served at once.", fallback: 1, min: 0 }],
+  service: [{ key: "durationMean", label: "Duration", help: "Average processing time. Everyone is served at once.", fallback: 1, min: 0 }],
   queue: [
     { key: "capacity", label: "Max queue", help: "Most items that can wait here; -1 means unlimited. Extra arrivals are turned away.", fallback: -1, integer: true, allowUnlimited: true },
-    { key: "patienceTimeout", label: "Patience", help: "How long an item waits before giving up and leaving (simulated seconds).", fallback: 0, min: 0 },
+    { key: "patienceTimeout", label: "Patience", help: "How long an item waits before giving up and leaving.", fallback: 0, min: 0 },
   ],
   channel: [
-    { key: "propagationDelay", label: "Delay", help: "Transmission delay through this channel (simulated seconds).", fallback: 0, min: 0 },
+    { key: "propagationDelay", label: "Delay", help: "Transmission delay through this channel.", fallback: 0, min: 0 },
     { key: "bufferCapacity", label: "Buffer", help: "Messages the channel can hold; -1 means unlimited.", fallback: -1, integer: true, allowUnlimited: true },
   ],
   container: [
     { key: "capacity", label: "Capacity", help: "Maximum amount the tank or store can hold.", fallback: 1000, min: 0 },
-    { key: "fillRate", label: "Fill rate", help: "Amount added per simulated second.", fallback: 1, min: 0 },
+    { key: "fillRate", label: "Fill rate", help: "Amount added over time.", fallback: 1, min: 0 },
   ],
 };
 

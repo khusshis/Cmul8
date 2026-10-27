@@ -14,6 +14,7 @@ import type { SimState } from "@/app/dashboard/project/[id]/page";
 import type { SimTick, NodeStats, NodeType, SimGraph } from "@/lib/simulation/types";
 import { AlertCircle, X, CalendarClock, Users, Shuffle, Star, ListOrdered, ArrowDownWideNarrow, Hourglass, UserRound, Timer, Gauge, Zap, Wrench, Flag, Package, Layers, ArrowDownToLine, ArrowUpFromLine, GitFork } from "lucide-react";
 import { SIM_TYPE_REGISTRY, NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
+import { fmtDuration, fmtPerTime } from "@/lib/simulation/units";
 import type { PresenceUser } from "@/lib/realtime/usePresence";
 import LiveCursor from "@/components/workspace/LiveCursor";
 
@@ -331,7 +332,7 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
           : params.distribution === "normal"
           ? "Average"
           : "Random";
-      return `${rate}/sec • ${dist} flow`;
+      return `${fmtPerTime(rate)} • ${dist} flow`;
     }
     case "queue": {
       const cap =
@@ -351,11 +352,11 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
       const cap = params.capacity ?? 1;
       const dur = params.serviceTimeMean ?? 1;
       const servers = cap === 1 ? "1 counter" : `${cap} counters`;
-      return `${servers} • ~${dur}s avg`;
+      return `${servers} • ~${fmtDuration(dur)} avg`;
     }
     case "service": {
       const dur = params.durationMean ?? 1;
-      return `Processing ~${dur}s avg`;
+      return `Processing ~${fmtDuration(dur)} avg`;
     }
     case "decision": {
       const routesCount = params.routes?.length ?? 0;
@@ -388,10 +389,6 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
 // ─── Hover details card ─────────────────────────────────────────────────────
 const plural = (n: number, one: string, many = /(s|ch|sh|x)$/.test(one) ? `${one}es` : `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const nounPlural = (one: string) => (/(s|ch|sh|x)$/.test(one) ? `${one}es` : `${one}s`);
-const perMinute = (perSec: number) => {
-  const m = perSec * 60;
-  return m >= 10 ? String(Math.round(m)) : m.toFixed(1);
-};
 
 type IconType = React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 type Point = { icon: IconType; label: string; value: string; warn?: boolean };
@@ -407,7 +404,7 @@ function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): 
       }
       const rate = Number(p.arrivalRate ?? 1);
       return [
-        { icon: Users, label: "Arrivals", value: `${rate}/sec · ${perMinute(rate)}/min` },
+        { icon: Users, label: "Arrivals", value: fmtPerTime(rate) },
         { icon: Shuffle, label: "Timing", value: p.distribution === "deterministic" ? "Evenly spaced" : p.distribution === "burst" ? "In bursts" : p.distribution === "normal" ? "Near average" : "Random" },
         ...(p.priorityLevel && p.priorityLevel !== "standard"
           ? [{ icon: Star, label: "Priority", value: p.priorityLevel === "urgent" ? "Urgent" : "Fast-track" }]
@@ -420,7 +417,7 @@ function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): 
       return [
         { icon: ListOrdered, label: "Line limit", value: unlimited ? "No limit" : `${p.capacity} ${many}` },
         { icon: ArrowDownWideNarrow, label: "Order", value: p.discipline === "PRIORITY" ? "VIP first" : p.discipline === "LIFO" ? "Newest first" : "First come, first served" },
-        { icon: Hourglass, label: "Gives up after", value: patient ? `~${p.patienceTimeout ?? 5} sec` : "Never" },
+        { icon: Hourglass, label: "Gives up after", value: patient ? `~${fmtDuration(Number(p.patienceTimeout ?? 5))}` : "Never" },
       ];
     }
     case "resource":
@@ -429,18 +426,18 @@ function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): 
       const mean = Number(p.serviceTimeMean ?? 1) || 1;
       return [
         { icon: UserRound, label: "Counters", value: String(cap) },
-        { icon: Timer, label: `Time per ${noun}`, value: `~${mean} sec (${timing(p.serviceDistribution)})` },
-        { icon: Gauge, label: "Max output", value: `${perMinute(cap / mean)} ${many}/min` },
+        { icon: Timer, label: `Time per ${noun}`, value: `~${fmtDuration(mean)} (${timing(p.serviceDistribution)})` },
+        { icon: Gauge, label: "Max output", value: fmtPerTime(cap / mean) },
         ...(p.isPreemptive ? [{ icon: Zap, label: "VIPs jump ahead", value: "Yes" }] : []),
         ...(p.meanTimeBetweenFailures
-          ? [{ icon: Wrench, label: "Breakdowns", value: `Every ~${p.meanTimeBetweenFailures}s · fix ~${p.repairTimeMean ?? 1}s` }]
+          ? [{ icon: Wrench, label: "Breakdowns", value: `Every ~${fmtDuration(Number(p.meanTimeBetweenFailures))} · fix ~${fmtDuration(Number(p.repairTimeMean ?? 1))}` }]
           : []),
       ];
     }
     case "service": {
       const mean = Number(p.durationMean ?? 1) || 1;
       return [
-        { icon: Timer, label: `Time per ${noun}`, value: `~${mean} sec (${timing(p.distribution)})` },
+        { icon: Timer, label: `Time per ${noun}`, value: `~${fmtDuration(mean)} (${timing(p.distribution)})` },
         { icon: Users, label: "At once", value: "No limit" },
       ];
     }

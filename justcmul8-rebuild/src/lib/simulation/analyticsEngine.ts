@@ -17,6 +17,7 @@ import type {
   CostBreakdown,
 } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
+import { perTimeParts } from "./units";
 
 /**
  * Calculates exact statistical percentiles using Hyndman & Fan Type-7 linear interpolation (numpy / Excel standard).
@@ -538,14 +539,15 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
     }
 
     default: {
+      const speed = perTimeParts(totalCompleted / duration);
       cards.push({
         id: "throughput_rate",
         label: "Processing Speed",
-        value: (totalCompleted / duration).toFixed(2),
-        unit: "items / sec",
+        value: String(speed.value),
+        unit: `items / ${speed.short}`,
         status: "optimal",
-        benchmark: "Speed per second",
-        description: "How many items successfully finished every second.",
+        benchmark: `Speed ${speed.per}`,
+        description: `How many items successfully finished ${speed.per}.`,
         iconName: "Activity",
       });
     }

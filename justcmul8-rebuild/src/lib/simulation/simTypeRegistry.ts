@@ -155,17 +155,18 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
       { type: "event_trigger", label: "Event Trigger",   icon: Bell, color: "var(--neon-orange)", desc: "Waits for a condition to become true, then fires an event",      spriteKey: "source" },
     ],
 
+    // Template numbers read per minute (2 / 60 = two a minute; 5 * 60 = five minutes): the engine runs in seconds.
     subScenarios: [
       {
         label: "Bank Tellers",
         description: "Customers arrive, queue, and are served by 3 tellers",
         icon: Landmark,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "Customer Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 2, distribution: "exponential" } },
+          { id: "n1", nodeType: "source",   label: "Customer Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 2 / 60, distribution: "exponential" } },
           { id: "n2", nodeType: "queue",    label: "Waiting Queue",    position: { x: 320, y: 250 }, params: { capacity: -1, discipline: "FIFO" } },
-          { id: "n3", nodeType: "resource", label: "Teller 1",         position: { x: 560, y: 150 }, params: { capacity: 1, serviceTimeMean: 5, serviceDistribution: "exponential" } },
-          { id: "n4", nodeType: "resource", label: "Teller 2",         position: { x: 560, y: 280 }, params: { capacity: 1, serviceTimeMean: 5, serviceDistribution: "exponential" } },
-          { id: "n5", nodeType: "resource", label: "Teller 3",         position: { x: 560, y: 410 }, params: { capacity: 1, serviceTimeMean: 5, serviceDistribution: "exponential" } },
+          { id: "n3", nodeType: "resource", label: "Teller 1",         position: { x: 560, y: 150 }, params: { capacity: 1, serviceTimeMean: 5 * 60, serviceDistribution: "exponential" } },
+          { id: "n4", nodeType: "resource", label: "Teller 2",         position: { x: 560, y: 280 }, params: { capacity: 1, serviceTimeMean: 5 * 60, serviceDistribution: "exponential" } },
+          { id: "n5", nodeType: "resource", label: "Teller 3",         position: { x: 560, y: 410 }, params: { capacity: 1, serviceTimeMean: 5 * 60, serviceDistribution: "exponential" } },
           { id: "n6", nodeType: "sink",     label: "Exit",             position: { x: 780, y: 250 }, params: { collectKPIs: true } },
         ],
         edges: [
@@ -183,11 +184,11 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
         description: "Patients arrive, are triaged, then routed to treatment",
         icon: Stethoscope,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "Patient Arrival",  position: { x: 100, y: 250 }, params: { arrivalRate: 1, distribution: "poisson" } },
-          { id: "n2", nodeType: "resource", label: "Triage Nurse",     position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3, serviceDistribution: "exponential" } },
+          { id: "n1", nodeType: "source",   label: "Patient Arrival",  position: { x: 100, y: 250 }, params: { arrivalRate: 1 / 60, distribution: "poisson" } },
+          { id: "n2", nodeType: "resource", label: "Triage Nurse",     position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3 * 60, serviceDistribution: "exponential" } },
           { id: "n3", nodeType: "decision", label: "Triage Decision",  position: { x: 500, y: 250 }, params: { routes: [{ targetId: "n4", probability: 0.3 }, { targetId: "n5", probability: 0.7 }] } },
-          { id: "n4", nodeType: "resource", label: "Critical Care",    position: { x: 700, y: 150 }, params: { capacity: 2, serviceTimeMean: 30, serviceDistribution: "normal" } },
-          { id: "n5", nodeType: "resource", label: "Minor Treatment",  position: { x: 700, y: 350 }, params: { capacity: 4, serviceTimeMean: 10, serviceDistribution: "exponential" } },
+          { id: "n4", nodeType: "resource", label: "Critical Care",    position: { x: 700, y: 150 }, params: { capacity: 2, serviceTimeMean: 30 * 60, serviceDistribution: "normal" } },
+          { id: "n5", nodeType: "resource", label: "Minor Treatment",  position: { x: 700, y: 350 }, params: { capacity: 4, serviceTimeMean: 10 * 60, serviceDistribution: "exponential" } },
           { id: "n6", nodeType: "sink",     label: "Discharged",       position: { x: 900, y: 250 }, params: { collectKPIs: true } },
         ],
         edges: [
@@ -220,7 +221,7 @@ export const SIM_TYPE_REGISTRY: Record<SimTypeId, SimTypeConfig> = {
 Entities are PEOPLE (customers, patients, passengers).
 Use these node types: source (entry), queue (waiting line), resource (teller/nurse/agent — capacity-limited server), service (fixed processing step), decision (probabilistic routing), sink (exit/KPI collection).
 Use realistic labels: "Customer Arrival", "Waiting Queue", "Bank Teller", "Checkout Counter", "ER Nurse", etc.
-Arrival rates are in customers/minute. Service times are in minutes.`,
+Think of arrivals in customers per minute and service in minutes. Write canvas values in seconds as the UNITS rule says (2 per minute = arrivalRate 0.0333; 5 minutes = 300).`,
   },
 
   // ── 2. VEHICLE ──────────────────────────────────────────────────────────────
@@ -269,10 +270,10 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
         description: "Vehicles arrive, queue, fill up at pumps, depart",
         icon: Fuel,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "Vehicle Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 3, distribution: "exponential" } },
+          { id: "n1", nodeType: "source",   label: "Vehicle Arrival", position: { x: 100, y: 250 }, params: { arrivalRate: 3 / 60, distribution: "exponential" } },
           { id: "n2", nodeType: "queue",    label: "Entry Lane",      position: { x: 300, y: 250 }, params: { capacity: 10, discipline: "FIFO" } },
-          { id: "n3", nodeType: "resource", label: "Pump 1",          position: { x: 520, y: 150 }, params: { capacity: 1, serviceTimeMean: 4, serviceDistribution: "uniform" } },
-          { id: "n4", nodeType: "resource", label: "Pump 2",          position: { x: 520, y: 350 }, params: { capacity: 1, serviceTimeMean: 4, serviceDistribution: "uniform" } },
+          { id: "n3", nodeType: "resource", label: "Pump 1",          position: { x: 520, y: 150 }, params: { capacity: 1, serviceTimeMean: 4 * 60, serviceDistribution: "uniform" } },
+          { id: "n4", nodeType: "resource", label: "Pump 2",          position: { x: 520, y: 350 }, params: { capacity: 1, serviceTimeMean: 4 * 60, serviceDistribution: "uniform" } },
           { id: "n5", nodeType: "sink",     label: "Exit",            position: { x: 720, y: 250 }, params: { collectKPIs: true } },
         ],
         edges: [
@@ -288,10 +289,10 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
         description: "4-way intersection with signal control",
         icon: TrafficCone,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "North Approach",  position: { x: 400, y: 50  }, params: { arrivalRate: 4, distribution: "poisson" } },
-          { id: "n2", nodeType: "source",   label: "South Approach",  position: { x: 400, y: 450 }, params: { arrivalRate: 3, distribution: "poisson" } },
-          { id: "n3", nodeType: "source",   label: "East Approach",   position: { x: 700, y: 250 }, params: { arrivalRate: 2, distribution: "poisson" } },
-          { id: "n4", nodeType: "source",   label: "West Approach",   position: { x: 100, y: 250 }, params: { arrivalRate: 2, distribution: "poisson" } },
+          { id: "n1", nodeType: "source",   label: "North Approach",  position: { x: 400, y: 50  }, params: { arrivalRate: 4 / 60, distribution: "poisson" } },
+          { id: "n2", nodeType: "source",   label: "South Approach",  position: { x: 400, y: 450 }, params: { arrivalRate: 3 / 60, distribution: "poisson" } },
+          { id: "n3", nodeType: "source",   label: "East Approach",   position: { x: 700, y: 250 }, params: { arrivalRate: 2 / 60, distribution: "poisson" } },
+          { id: "n4", nodeType: "source",   label: "West Approach",   position: { x: 100, y: 250 }, params: { arrivalRate: 2 / 60, distribution: "poisson" } },
           { id: "n5", nodeType: "decision", label: "Traffic Signal",  position: { x: 400, y: 250 }, params: { routes: [{ targetId: "n6", probability: 1 }] } },
           { id: "n6", nodeType: "sink",     label: "Cleared",         position: { x: 600, y: 250 }, params: { collectKPIs: true } },
         ],
@@ -317,7 +318,7 @@ Arrival rates are in customers/minute. Service times are in minutes.`,
 Entities are VEHICLES (cars, trucks, buses).
 Use these node types: source (approach/arrival), queue (lane/waiting), resource (pump/bay/dock), service (car wash step), decision (traffic signal/crossroad routing), priority_resource (pedestrian crossing), sink (vehicle departs).
 Use realistic labels: "North Approach", "Entry Lane", "Pump 1", "Traffic Signal", "Crossroad", "Pedestrian Crossing", etc.
-Arrival rates are in vehicles/minute. Service times in minutes.`,
+Think of arrivals in vehicles per minute and service in minutes. Write canvas values in seconds as the UNITS rule says (2 per minute = arrivalRate 0.0333; 5 minutes = 300).`,
   },
 
   // ── 3. LIQUID / MATERIAL ────────────────────────────────────────────────────
@@ -363,10 +364,10 @@ Arrival rates are in vehicles/minute. Service times in minutes.`,
         description: "Raw water → filter → clean tank → distribution",
         icon: Droplet,
         nodes: [
-          { id: "n1", nodeType: "source",    label: "Raw Water Inlet", position: { x: 100, y: 250 }, params: { arrivalRate: 10, distribution: "deterministic" } },
-          { id: "n2", nodeType: "container", label: "Raw Tank",        position: { x: 300, y: 250 }, params: { capacity: 500, initialLevel: 0, fillRate: 10 } },
-          { id: "n3", nodeType: "service",   label: "Filter Unit",     position: { x: 500, y: 250 }, params: { durationMean: 2, distribution: "exponential" } },
-          { id: "n4", nodeType: "container", label: "Clean Tank",      position: { x: 700, y: 250 }, params: { capacity: 300, initialLevel: 0, fillRate: 8 } },
+          { id: "n1", nodeType: "source",    label: "Raw Water Inlet", position: { x: 100, y: 250 }, params: { arrivalRate: 10 / 60, distribution: "deterministic" } },
+          { id: "n2", nodeType: "container", label: "Raw Tank",        position: { x: 300, y: 250 }, params: { capacity: 500, initialLevel: 0, fillRate: 10 / 60 } },
+          { id: "n3", nodeType: "service",   label: "Filter Unit",     position: { x: 500, y: 250 }, params: { durationMean: 2 * 60, distribution: "exponential" } },
+          { id: "n4", nodeType: "container", label: "Clean Tank",      position: { x: 700, y: 250 }, params: { capacity: 300, initialLevel: 0, fillRate: 8 / 60 } },
           { id: "n5", nodeType: "sink",      label: "Distribution",    position: { x: 900, y: 250 }, params: { collectKPIs: true } },
         ],
         edges: [
@@ -390,7 +391,7 @@ Arrival rates are in vehicles/minute. Service times in minutes.`,
 Entities are fluid batches or material parcels flowing through a pipeline.
 Use these node types: source (inlet), container (tank/reservoir with capacity and fill level), service (treatment/processing), decision (valve/flow control), store (async buffer), sink (outlet).
 Use realistic labels: "Raw Water Inlet", "Settling Tank", "Filter Unit", "Chlorination", "Distribution Outlet", etc.
-Flow rates in units/minute. Tank capacity in units.`,
+Think of flow in units per minute. Tank capacity is in units. Write canvas values in seconds as the UNITS rule says (2 per minute = arrivalRate 0.0333; 5 minutes = 300).`,
   },
 
   // ── 4. MANUFACTURING ────────────────────────────────────────────────────────
@@ -435,13 +436,13 @@ Flow rates in units/minute. Tank capacity in units.`,
         description: "Parts flow through machines, QC check, then finished goods",
         icon: Factory,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "Raw Parts In",    position: { x: 100, y: 250 }, params: { arrivalRate: 5, distribution: "exponential" } },
-          { id: "n2", nodeType: "resource", label: "Machine A",       position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3, serviceDistribution: "normal" } },
+          { id: "n1", nodeType: "source",   label: "Raw Parts In",    position: { x: 100, y: 250 }, params: { arrivalRate: 5 / 60, distribution: "exponential" } },
+          { id: "n2", nodeType: "resource", label: "Machine A",       position: { x: 300, y: 250 }, params: { capacity: 2, serviceTimeMean: 3 * 60, serviceDistribution: "normal" } },
           { id: "n3", nodeType: "queue",    label: "WIP Buffer",      position: { x: 500, y: 250 }, params: { capacity: 20, discipline: "FIFO" } },
-          { id: "n4", nodeType: "resource", label: "Machine B",       position: { x: 700, y: 250 }, params: { capacity: 1, serviceTimeMean: 5, serviceDistribution: "normal" } },
+          { id: "n4", nodeType: "resource", label: "Machine B",       position: { x: 700, y: 250 }, params: { capacity: 1, serviceTimeMean: 5 * 60, serviceDistribution: "normal" } },
           { id: "n5", nodeType: "decision", label: "QC Check",        position: { x: 900, y: 250 }, params: { routes: [{ targetId: "n6", probability: 0.85 }, { targetId: "n7", probability: 0.15 }] } },
           { id: "n6", nodeType: "sink",     label: "Finished Goods",  position: { x: 1100, y: 150 }, params: { collectKPIs: true } },
-          { id: "n7", nodeType: "service",  label: "Rework",          position: { x: 900, y: 400 }, params: { durationMean: 8, distribution: "exponential" } },
+          { id: "n7", nodeType: "service",  label: "Rework",          position: { x: 900, y: 400 }, params: { durationMean: 8 * 60, distribution: "exponential" } },
         ],
         edges: [
           { id: "e1", source: "n1", target: "n2" },
@@ -468,7 +469,7 @@ Flow rates in units/minute. Tank capacity in units.`,
 Entities are PARTS, COMPONENTS, or PRODUCTS flowing through a factory.
 Use these node types: source (raw parts input), queue (WIP buffer/storage), resource (machine/robot with capacity), service (single process step), decision (QC check with pass/fail routing), sink (finished goods / shipping dock).
 Use realistic labels: "Raw Parts In", "Lathe Machine", "WIP Buffer", "CNC Press", "QC Inspection", "Rework Station", "Finished Goods", etc.
-Arrival rates in parts/minute. Service times in minutes. QC failure route probability typically 0.05–0.2.`,
+Think of arrivals in parts per minute and service in minutes. Write canvas values in seconds as the UNITS rule says (2 per minute = arrivalRate 0.0333; 5 minutes = 300). QC failure route probability typically 0.05–0.2.`,
   },
 
   // ── 5. LOGISTICS ────────────────────────────────────────────────────────────
@@ -513,15 +514,15 @@ Arrival rates in parts/minute. Service times in minutes. QC failure route probab
         description: "Packages arrive, are scanned and sorted to zones, loaded at docks",
         icon: PackageCheck,
         nodes: [
-          { id: "n1", nodeType: "source",   label: "Inbound Truck",   position: { x: 400, y: 50  }, params: { arrivalRate: 10, distribution: "poisson" } },
-          { id: "n2", nodeType: "service",  label: "Scan & Check-in", position: { x: 400, y: 200 }, params: { durationMean: 0.5, distribution: "deterministic" } },
+          { id: "n1", nodeType: "source",   label: "Inbound Truck",   position: { x: 400, y: 50  }, params: { arrivalRate: 10 / 60, distribution: "poisson" } },
+          { id: "n2", nodeType: "service",  label: "Scan & Check-in", position: { x: 400, y: 200 }, params: { durationMean: 0.5 * 60, distribution: "deterministic" } },
           { id: "n3", nodeType: "decision", label: "Sorter",          position: { x: 400, y: 350 }, params: { routes: [{ targetId: "n4", probability: 0.33 }, { targetId: "n5", probability: 0.33 }, { targetId: "n6", probability: 0.34 }] } },
           { id: "n4", nodeType: "queue",    label: "Zone A Storage",  position: { x: 150, y: 500 }, params: { capacity: 100, discipline: "FIFO" } },
           { id: "n5", nodeType: "queue",    label: "Zone B Storage",  position: { x: 400, y: 500 }, params: { capacity: 100, discipline: "FIFO" } },
           { id: "n6", nodeType: "queue",    label: "Zone C Storage",  position: { x: 650, y: 500 }, params: { capacity: 100, discipline: "FIFO" } },
-          { id: "n7", nodeType: "resource", label: "Dock A",          position: { x: 150, y: 650 }, params: { capacity: 2, serviceTimeMean: 1, serviceDistribution: "exponential" } },
-          { id: "n8", nodeType: "resource", label: "Dock B",          position: { x: 400, y: 650 }, params: { capacity: 2, serviceTimeMean: 1, serviceDistribution: "exponential" } },
-          { id: "n9", nodeType: "resource", label: "Dock C",          position: { x: 650, y: 650 }, params: { capacity: 2, serviceTimeMean: 1, serviceDistribution: "exponential" } },
+          { id: "n7", nodeType: "resource", label: "Dock A",          position: { x: 150, y: 650 }, params: { capacity: 2, serviceTimeMean: 1 * 60, serviceDistribution: "exponential" } },
+          { id: "n8", nodeType: "resource", label: "Dock B",          position: { x: 400, y: 650 }, params: { capacity: 2, serviceTimeMean: 1 * 60, serviceDistribution: "exponential" } },
+          { id: "n9", nodeType: "resource", label: "Dock C",          position: { x: 650, y: 650 }, params: { capacity: 2, serviceTimeMean: 1 * 60, serviceDistribution: "exponential" } },
           { id: "n10", nodeType: "sink",    label: "Loaded & Shipped",position: { x: 400, y: 800 }, params: { collectKPIs: true } },
         ],
         edges: [
@@ -553,7 +554,7 @@ Arrival rates in parts/minute. Service times in minutes. QC failure route probab
 Entities are PACKAGES, PALLETS, or SHIPMENTS moving through a facility.
 Use these node types: source (inbound truck/arrival), queue (storage zone/buffer), resource (loading dock with capacity), service (conveyor/scan step), decision (sorter/router), sink (loaded & shipped).
 Use realistic labels: "Inbound Truck", "Zone A Storage", "Sort Gate", "Dock Bay 1", "Conveyor Belt", "Loaded & Shipped", etc.
-Arrival rates in packages/minute. Service times in minutes.`,
+Think of arrivals in packages per minute and service in minutes. Write canvas values in seconds as the UNITS rule says (2 per minute = arrivalRate 0.0333; 5 minutes = 300).`,
   },
 
   // ── 6. NETWORK / SIGNAL ─────────────────────────────────────────────────────
@@ -692,7 +693,7 @@ Use these node types:
   - broadcaster (fan-out: copies one message to ALL connected outputs, like SimPy BroadcastPipe)
   - sink (consumer: receives and processes messages, collects latency KPIs)
 Use realistic labels: "API Gateway", "Auth Service", "Message Broker", "TCP Channel", "Load Balancer", "Consumer A", "Subscriber B", etc.
-Message rates in messages/second. Propagation delays in milliseconds.
+Message rates are in messages per second. Propagation delays are in seconds (50 ms = 0.05).
 This type is ideal for: microservices, IoT sensors, pub/sub systems, CDN routing, RF propagation, fiber cables.`,
   },
 

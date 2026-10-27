@@ -30,6 +30,7 @@ import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
 import { decisionChoices, effectiveShares, routingWarning } from "@/lib/simulation/decisionRouting";
 import { invalidParamsChange } from "@/lib/simulation/paramRules";
+import { TIME_UNITS, bestRateUnit, bestTimeUnit, tidy, unitSeconds, type TimeUnit } from "@/lib/simulation/units";
 import { toast } from "@/components/ui/Toast";
 
 interface NodePropertiesPanelProps {
@@ -305,6 +306,59 @@ function CustomSelect({
   );
 }
 
+// ─── Number + Unit Input ───────────────────────────────────────
+// The engine works in seconds; people type "30 per hour" or "4 minutes". Converts both ways.
+function UnitInput({
+  kind,
+  value,
+  onChange,
+  allowEmpty,
+  placeholder,
+  startUnit,
+}: {
+  kind: "time" | "rate";
+  value: number | undefined;
+  onChange: (engineValue: number | undefined) => void;
+  allowEmpty?: boolean;
+  placeholder?: string;
+  /** Unit to open with instead of the one that best fits the value (money reads best per hour). */
+  startUnit?: TimeUnit;
+}) {
+  const [unit, setUnit] = useState<TimeUnit>(
+    () => startUnit ?? (kind === "time" ? bestTimeUnit(value ?? 0) : bestRateUnit(value ?? 0))
+  );
+  const [draft, setDraft] = useState<string | null>(null);
+  const k = unitSeconds(unit);
+  const shown = value === undefined || value === null ? "" : tidy(kind === "time" ? value / k : value * k);
+  return (
+    <div className="flex gap-2">
+      <input
+        type="number"
+        min={0}
+        step="any"
+        value={draft ?? shown}
+        placeholder={placeholder}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setDraft(raw);
+          if (raw === "") { if (allowEmpty) onChange(undefined); return; }
+          const n = Number(raw);
+          if (Number.isFinite(n)) onChange(kind === "time" ? n * k : n / k);
+        }}
+        onBlur={() => setDraft(null)}
+        className={modernInputCls}
+      />
+      <div className="w-36 shrink-0">
+        <CustomSelect
+          value={unit}
+          onChange={(u) => setUnit(u as TimeUnit)}
+          options={TIME_UNITS.map((u) => ({ value: u.id, label: kind === "time" ? u.plural : u.per }))}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Input & Section Card Styles ───────────────────────────────
 const modernInputCls =
   "w-full mt-1.5 px-3.5 py-2.5 rounded-xl border border-gray-200/80 bg-sf-fafafc focus:bg-surface text-[12.5px] font-semibold text-fg-111827 focus:border-ln-5742ff focus:ring-2 focus:ring-ln-5742ff/10 transition-all outline-none";
@@ -475,6 +529,10 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
 
   const schedule: { simTime: number; count: number }[] = params.schedule || [];
   const useSchedule = schedule.length > 0;
+  const [scheduleUnit, setScheduleUnit] = useState<TimeUnit>(() =>
+    bestTimeUnit(Math.max(0, ...schedule.map((s) => s.simTime || 0)))
+  );
+  const scheduleK = unitSeconds(scheduleUnit);
 
   return (
     <>
@@ -557,15 +615,14 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
               </div>
             )}
             <div>
-              <label className={labelCls}>Arrival Speed (People per second)</label>
-              <input
-                type="number"
-                min={0.0001}
-                step={0.1}
+              <label className={labelCls}>How Many Arrive (on average)</label>
+              <UnitInput
+                key={`${nodeId}-arrivalRate`}
+                kind="rate"
                 value={params.arrivalRate ?? 1}
-                onChange={(e) => setParam("arrivalRate", Number(e.target.value))}
-                className={modernInputCls}
+                onChange={(v) => setParam("arrivalRate", v)}
               />
+              <span className="text-[11px] text-gray-400">e.g. 30 per hour, or 2 per minute</span>
             </div>
           </>
         ) : (
@@ -579,18 +636,30 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
                 <Plus size={12} /> Add Arrival
               </button>
             </div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-bold text-gray-500 shrink-0">Times after start, in</span>
+              <div className="w-32">
+                <CustomSelect
+                  value={scheduleUnit}
+                  onChange={(u) => setScheduleUnit(u as TimeUnit)}
+                  options={TIME_UNITS.map((u) => ({ value: u.id, label: u.plural }))}
+                />
+              </div>
+            </div>
             {schedule.map((entry, idx) => (
               <div key={idx} className="flex gap-2 mb-2 items-center">
                 <input
                   type="number"
                   min={0}
-                  value={entry.simTime}
+                  step="any"
+                  value={tidy(entry.simTime / scheduleK)}
                   onChange={(e) => {
                     const s = [...schedule];
-                    s[idx].simTime = Number(e.target.value);
+                    s[idx].simTime = Number(e.target.value) * scheduleK;
                     setParam("schedule", s);
                   }}
-                  placeholder="At second"
+                  placeholder={`At ${TIME_UNITS.find((u) => u.id === scheduleUnit)!.short}`}
+                  aria-label={`Arrival time, in ${TIME_UNITS.find((u) => u.id === scheduleUnit)!.plural}`}
                   className={modernInputCls}
                 />
                 <input
@@ -603,6 +672,7 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
                     setParam("schedule", s);
                   }}
                   placeholder="How many"
+                  aria-label="How many arrive at this time"
                   className={modernInputCls}
                 />
                 <button
@@ -656,14 +726,16 @@ function QueueProperties({ params, nodeId, onUpdate, theme }: any) {
       </SectionHeading>
 
       <div>
-        <label className={labelCls}>Maximum Line Capacity (-1 for unlimited)</label>
+        <label className={labelCls}>Most People That Fit in the Line</label>
         <input
           type="number"
-          value={params.capacity ?? -1}
-          onChange={(e) => setParam("capacity", Number(e.target.value))}
-          placeholder="-1 for infinite line"
+          min={1}
+          value={params.capacity === undefined || params.capacity < 0 ? "" : params.capacity}
+          onChange={(e) => setParam("capacity", e.target.value === "" ? -1 : Number(e.target.value))}
+          placeholder="No limit"
           className={modernInputCls}
         />
+        <span className="text-[11px] text-gray-400">Leave empty for no limit. When full, new arrivals are turned away.</span>
       </div>
 
       <div>
@@ -693,12 +765,12 @@ function QueueProperties({ params, nodeId, onUpdate, theme }: any) {
 
         {params.patienceDistribution && params.patienceDistribution !== "none" && (
           <div>
-            <label className={labelCls}>Average Patience Time (seconds before leaving)</label>
-            <input
-              type="number"
+            <label className={labelCls}>How Long They Wait Before Leaving (average)</label>
+            <UnitInput
+              key={`${nodeId}-patienceTimeout`}
+              kind="time"
               value={params.patienceTimeout ?? 5}
-              onChange={(e) => setParam("patienceTimeout", Number(e.target.value))}
-              className={modernInputCls}
+              onChange={(v) => setParam("patienceTimeout", v)}
             />
           </div>
         )}
@@ -709,32 +781,28 @@ function QueueProperties({ params, nodeId, onUpdate, theme }: any) {
           <DollarSign size={14} className="text-emerald-600" /> Cost & Financial Impact
         </label>
         <div>
-          <label className={labelCls}>Holding Cost ($ / unit time per waiting item)</label>
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            value={params.holdingCostPerUnitTime ?? ""}
+          <label className={labelCls}>Holding Cost ($ per waiting item)</label>
+          <UnitInput
+            key={`${nodeId}-holdingCost`}
+            kind="rate"
+            allowEmpty
+            startUnit="hr"
             placeholder="0.00"
-            onChange={(e) =>
-              setParam("holdingCostPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
-            }
-            className={modernInputCls}
+            value={params.holdingCostPerUnitTime}
+            onChange={(v) => setParam("holdingCostPerUnitTime", v)}
           />
           <span className="text-[11px] text-gray-400">Inventory or buffer holding cost while items wait</span>
         </div>
         <div>
-          <label className={labelCls}>Waiting Penalty ($ / unit time per waiting item)</label>
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            value={params.waitingPenaltyPerUnitTime ?? ""}
+          <label className={labelCls}>Waiting Penalty ($ per waiting item)</label>
+          <UnitInput
+            key={`${nodeId}-waitingPenalty`}
+            kind="rate"
+            allowEmpty
+            startUnit="hr"
             placeholder="0.00"
-            onChange={(e) =>
-              setParam("waitingPenaltyPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
-            }
-            className={modernInputCls}
+            value={params.waitingPenaltyPerUnitTime}
+            onChange={(v) => setParam("waitingPenaltyPerUnitTime", v)}
           />
           <span className="text-[11px] text-gray-400">Dissatisfaction or SLA delay penalty incurred while waiting</span>
         </div>
@@ -766,14 +834,12 @@ function ResourceProperties({ params, nodeId, onUpdate, theme, isPriorityNode }:
       </div>
 
       <div>
-        <label className={labelCls}>Average Time to Serve One Person (seconds)</label>
-        <input
-          type="number"
-          min={0}
-          step={0.1}
+        <label className={labelCls}>Average Time to Serve One Person</label>
+        <UnitInput
+          key={`${nodeId}-serviceTimeMean`}
+          kind="time"
           value={params.serviceTimeMean ?? 1}
-          onChange={(e) => setParam("serviceTimeMean", Number(e.target.value))}
-          className={modernInputCls}
+          onChange={(v) => setParam("serviceTimeMean", v)}
         />
       </div>
 
@@ -799,27 +865,25 @@ function ResourceProperties({ params, nodeId, onUpdate, theme, isPriorityNode }:
       </div>
 
       <div className="pt-3 border-t border-gray-100 space-y-3">
-        <label className={labelCls}>How Often Does This Station Break Down? (MTBF)</label>
-        <input
-          type="number"
-          min={0}
-          value={params.meanTimeBetweenFailures ?? ""}
-          placeholder="Never breaks down (Leave empty)"
-          onChange={(e) =>
-            setParam("meanTimeBetweenFailures", e.target.value ? Number(e.target.value) : undefined)
-          }
-          className={modernInputCls}
+        <label className={labelCls}>Breaks Down Once Every (on average)</label>
+        <UnitInput
+          key={`${nodeId}-mtbf`}
+          kind="time"
+          allowEmpty
+          startUnit={params.meanTimeBetweenFailures > 0 ? undefined : "hr"}
+          value={params.meanTimeBetweenFailures}
+          placeholder="Never (leave empty)"
+          onChange={(v) => setParam("meanTimeBetweenFailures", v || undefined)}
         />
 
         {params.meanTimeBetweenFailures > 0 && (
           <div>
-            <label className={labelCls}>Average Time to Fix / Repair (seconds)</label>
-            <input
-              type="number"
-              min={0}
+            <label className={labelCls}>Average Time to Fix / Repair</label>
+            <UnitInput
+              key={`${nodeId}-repairTimeMean`}
+              kind="time"
               value={params.repairTimeMean ?? 1}
-              onChange={(e) => setParam("repairTimeMean", Number(e.target.value))}
-              className={modernInputCls}
+              onChange={(v) => setParam("repairTimeMean", v)}
             />
           </div>
         )}
@@ -860,14 +924,12 @@ function ServiceProperties({ params, nodeId, onUpdate, theme }: any) {
         Processing Speed & Duration
       </SectionHeading>
       <div>
-        <label className={labelCls}>Average Duration (seconds)</label>
-        <input
-          type="number"
-          min={0}
-          step={0.1}
+        <label className={labelCls}>Average Duration</label>
+        <UnitInput
+          key={`${nodeId}-durationMean`}
+          kind="time"
           value={params.durationMean ?? 1}
-          onChange={(e) => setParam("durationMean", Number(e.target.value))}
-          className={modernInputCls}
+          onChange={(v) => setParam("durationMean", v)}
         />
       </div>
       <div>
@@ -892,8 +954,9 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
   );
   const pct = (id: string) => `${Math.round((shares.get(id) ?? 0) * 100)}%`;
   const warning = routingWarning(routes, connected.map((t) => t.id), (id) => nodeIds.includes(id));
+  // People type percentages; the engine stores a 0–1 probability.
   const setChance = (targetId: string, raw: string) => {
-    const next = { targetId, probability: Number(raw) };
+    const next = { targetId, probability: tidy(Number(raw) / 100) };
     const has = routes.some((r) => r.targetId === targetId);
     const updated =
       raw === "" ? routes.filter((r) => r.targetId !== targetId)
@@ -929,12 +992,12 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
             <input
               type="number"
               min={0}
-              max={1}
-              step={0.1}
-              value={route ? route.probability : ""}
+              max={100}
+              step={5}
+              value={route ? tidy(route.probability * 100) : ""}
               onChange={(e) => setChance(t.id, e.target.value)}
-              placeholder="Auto"
-              aria-label={`Chance of going to ${t.label} (0-1)`}
+              placeholder="Auto %"
+              aria-label={`Chance of going to ${t.label}, in percent`}
               className={`${modernInputCls} w-24`}
             />
             <span className="w-10 text-right text-[11.5px] font-bold text-gray-500">{pct(t.id)}</span>
@@ -957,15 +1020,15 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
           <input
             type="number"
             min={0}
-            max={1}
-            step={0.1}
-            value={route.probability}
+            max={100}
+            step={5}
+            value={tidy(route.probability * 100)}
             onChange={(e) => {
               const r = [...routes];
-              r[idx].probability = Number(e.target.value);
+              r[idx].probability = tidy(Number(e.target.value) / 100);
               onUpdate(nodeId, { params: { ...params, routes: r } });
             }}
-            placeholder="Chances (0-1)"
+            placeholder="Chance %"
             className={modernInputCls}
           />
           <button
@@ -1050,26 +1113,23 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         />
       </div>
       <div>
-        <label className={labelCls}>Fill Rate (units/sec)</label>
-        <input
-          type="number"
-          min={0}
-          step={0.1}
+        <label className={labelCls}>Fills By (units)</label>
+        <UnitInput
+          key={`${nodeId}-fillRate`}
+          kind="rate"
           value={params.fillRate ?? 1}
-          onChange={(e) => setParam("fillRate", Number(e.target.value))}
-          className={modernInputCls}
+          onChange={(v) => setParam("fillRate", v)}
         />
       </div>
       <div>
-        <label className={labelCls}>Drain Rate (units/sec, 0 = never drains)</label>
-        <input
-          type="number"
-          min={0}
-          step={0.1}
+        <label className={labelCls}>Drains By (units)</label>
+        <UnitInput
+          key={`${nodeId}-drainRate`}
+          kind="rate"
           value={params.drainRate ?? 0}
-          onChange={(e) => setParam("drainRate", Number(e.target.value))}
-          className={modernInputCls}
+          onChange={(v) => setParam("drainRate", v)}
         />
+        <span className="text-[11px] text-gray-400">0 means it never drains on its own</span>
       </div>
 
       <div className="pt-3 border-t border-gray-100 space-y-3">
@@ -1077,17 +1137,15 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
           <DollarSign size={14} className="text-emerald-600" /> Cost & ROI
         </label>
         <div>
-          <label className={labelCls}>Holding Cost ($ / unit time)</label>
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            value={params.holdingCostPerUnitTime ?? ""}
+          <label className={labelCls}>Holding Cost ($)</label>
+          <UnitInput
+            key={`${nodeId}-holdingCost`}
+            kind="rate"
+            allowEmpty
+            startUnit="hr"
             placeholder="0.00"
-            onChange={(e) =>
-              setParam("holdingCostPerUnitTime", e.target.value !== "" ? Number(e.target.value) : undefined)
-            }
-            className={modernInputCls}
+            value={params.holdingCostPerUnitTime}
+            onChange={(v) => setParam("holdingCostPerUnitTime", v)}
           />
           <span className="text-[11px] text-gray-400">Inventory holding cost for fluid/material</span>
         </div>
