@@ -51,7 +51,7 @@
     "eslint-config-next": "16.4.3",
     "pyodide": "0.24.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "^7",
     "vitest": "^3.2.7"
   }
 }
