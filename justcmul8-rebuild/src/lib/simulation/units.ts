@@ -15,10 +15,10 @@ export const unitSeconds = (u: TimeUnit) => TIME_UNITS.find((x) => x.id === u)!.
 /** Drops float noise from conversions: 0.0333… × 60 shows as 2, not 1.9999999999. */
 export const tidy = (v: number) => (Number.isFinite(v) ? Number(v.toPrecision(6)) : 0);
 
-/** The unit a person would say this duration in: 90 → sec, 300 → min, 7200 → hr. */
+/** The unit a person would say this duration in: 45 → sec, 60 → min, 7200 → hr. */
 export function bestTimeUnit(seconds: number): TimeUnit {
   const s = Math.abs(seconds);
-  if (!Number.isFinite(s) || s < 120) return "sec";
+  if (!Number.isFinite(s) || s < 60) return "sec";
   if (s < 7200) return "min";
   if (s < 172800) return "hr";
   return "day";

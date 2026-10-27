@@ -30,7 +30,7 @@ import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
 import { decisionChoices, effectiveShares, routingWarning } from "@/lib/simulation/decisionRouting";
 import { invalidParamsChange } from "@/lib/simulation/paramRules";
-import { TIME_UNITS, bestRateUnit, bestTimeUnit, tidy, unitSeconds, type TimeUnit } from "@/lib/simulation/units";
+import { TIME_UNITS, bestRateUnit, bestTimeUnit, fmtDuration, fmtPerTime, tidy, unitSeconds, type TimeUnit } from "@/lib/simulation/units";
 import { toast } from "@/components/ui/Toast";
 
 interface NodePropertiesPanelProps {
@@ -402,26 +402,26 @@ const ARRIVAL_DISTRIBUTIONS: DropdownOption[] = [
   {
     value: "normal",
     emoji: "📊",
-    label: "Clustered Around an Average",
-    desc: "Most arrivals happen around the target time (bell curve)",
+    label: "Fairly Regular",
+    desc: "Gaps between arrivals stay close to the average, with small variation",
   },
   {
     value: "uniform",
     emoji: "↔️",
-    label: "Even Range Spread",
-    desc: "Arrivals are equally likely anywhere between min and max time",
+    label: "Anywhere in a Range",
+    desc: "Each gap is anywhere from half to one-and-a-half times the average",
   },
   {
     value: "deterministic",
     emoji: "⏱️",
-    label: "Fixed & Exact Spacing",
-    desc: "Arrivals show up at the exact same interval (like a clock)",
+    label: "Exactly on Schedule",
+    desc: "Arrivals come at exactly the same gap every time (like a conveyor)",
   },
   {
     value: "poisson",
     emoji: "🎲",
-    label: "Poisson Process",
-    desc: "Same as random arrivals: independent arrivals at a steady average rate",
+    label: "Random, Steady Average (Poisson)",
+    desc: "Same as natural random spacing; the textbook name for it",
   },
   {
     value: "burst",
@@ -435,26 +435,26 @@ const SERVICE_DISTRIBUTIONS: DropdownOption[] = [
   {
     value: "exponential",
     emoji: "🎲",
-    label: "Random Service Duration",
-    desc: "Some tasks are quick, some take longer (standard)",
+    label: "Varies a Lot",
+    desc: "Some are quick, some take much longer (most real counters)",
   },
   {
     value: "normal",
     emoji: "📊",
-    label: "Consistent Around Average",
-    desc: "Most tasks take roughly the same average time",
+    label: "Fairly Consistent",
+    desc: "Most take close to the average time",
   },
   {
     value: "uniform",
     emoji: "↔️",
-    label: "Anywhere in Time Range",
-    desc: "Takes an even random amount between min and max seconds",
+    label: "Anywhere in a Range",
+    desc: "Anywhere from half to one-and-a-half times the average",
   },
   {
     value: "deterministic",
     emoji: "⏱️",
-    label: "Fixed Constant Duration",
-    desc: "Always takes the exact same number of seconds",
+    label: "Always the Same",
+    desc: "Takes exactly the average time, every time (like a machine cycle)",
   },
 ];
 
@@ -496,7 +496,7 @@ const PATIENCE_MODELS: DropdownOption[] = [
     value: "deterministic",
     emoji: "⏱️",
     label: "Exact Maximum Wait Limit",
-    desc: "People leave if the line wait exceeds a set number of seconds",
+    desc: "Everyone leaves after waiting exactly the time you set",
   },
 ];
 
@@ -541,33 +541,20 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
           How & When Do People Arrive?
         </SectionHeading>
 
-        <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100">
-          <div>
-            <label className="text-[12.5px] font-bold text-gray-900 block leading-tight">Continuous Arrivals</label>
-            <span className="text-[11px] text-gray-400">Keep sending people in for the whole simulation</span>
-          </div>
-          <Switch
-            checked={!!params.infiniteArrivals}
-            onChange={(v) => setParam("infiniteArrivals", v)}
-            label="Infinite Arrivals"
+        <div>
+          <label className={labelCls}>Stop After This Many Have Arrived</label>
+          <input
+            type="number"
+            min={1}
+            value={params.maxEntities || ""}
+            onChange={(e) =>
+              setParam("maxEntities", e.target.value === "" ? undefined : Number(e.target.value))
+            }
+            placeholder="No limit (keep arriving)"
+            className={modernInputCls}
           />
+          <span className="text-[11px] text-gray-400">Leave empty to keep people arriving for the whole run</span>
         </div>
-
-        {!params.infiniteArrivals && (
-          <div>
-            <label className={labelCls}>Maximum People / Items Allowed</label>
-            <input
-              type="number"
-              min={1}
-              value={params.maxEntities || ""}
-              onChange={(e) =>
-                setParam("maxEntities", e.target.value === "" ? undefined : Number(e.target.value))
-              }
-              placeholder="Unlimited (e.g. 100)"
-              className={modernInputCls}
-            />
-          </div>
-        )}
 
         {/* Segmented Mode Button Pill */}
         <div className="flex rounded-xl bg-gray-100 p-1 border border-gray-200/60 mt-2">
@@ -622,7 +609,11 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
                 value={params.arrivalRate ?? 1}
                 onChange={(v) => setParam("arrivalRate", v)}
               />
-              <span className="text-[11px] text-gray-400">e.g. 30 per hour, or 2 per minute</span>
+              <span className="text-[11px] text-gray-400">
+                {(params.arrivalRate ?? 1) > 0
+                  ? `About one every ${fmtDuration(1 / (params.arrivalRate ?? 1))}. Count them at a busy hour if unsure.`
+                  : "Set above 0 to start arrivals."}
+              </span>
             </div>
           </>
         ) : (
@@ -695,8 +686,8 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
           <label className={labelCls}>Item or Person Name</label>
           <input
             type="text"
-            value={params.entityClass || "standard"}
-            onChange={(e) => setParam("entityClass", e.target.value)}
+            value={params.entityClass ?? ""}
+            onChange={(e) => setParam("entityClass", e.target.value || undefined)}
             placeholder="e.g. Customer, Vehicle, Parcel"
             className={modernInputCls}
           />
@@ -841,6 +832,11 @@ function ResourceProperties({ params, nodeId, onUpdate, theme, isPriorityNode }:
           value={params.serviceTimeMean ?? 1}
           onChange={(v) => setParam("serviceTimeMean", v)}
         />
+        <span className="text-[11px] text-gray-400">
+          From starting to finishing one person, not counting their wait.
+          {(params.serviceTimeMean ?? 1) > 0 &&
+            ` Together these counters can handle about ${fmtPerTime((params.capacity ?? 1) / (params.serviceTimeMean ?? 1))}.`}
+        </span>
       </div>
 
       <div>
@@ -1093,7 +1089,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         Container & Fluid Parameters
       </SectionHeading>
       <div>
-        <label className={labelCls}>Capacity</label>
+        <label className={labelCls}>Tank Size (units)</label>
         <input
           type="number"
           min={0}
@@ -1103,7 +1099,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         />
       </div>
       <div>
-        <label className={labelCls}>Initial Level</label>
+        <label className={labelCls}>Starts With (units)</label>
         <input
           type="number"
           min={0}
@@ -1113,7 +1109,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         />
       </div>
       <div>
-        <label className={labelCls}>Fills By (units)</label>
+        <label className={labelCls}>How Fast It Fills (units)</label>
         <UnitInput
           key={`${nodeId}-fillRate`}
           kind="rate"
@@ -1122,7 +1118,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         />
       </div>
       <div>
-        <label className={labelCls}>Drains By (units)</label>
+        <label className={labelCls}>How Fast It Drains (units)</label>
         <UnitInput
           key={`${nodeId}-drainRate`}
           kind="rate"

@@ -22,6 +22,7 @@ describe("human units for block inputs (engine stays in seconds)", () => {
     expect(fmtPerTime(30 / 3600)).toBe("30 per hour");
     expect(fmtDuration(5 * 60)).toBe("5 min");
     expect(fmtDuration(30)).toBe("30 sec");
+    expect(fmtDuration(60)).toBe("1 min");
   });
 
   it("knows which params are times and rates", () => {

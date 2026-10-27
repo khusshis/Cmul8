@@ -302,6 +302,16 @@ let clipboard: { nodes: Node[]; edges: Edge[]; pasteCount: number } | null = nul
 // Which canvas receives keyboard shortcuts: the one last pressed on.
 let activeCanvas: object | null = null;
 
+// A new block starts at everyday numbers (one arrival a minute, two minutes to serve), not the
+// engine's bare fallbacks of one a second. Saved blocks keep whatever they already have.
+const NEW_BLOCK_PARAMS: Record<string, Record<string, unknown>> = {
+  source: { arrivalRate: 1 / 60, distribution: "exponential" },
+  resource: { capacity: 1, serviceTimeMean: 2 * 60 },
+  priority_resource: { capacity: 1, serviceTimeMean: 2 * 60 },
+  service: { durationMean: 60 },
+  queue: { capacity: -1, discipline: "FIFO", patienceTimeout: 10 * 60 },
+};
+
 // ─── Handle style helper ──────────────────────────────────────────────────────
 // Dots stay hidden until they're useful: on hover/select (drag from here) or while a link is being drawn (drop here).
 function handleStyle(color: string, isConnected: boolean, visible: boolean): React.CSSProperties {
@@ -1096,7 +1106,7 @@ function NodeCanvasInner({
         id: newNodeId,
         type: "simNode",
         position: { x: position.x + Math.random() * 40 - 20, y: position.y + Math.random() * 40 - 20 },
-        data: { label: (NODE_LABELS as any)[nodeType] || nodeType, nodeType, params: {} },
+        data: { label: (NODE_LABELS as any)[nodeType] || nodeType, nodeType, params: { ...NEW_BLOCK_PARAMS[nodeType] } },
       };
       onNodesChange([{ type: "add", item: newNode }]);
     },
@@ -1181,7 +1191,7 @@ function NodeCanvasInner({
       data: {
         label: (NODE_LABELS as any)[nodeType] || nodeType,
         nodeType,
-        params: {},
+        params: { ...NEW_BLOCK_PARAMS[nodeType] },
       },
     };
     onNodesChange([{ type: "add", item: newNode }]);
