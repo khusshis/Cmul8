@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import type { SimGraph, SimResult } from "@/lib/simulation/types";
 import { mm1, mmc, queueGraph } from "../helpers";
 import { hasSimpy, runPython } from "./simpyRunner";
@@ -50,6 +51,18 @@ describe.skipIf(!hasSimpy)("SimPy engine (generated script) vs queueing theory",
       const s = result.nodeStats[id];
       expect(s.entitiesIn - s.entitiesOut, id).toBe(s.currentDepth);
     }
+  });
+
+  // Health used to sit at ~93 for almost any healthy model (fixed steps, and a tail check that fired
+  // whenever most people didn't wait). It must now fall steadily as load rises.
+  it("health falls steadily as load rises", () => {
+    const health = [0.4, 0.7, 0.9, 1.5].map((rho) => {
+      const g = queueGraph(rho, 1);
+      return enrichSimResult({ ...runPython(g, 5000, 1).result, simType: "human_queue" }, g).healthScore!;
+    });
+    for (let i = 1; i < health.length; i++) expect(health[i], health.join(" > ")).toBeLessThan(health[i - 1] - 3);
+    expect(health[0]).toBeGreaterThan(85);
+    expect(health[3]).toBeLessThan(45);
   });
 
   it("overloaded M/M/1 (rho=2) completes ~mu*T and builds a backlog", () => {

@@ -1126,9 +1126,14 @@ export default function WorkspacePage() {
           {/* Live Simulation Clock & Progress HUD */}
           {(simState === "running" || simState === "paused" || simTick) && (() => {
             const unitMult = unitMultipliers[durationUnit] || 60;
-            const currentSecs = simTick?.simTime ?? (simResult?.totalSimTime ?? 0);
+            // Once a run is done, show its final numbers. The last live tick lands one tick before the end
+            // (an update due exactly at the end never fires), so it read "99.9/100" with slightly low counts.
+            const done = simState === "idle" && simResult ? simResult : null;
+            const currentSecs = done ? done.totalSimTime : simTick?.simTime ?? 0;
+            const arrivedNow = done ? done.totalArrived : simTick?.totalArrived ?? 0;
+            const finishedNow = done ? done.totalCompleted : simTick?.totalCompleted ?? 0;
             const totalSecs = Math.max(1, (durationValue || 1) * unitMult);
-            const currentVal = (currentSecs / unitMult).toFixed(1);
+            const currentVal = Number((currentSecs / unitMult).toFixed(1));
             const pct = Math.min(100, Math.round((currentSecs / totalSecs) * 100));
             return (
               <div className="flex items-center gap-2 h-[32px] px-3 rounded-full bg-sf-f5f3ff border border-indigo-100 text-fg-1e1b4b text-[11.5px] font-bold shadow-xs shrink-0 whitespace-nowrap">
@@ -1137,8 +1142,8 @@ export default function WorkspacePage() {
                   <span>{currentVal}/{durationValue} {durationUnit}</span>
                 </div>
                 <span className="text-indigo-200 dark:text-white/20">|</span>
-                <span className="text-emerald-600 font-extrabold" title="Total Entities Arrived">↑{simTick?.totalArrived ?? 0}</span>
-                <span className="text-fg-5742ff font-extrabold" title="Total Entities Completed">↓{simTick?.totalCompleted ?? 0}</span>
+                <span className="text-emerald-600 font-extrabold" title="Total Entities Arrived">↑{arrivedNow}</span>
+                <span className="text-fg-5742ff font-extrabold" title="Total Entities Completed">↓{finishedNow}</span>
                 <div className="w-10 h-1.5 bg-indigo-200/60 rounded-full overflow-hidden shrink-0">
                   <div
                     className="h-full bg-sf-5742ff rounded-full transition-all duration-200"

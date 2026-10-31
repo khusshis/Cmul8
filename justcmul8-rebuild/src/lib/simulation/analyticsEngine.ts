@@ -600,10 +600,11 @@ export function calculateSystemHealthScore(result: SimResult, littlesLaw: Little
   const completionScore = completionRate * 35;
 
   // 2. Bottleneck & Utilization Balance (Weight: 30%)
-  const maxUtil = Math.max(0, ...Object.values(result.nodeStats).filter(isServerNode).map((s) => s.utilization || 0));
-  let utilScore = 30;
-  if (maxUtil > 0.95) utilScore = 15; // severe bottleneck
-  else if (maxUtil > 0.88) utilScore = 22;
+  // Full marks up to 80% busy, falling smoothly to 0 at 100%. (Fixed steps at 88% and 95% meant most
+  // changes to a model didn't move the score at all.)
+  const servers = Object.values(result.nodeStats).filter(isServerNode);
+  const maxUtil = Math.max(0, ...servers.map((s) => s.utilization || 0));
+  const utilScore = 30 * Math.min(1, Math.max(0, (1 - maxUtil) / 0.2));
 
   // 3. Queuing Stability & Flow Balance (Weight: 20%)
   // Penalise genuine instability, not estimator disagreement (see calculateLittlesLaw).
@@ -611,11 +612,15 @@ export function calculateSystemHealthScore(result: SimResult, littlesLaw: Little
   if (!littlesLaw.isStable) stabilityScore = 5;
   else if (littlesLaw.discrepancyPercent > 20) stabilityScore = 12;
 
-  // 4. Tail Latency Penalty (Weight: 15%)
-  let tailScore = 15;
-  if (waitStats.p99 > waitStats.p50 * 5) tailScore = 8;
+  // 4. Waiting (Weight: 15%): average wait relative to the average service time, so it means the same
+  // for 30-second and 3-hour jobs. No wait = 15, waiting as long as being served = 7.5, 4x as long = 3.
+  // (The old "p99 > 5 x p50" check fired on almost every run, since most people don't wait at all,
+  // which pinned healthy models at ~93.)
+  const served = servers.reduce((n, s) => n + (s.entitiesOut || 0), 0);
+  const serviceTime = served > 0 ? servers.reduce((n, s) => n + (s.avgServiceTime || 0) * (s.entitiesOut || 0), 0) / served : 0;
+  const waitScore = serviceTime > 0 ? 15 / (1 + Math.max(0, waitStats.mean) / serviceTime) : 15;
 
-  const totalScore = Math.round(completionScore + utilScore + stabilityScore + tailScore);
+  const totalScore = Math.round(completionScore + utilScore + stabilityScore + waitScore);
   return Math.min(100, Math.max(10, totalScore));
 }
 
