@@ -73,14 +73,18 @@ export default function ExecutiveTab({
     [result.timeline]
   );
 
-  const [aiRecs, setAiRecs] = useState<OptimizerRecommendation[] | null>(null);
+  // AI suggestions and "Applied" marks belong to the run they were made for: after a fix re-runs the
+  // model, the new run's suggestions must not show the old run's ones or its Applied badges.
+  const [aiRecsFor, setAiRecs] = useState<{ run: SimResult; recs: OptimizerRecommendation[] } | null>(null);
+  const aiRecs = aiRecsFor?.run === result ? aiRecsFor.recs : null;
   const [aiLoading, setAiLoading] = useState(false);
-  const [appliedFixIds, setAppliedFixIds] = useState<Set<number>>(new Set());
+  const [appliedFor, setAppliedFixIds] = useState<{ run: SimResult; ids: Set<number> } | null>(null);
+  const appliedFixIds = appliedFor?.run === result ? appliedFor.ids : new Set<number>();
 
   async function runAiOptimizer() {
     setAiLoading(true);
     const recs = await requestOptimizer(result, simType);
-    if (recs) setAiRecs(recs);
+    if (recs) setAiRecs({ run: result, recs });
     setAiLoading(false);
   }
 
@@ -359,7 +363,7 @@ export default function ExecutiveTab({
                           <button
                             onClick={() => {
                               onApplyFix(fix);
-                              setAppliedFixIds((prev) => new Set([...prev, i]));
+                              setAppliedFixIds({ run: result, ids: new Set([...appliedFixIds, i]) });
                             }}
                             disabled={applied}
                             className={`inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-[12px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ln-5742ff/50 ${

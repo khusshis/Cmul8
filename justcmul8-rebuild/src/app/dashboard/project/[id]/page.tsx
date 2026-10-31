@@ -20,6 +20,7 @@ import { validateGraphConnectivity, graphToSimNodes } from "@/components/workspa
 import type { NodeCanvasHandle } from "@/components/workspace/NodeCanvas";
 import { usePresence, type GraphOp } from "@/lib/realtime/usePresence";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { fmtSeconds } from "@/components/ui/chartTheme";
 import type { OptimizerFix } from "@/app/api/ai/optimize/route";
 
 // Dynamic imports for workspace components (stubs in Phase 4)
@@ -160,6 +161,15 @@ function ReopenButton({ side, visible, animate, onClick, label, shortcut }: { si
       </Tooltip>
     </div>
   );
+}
+
+/** The few numbers a before/after comparison of two runs shows. */
+function headlineOf(r: SimResult) {
+  return {
+    finishedPct: r.totalArrived > 0 ? Math.round((r.totalCompleted / r.totalArrived) * 100) : 100,
+    wait: r.waitTimePercentiles?.p50 ?? 0,
+    health: r.healthScore ?? 0,
+  };
 }
 
 export default function WorkspacePage() {
@@ -307,6 +317,8 @@ export default function WorkspacePage() {
   const canvasRef = useRef<NodeCanvasHandle>(null);
   const projectRef = useRef<Project | null>(null);
   const runStartTimeRef = useRef<number>(0);
+  // Set by "Apply fix": the run it started reports before → after when it finishes.
+  const fixCompareRef = useRef<{ description: string; before: ReturnType<typeof headlineOf> } | null>(null);
   const throttleRef = useRef(false);
 
   const nodesRef = useRef(nodes);
@@ -361,6 +373,15 @@ export default function WorkspacePage() {
       const currentSimGraph = graphToSimNodes(nodesRef.current, edgesRef.current);
       const result = enrichSimResult(rawResult, currentSimGraph);
       setSimResult(result);
+      const compare = fixCompareRef.current;
+      if (compare) {
+        fixCompareRef.current = null;
+        const after = headlineOf(result);
+        toast.success(
+          `Finished ${compare.before.finishedPct}% → ${after.finishedPct}% · typical wait ${fmtSeconds(compare.before.wait)} → ${fmtSeconds(after.wait)} · health ${compare.before.health} → ${after.health}`,
+          `After "${compare.description}"`
+        );
+      }
 
       if (projectRef.current) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -763,10 +784,15 @@ export default function WorkspacePage() {
 
     onUpdateNodes(() => updatedNodes);
     recordHistory(updatedNodes, edges);
-    toast.success(`Applied fix: ${fix.description}`, "Optimization Applied");
+    // Re-run straight away so the results show what the fix did (they used to keep showing the old
+    // run, so "Apply fix" looked like it did nothing), and compare the new run with this one.
+    if (simResult) fixCompareRef.current = { description: fix.description, before: headlineOf(simResult) };
+    toast.info(`${fix.description}. Re-running the simulation…`, "Fix applied");
+    handleRun(updatedNodes);
   }
 
-  function handleRun() {
+  function handleRun(runNodes: typeof nodes = nodes) {
+    const nodes = runNodes;
     const validation = validateGraphConnectivity(nodes, edges);
     if (!validation.valid) {
       toast.warning(validation.message, "Incomplete Network");
@@ -1029,7 +1055,7 @@ export default function WorkspacePage() {
           <div className="relative flex items-center shadow-xs h-[32px] shrink-0 whitespace-nowrap">
             <button
               type="button"
-              onClick={handleRun}
+              onClick={() => handleRun()}
               disabled={simState === "running" || pyodideStatus.phase === "loading_runtime" || pyodideStatus.phase === "loading_simpy"}
               className="flex items-center h-full gap-1.5 pl-3.5 pr-2.5 rounded-l-full bg-sf-5742ff text-white text-[12.5px] font-bold hover:bg-sf-4531e5 disabled:opacity-50 transition-colors border-r border-ln-4531e5"
             >
