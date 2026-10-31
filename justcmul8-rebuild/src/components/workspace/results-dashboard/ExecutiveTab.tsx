@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "@/components/ui/Toast";
+import { requestOptimizer } from "@/lib/ai/requestOptimizer";
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -78,24 +78,9 @@ export default function ExecutiveTab({
 
   async function runAiOptimizer() {
     setAiLoading(true);
-    try {
-      const res = await fetch("/api/ai/optimize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result, simType }),
-      });
-      const data = await res.json();
-      if (data.recommendations && Array.isArray(data.recommendations)) {
-        setAiRecs(data.recommendations);
-      } else if (data.error) {
-        toast.error(data.error, res.status === 402 ? "Out of credits" : "Optimizer unavailable");
-      }
-    } catch (err) {
-      console.error("AI Optimizer Request Failed:", err);
-      toast.error("Couldn't reach the optimizer. Check your connection and try again.", "Optimizer unavailable");
-    } finally {
-      setAiLoading(false);
-    }
+    const recs = await requestOptimizer(result, simType);
+    if (recs) setAiRecs(recs);
+    setAiLoading(false);
   }
 
   const activeRecommendations: OptimizerRecommendation[] = aiRecs || aiDiagnosis?.recommendations || [];

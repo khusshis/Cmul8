@@ -40,8 +40,13 @@ const domainOf = (id: string) => DOMAINS.find((d) => d.id === id) ?? DOMAINS[0];
 
 const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 function timeAgo(iso: string) {
-  const s = (new Date(iso).getTime() - Date.now()) / 1000;
-  const steps: [number, Intl.RelativeTimeFormatUnit][] = [[60, "second"], [60, "minute"], [24, "hour"], [7, "day"], [4.345, "week"], [12, "month"], [Infinity, "year"]];
+  const d = new Date(iso);
+  const s = (d.getTime() - Date.now()) / 1000;
+  // Past a week, relative phrases ("last month") are too vague to tell cards apart — show the date.
+  if (Math.abs(s) >= 7 * 86400) {
+    return d.toLocaleDateString("en", { month: "short", day: "numeric", ...(d.getFullYear() !== new Date().getFullYear() && { year: "numeric" }) });
+  }
+  const steps: [number, Intl.RelativeTimeFormatUnit][] = [[60, "second"], [60, "minute"], [24, "hour"], [7, "day"]];
   let v = s;
   for (const [n, unit] of steps) {
     if (Math.abs(v) < n) return rtf.format(Math.round(v), unit);

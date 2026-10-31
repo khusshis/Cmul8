@@ -437,7 +437,13 @@ export interface SimResult {
     title: string;
     summary: string;
     bottleneckCause: string;
-    recommendations: Array<{ title: string; action: string; impact: string; confidence: number }>;
+    recommendations: Array<{
+      title: string;
+      action: string;
+      impact: string;
+      confidence: number;
+      fix?: { nodeId: string; paramPatch: Record<string, number | string | boolean>; description: string };
+    }>;
   };
   costAnalysis?: CostAnalysis;
 }

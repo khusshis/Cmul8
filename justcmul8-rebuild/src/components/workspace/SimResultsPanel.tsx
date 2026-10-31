@@ -24,7 +24,11 @@ import {
   X,
   Info,
   Lightbulb,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
+import { requestOptimizer } from "@/lib/ai/requestOptimizer";
+import type { OptimizerRecommendation } from "@/app/api/ai/optimize/route";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
@@ -80,6 +84,8 @@ export default function SimResultsPanel({
   const [height, setHeight] = useState<number>(450);
   const [activeTab, setActiveTab] = useState<PanelTab>("overview");
   const [chartViewMode, setChartViewMode] = useState<"curve" | "bars">("curve");
+  const [aiRec, setAiRec] = useState<{ for: SimResult; rec: OptimizerRecommendation } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const isDraggingRef = useRef(false);
   const startYRef = useRef(0);
@@ -171,7 +177,15 @@ export default function SimResultsPanel({
   const waitP = result.waitTimePercentiles;
   const cycleP = result.cycleTimePercentiles;
   const resolvedKpis = resolveKpiMetrics(simConfig.kpiMetrics, result);
-  const topRec = result.aiDiagnosis?.recommendations?.[0];
+  // An AI answer only applies to the run it was asked about.
+  const aiTop = aiRec?.for === rawResult ? aiRec.rec : null;
+  const topRec = aiTop ?? result.aiDiagnosis?.recommendations?.[0];
+  const askAi = async () => {
+    setAiLoading(true);
+    const recs = await requestOptimizer(result, simType);
+    if (recs?.[0]) setAiRec({ for: rawResult, rec: recs[0] });
+    setAiLoading(false);
+  };
   const avgWip = result.littlesLaw?.timeWeightedWIP_L;
 
   const healthTone = healthScore === undefined ? TONES.brand : healthScore >= 80 ? TONES.good : healthScore >= 60 ? TONES.warn : TONES.bad;
@@ -390,7 +404,19 @@ export default function SimResultsPanel({
                       <span aria-hidden className="pointer-events-none absolute inset-0" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1px, transparent 1.5px)", backgroundSize: "16px 16px", maskImage: "linear-gradient(160deg,#000,transparent 70%)", WebkitMaskImage: "linear-gradient(160deg,#000,transparent 70%)" }} />
                       <div className="relative flex items-center justify-between">
                         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15"><Lightbulb size={16} aria-hidden /></span>
-                        <span className="text-[10.5px] font-bold uppercase tracking-wider text-white/80">AI suggestion</span>
+                        {aiTop ? (
+                          <span className="text-[10.5px] font-bold uppercase tracking-wider text-white/80">AI suggestion</span>
+                        ) : (
+                          <button
+                            onClick={askAi}
+                            disabled={aiLoading}
+                            title="Have the AI optimizer analyse this run (uses credits)"
+                            className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white transition-colors hover:bg-white/25 disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                          >
+                            {aiLoading ? <Loader2 size={12} className="animate-spin" aria-hidden /> : <Sparkles size={12} aria-hidden />}
+                            {aiLoading ? "Analysing…" : "Ask AI"}
+                          </button>
+                        )}
                       </div>
                       <h5 className="relative mt-2.5 line-clamp-2 text-[14px] font-black leading-snug">{topRec?.title || "Flow is balanced"}</h5>
                       <p className="relative mt-1 line-clamp-2 text-[12px] leading-snug text-white/85">{topRec?.action || "The current setup keeps up with the arrival rate."}</p>
@@ -488,7 +514,11 @@ export default function SimResultsPanel({
                               </div>
                               <div className="text-[11.5px] font-extrabold" style={{ color: severity === "none" ? "var(--color-fg-475569)" : tone.text }}>{headlineText}</div>
                               {/* Only steps where people actually queue have a "line"; arrival/exit/router don't. */}
-                              {(isServer || isWaitingNode) && <div className="mt-0.5 text-[11px] font-medium text-slate-600">{fmtSeconds(s.avgWaitTime ?? 0)} wait</div>}
+                              {(isServer || isWaitingNode) && <div className="mt-0.5 text-[11px] font-medium text-slate-600" title="Average wait of those who got served; anyone still in line at the end isn't counted">{fmtSeconds(s.avgWaitTime ?? 0)} avg wait</div>}
+                              {/* A server's depth is in service + waiting; the waiting part is the backlog left at the end of the run. */}
+                              {isServer && backlog > (s.capacity ?? 1) && (
+                                <div className="mt-0.5 text-[11px] font-bold" style={{ color: tone.text }}>{(backlog - (s.capacity ?? 1)).toLocaleString()} still in line</div>
+                              )}
                             </div>
                             {i < statsEntries.length - 1 && <ArrowRight size={15} className="shrink-0 text-indigo-300" aria-hidden />}
                           </li>

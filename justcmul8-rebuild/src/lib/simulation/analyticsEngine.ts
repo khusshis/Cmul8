@@ -17,7 +17,7 @@ import type {
   CostBreakdown,
 } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
-import { perTimeParts } from "./units";
+import { perTimeParts, fmtDuration } from "./units";
 
 /**
  * Calculates exact statistical percentiles using Hyndman & Fan Type-7 linear interpolation (numpy / Excel standard).
@@ -614,47 +614,163 @@ export function generateExecutiveDiagnosis(
   }
 
   let bottleneckCause = "Everything is well-balanced. No single counter is holding everyone up.";
-  const recommendations: Array<{ title: string; action: string; impact: string; confidence: number }> = [];
-
   if (bottleneck) {
     const utilPct = Math.round((bottleneck.utilization || 0) * 100);
-    bottleneckCause = `Counter "${bottleneck.label}" was busy ${utilPct}% of the time with an average line delay of ${bottleneck.avgWaitTime.toFixed(1)}s. This is the main choke point where long lines are forming.`;
-
-    recommendations.push({
-      title: `Add +1 Helper or Lane at "${bottleneck.label}"`,
-      action: `Adding 1 more staff member or parallel service window to "${bottleneck.label}" will immediately clear the backup.`,
-      impact: `Cuts line waiting time in half (~40-50% faster) and prevents customers from giving up.`,
-      confidence: 94,
-    });
-
-    recommendations.push({
-      title: "Pace Incoming Arrivals",
-      action: "Spread out customer arrival times or introduce an appointment scheduling system.",
-      impact: "Eliminates sudden rush-hour crowds.",
-      confidence: 88,
-    });
-  } else {
-    recommendations.push({
-      title: "Current Setup Is Well Sized",
-      action: "Your staff and counters are handling demand comfortably. You could try testing with 2x more customers to see when lines start forming.",
-      impact: "Helps you know your maximum capacity before real-world rushes.",
-      confidence: 96,
-    });
+    bottleneckCause = `Counter "${bottleneck.label}" was busy ${utilPct}% of the time with an average line delay of ${fmtDuration(bottleneck.avgWaitTime)}. This is the main choke point where long lines are forming.`;
   }
-
-  recommendations.push({
-    title: "Keep Line Buffers Big Enough",
-    action: "Make sure waiting areas or lanes have enough physical space so lines don't spill out into the street.",
-    impact: "Prevents frustrated customers from leaving before being served.",
-    confidence: 85,
-  });
 
   return {
     title,
     summary,
     bottleneckCause,
-    recommendations,
+    recommendations: buildRecommendations(result, config.entityName.toLowerCase(), littlesLaw, waitStats),
   };
+}
+
+/** Erlang B via the stable recursion, then Erlang C → M/M/c mean queue wait. Infinity when a ≥ c. */
+export function mmcWait(c: number, a: number, serviceTime: number): number {
+  if (a <= 0) return 0;
+  if (a >= c) return Infinity;
+  let b = 1;
+  for (let k = 1; k <= c; k++) b = (a * b) / (k + a * b);
+  const pWait = (c * b) / (c - a * (1 - b));
+  return (pWait * serviceTime) / (c - a);
+}
+
+type Rec = NonNullable<SimResult["aiDiagnosis"]>["recommendations"][number];
+
+/**
+ * Rule-based recommendations computed from this run's numbers. Each candidate gets a score
+ * (rough share of the problem it addresses) and the top three are returned, so the card
+ * changes with the model instead of repeating a template.
+ */
+function buildRecommendations(result: SimResult, entity: string, littlesLaw: LittlesLawVerification, waitStats: PercentileStats): Rec[] {
+  const T = Math.max(1e-9, result.totalSimTime);
+  const arrived = Math.max(1, result.totalArrived);
+  const stats = Object.values(result.nodeStats || {});
+  const servers = stats.filter((s) => (s.utilization || 0) > 0 && s.avgServiceTime > 0);
+  const out: Array<Rec & { score: number }> = [];
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+  // 1. Capacity at the hottest station: size it to ~80% busy and predict the new wait.
+  // Ties (several stations pinned at 100%) go to the flagged bottleneck, so this agrees with the "Biggest bottleneck" card.
+  const isFlagged = (s: NodeStats) => (s.nodeId === result.bottleneckNodeId ? 1 : 0);
+  const hot = [...servers].sort((x, y) => y.utilization - x.utilization || isFlagged(y) - isFlagged(x))[0];
+  if (hot && hot.utilization >= 0.75) {
+    const c = Math.max(1, hot.capacity ?? 1);
+    // Offered load in busy servers. Utilization caps at 100% when saturated, so also use the arrival count.
+    const a = Math.max(hot.utilization * c, (hot.entitiesIn / T) * hot.avgServiceTime);
+    let target = c + 1;
+    while (a / target > 0.8 && target < c + 50) target++;
+    const add = target - c;
+    const modelNow = mmcWait(c, a, hot.avgServiceTime);
+    const modelNew = mmcWait(target, a, hot.avgServiceTime);
+    // Scale the observed wait by the model's ratio so real variability carries over; when saturated, use the model directly.
+    const newWait = Number.isFinite(modelNow) && modelNow > 0 && hot.avgWaitTime > 0 ? hot.avgWaitTime * (modelNew / modelNow) : modelNew;
+    const saturated = a >= c;
+    out.push({
+      title: `Add ${add} server${add > 1 ? "s" : ""} at "${hot.label}" (${c} → ${target})`,
+      action: saturated
+        ? `"${hot.label}" gets about ${a.toFixed(1)} servers' worth of work but has only ${c}, so its line grows without limit. ${target} servers bring it to ~${pct(a / target)} busy.`
+        : `"${hot.label}" is ${pct(hot.utilization)} busy with ${c} server${c > 1 ? "s" : ""}. Going to ${target} brings it to ~${pct(a / target)} busy.`,
+      impact: `Average wait there: ${fmtDuration(hot.avgWaitTime)} → ~${fmtDuration(newWait)} (queueing-model estimate).`,
+      confidence: saturated ? 85 : hot.utilization > 0.9 ? 80 : 70,
+      score: saturated ? 1 : hot.utilization,
+      ...((hot.nodeType === "resource" || hot.nodeType === "priority_resource") && hot.capacity !== undefined
+        ? { fix: { nodeId: hot.nodeId, paramPatch: { capacity: target }, description: `Set ${hot.label} capacity to ${target}` } }
+        : {}),
+    });
+
+    // Alternative: same effect by working faster instead of hiring.
+    const faster = (0.8 * c) / a; // service-time multiplier that reaches 80% busy
+    if (faster < 1 && faster > 0.5) {
+      out.push({
+        title: `Speed up "${hot.label}" by ${pct(1 - faster)}`,
+        action: `Cut the average service time from ${fmtDuration(hot.avgServiceTime)} to ${fmtDuration(hot.avgServiceTime * faster)} (better tools, prep, fewer steps) instead of adding staff.`,
+        impact: `Brings "${hot.label}" to ~80% busy with the same ${c} server${c > 1 ? "s" : ""}.`,
+        confidence: 65,
+        score: hot.utilization * 0.7,
+      });
+    }
+  }
+
+  // 2. Lost entities: reneged (gave up waiting) or dropped (buffer full).
+  const lost = [...stats].map((s) => ({ s, n: (s.renegeCount ?? 0) + (s.droppedCount ?? 0) })).sort((x, y) => y.n - x.n)[0];
+  if (lost && lost.n / arrived > 0.02) {
+    const dropped = (lost.s.droppedCount ?? 0) > (lost.s.renegeCount ?? 0);
+    out.push({
+      title: `Stop losing ${entity}s at "${lost.s.label}"`,
+      action: dropped
+        ? `${lost.n} ${entity}s were turned away because "${lost.s.label}" was full. Raise its capacity or add capacity downstream so it drains faster.`
+        : `${lost.n} ${entity}s gave up after waiting at "${lost.s.label}" (avg wait ${fmtDuration(lost.s.avgWaitTime)}). Shorten that wait or add an express lane.`,
+      impact: `Recovers up to ${pct(lost.n / arrived)} of all ${entity}s.`,
+      confidence: 80,
+      score: 0.9 + lost.n / arrived,
+    });
+  }
+
+  // 3. Breakdowns eating capacity.
+  const flaky = [...stats].filter((s) => (s.totalDowntime ?? 0) / T > 0.05).sort((x, y) => (y.totalDowntime ?? 0) - (x.totalDowntime ?? 0))[0];
+  if (flaky) {
+    out.push({
+      title: `Reduce downtime at "${flaky.label}"`,
+      action: `"${flaky.label}" broke down ${flaky.breakdownCount ?? 0} time(s) and was out ${pct((flaky.totalDowntime ?? 0) / T)} of the run. Preventive maintenance or a faster repair crew wins that time back.`,
+      impact: `Up to ${pct((flaky.totalDowntime ?? 0) / T)} more working time at that station.`,
+      confidence: 75,
+      score: 0.6 + (flaky.totalDowntime ?? 0) / T,
+    });
+  }
+
+  // 4. Long tail with spare capacity: the waits come from bursts, not a lack of servers.
+  if (waitStats.p50 > 0 && waitStats.p95 > 4 * waitStats.p50 && (!hot || hot.utilization < 0.75)) {
+    out.push({
+      title: "Smooth out arrival bursts",
+      action: `Most ${entity}s wait ${fmtDuration(waitStats.p50)} or less, but the slowest 5% wait over ${fmtDuration(waitStats.p95)}, while no station is overloaded. Arrivals come in clumps: use appointments, time slots or staggered release.`,
+      impact: `Targets the ${fmtDuration(waitStats.p95)} tail without adding staff.`,
+      confidence: 70,
+      score: 0.55,
+    });
+  }
+
+  // 5. Overstaffed stations: can drop a server and stay under 70% busy.
+  for (const s of servers) {
+    const c = s.capacity ?? 1;
+    if (c < 2 || s.utilization >= 0.35) continue;
+    const after = (s.utilization * c) / (c - 1);
+    if (after > 0.7) continue;
+    out.push({
+      title: `"${s.label}" has spare capacity (${c} → ${c - 1})`,
+      action: `"${s.label}" is only ${pct(s.utilization)} busy. One fewer server would still leave it ${pct(after)} busy.`,
+      impact: `Frees 1 of ${c} servers there with little effect on waiting.`,
+      confidence: 70,
+      score: 0.4 - s.utilization,
+      ...((s.nodeType === "resource" || s.nodeType === "priority_resource") && s.capacity !== undefined
+        ? { fix: { nodeId: s.nodeId, paramPatch: { capacity: c - 1 }, description: `Set ${s.label} capacity to ${c - 1}` } }
+        : {}),
+    });
+  }
+
+  // 6. Nothing urgent: say how much headroom there is.
+  if (out.length === 0) {
+    const maxU = hot?.utilization ?? 0;
+    const growth = maxU > 0 ? 0.8 / maxU - 1 : 0;
+    out.push(
+      maxU > 0
+        ? {
+            title: `About ${pct(growth)} headroom before lines form`,
+            action: `The busiest station, "${hot!.label}", runs at ${pct(maxU)}. Demand can grow about ${pct(growth)} before it passes 80% busy and waits start climbing.`,
+            impact: littlesLaw.isStable ? "The setup handles current demand with room to spare." : "The run looks short; run it longer to confirm.",
+            confidence: 75,
+            score: 0.1,
+          }
+        : { title: "Flow is balanced", action: "No station is busy enough to cause waiting.", impact: "No change needed.", confidence: 70, score: 0 }
+    );
+  }
+
+  return out
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 3)
+    .map(({ score: _score, ...r }) => r);
 }
 
 /**
@@ -719,13 +835,17 @@ export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResu
   // Idempotence guard: page.tsx already enriches before storing, and both result
   // panels re-enrich defensively. Re-running costs a full journey reconstruction.
   if (rawResult.entityJourneys !== undefined) {
+    let out = rawResult;
     if (graph && !rawResult.costAnalysis && rawResult.resourceStates) {
-      return {
-        ...rawResult,
-        costAnalysis: calculateCostAnalysis(graph, rawResult, rawResult.resourceStates),
-      };
+      out = { ...out, costAnalysis: calculateCostAnalysis(graph, rawResult, rawResult.resourceStates) };
     }
-    return rawResult;
+    // Saved runs from before data-driven recommendations carry the old fixed template; rebuild them (cheap).
+    const { aiDiagnosis, littlesLaw, waitTimePercentiles } = rawResult;
+    if (aiDiagnosis && littlesLaw && waitTimePercentiles && aiDiagnosis.recommendations.some((r) => r.title === "Keep Line Buffers Big Enough")) {
+      const entity = (SIM_TYPE_REGISTRY[rawResult.simType] || SIM_TYPE_REGISTRY.human_queue).entityName.toLowerCase();
+      out = { ...out, aiDiagnosis: { ...aiDiagnosis, recommendations: buildRecommendations(rawResult, entity, littlesLaw, waitTimePercentiles) } };
+    }
+    return out;
   }
 
   const journeys = reconstructEntityJourneys(rawResult.logs || [], rawResult.totalSimTime);
