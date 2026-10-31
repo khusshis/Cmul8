@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,11 +69,9 @@ export default function ProfileMenu({ avatarClass = "w-9 h-9 text-[14px]" }: { a
           <AnimatePresence>
             {profileOpen && (
               <>
-                {/* Invisible overlay to catch clicks outside */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setProfileOpen(false)}
-                />
+                {/* Invisible overlay to catch clicks outside. On <body>: inside the blurred header it only
+                    covered the header, so clicking the page didn't close the menu. */}
+                {createPortal(<div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />, document.body)}
                 
                 <motion.div 
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}

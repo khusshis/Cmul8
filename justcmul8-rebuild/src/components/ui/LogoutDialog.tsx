@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, LogOut } from "lucide-react";
 import { spring, EASE_OUT } from "@/components/brand/CubeMark";
@@ -43,7 +44,10 @@ export default function LogoutDialog({
 
   const PATH = "M58 40 C 110 40, 130 40, 182 40";
 
-  return (
+  // Rendered at the end of <body>: opened from the sticky header, whose backdrop blur makes it the
+  // containing block for "fixed" children, the overlay was boxed into the header and the dialog cut off.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -149,6 +153,7 @@ export default function LogoutDialog({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
