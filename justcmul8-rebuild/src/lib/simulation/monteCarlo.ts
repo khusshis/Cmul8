@@ -1,4 +1,7 @@
-import type { SimResult } from "./types";
+import type { NodeStats, SimResult } from "./types";
+
+// Same rule as analyticsEngine.isServerNode; kept local because node --test runs this file without a bundler.
+const isServerNode = (s: NodeStats) => s.nodeType === "resource" || s.nodeType === "priority_resource";
 
 // ─── Distributions ───────────────────────────────────────────────────────────
 
@@ -224,7 +227,11 @@ export function runMetrics(r: SimResult): Record<MetricKey, number | undefined> 
   return {
     throughput: Number.isFinite(r.totalCompleted) ? r.totalCompleted : NaN,
     avgWaitTime: r.waitTimePercentiles?.p50 ?? 0,
-    utilization: (r.bottleneckNodeId ? r.nodeStats[r.bottleneckNodeId]?.utilization ?? 0 : 0) * 100,
+    // A run where nobody waited has no bottleneck: report the busiest server, not a fake 0%.
+    utilization:
+      (r.bottleneckNodeId && r.nodeStats[r.bottleneckNodeId]
+        ? r.nodeStats[r.bottleneckNodeId].utilization ?? 0
+        : Math.max(0, ...Object.values(r.nodeStats ?? {}).filter(isServerNode).map((s) => s.utilization ?? 0))) * 100,
     healthScore: r.healthScore ?? 0,
     totalCost: r.costAnalysis?.totalSystemCost,
   };

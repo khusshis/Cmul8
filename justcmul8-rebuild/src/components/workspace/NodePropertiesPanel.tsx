@@ -30,6 +30,7 @@ import Switch from "@/components/ui/Switch";
 import { NODE_BASE_COLORS } from "@/components/workspace/NodeCanvas";
 import { decisionChoices, effectiveShares, routingWarning } from "@/lib/simulation/decisionRouting";
 import { invalidParamsChange } from "@/lib/simulation/paramRules";
+import NumberInput from "@/components/ui/NumberInput";
 import { TIME_UNITS, bestRateUnit, bestTimeUnit, fmtDuration, fmtPerTime, tidy, unitSeconds, type TimeUnit } from "@/lib/simulation/units";
 import { toast } from "@/components/ui/Toast";
 
@@ -591,12 +592,11 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
             {params.distribution === "burst" && (
               <div>
                 <label className={labelCls}>Average Group Size (people per burst)</label>
-                <input
-                  type="number"
+                <NumberInput
                   min={1}
-                  step={1}
+                  integer
                   value={params.burstSize ?? 5}
-                  onChange={(e) => setParam("burstSize", Number(e.target.value))}
+                  onChange={(v) => setParam("burstSize", v)}
                   className={modernInputCls}
                 />
               </div>
@@ -639,27 +639,25 @@ function SourceProperties({ params, nodeId, onUpdate, theme }: any) {
             </div>
             {schedule.map((entry, idx) => (
               <div key={idx} className="flex gap-2 mb-2 items-center">
-                <input
-                  type="number"
+                <NumberInput
                   min={0}
-                  step="any"
                   value={tidy(entry.simTime / scheduleK)}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     const s = [...schedule];
-                    s[idx].simTime = Number(e.target.value) * scheduleK;
+                    s[idx] = { ...s[idx], simTime: v * scheduleK };
                     setParam("schedule", s);
                   }}
                   placeholder={`At ${TIME_UNITS.find((u) => u.id === scheduleUnit)!.short}`}
                   aria-label={`Arrival time, in ${TIME_UNITS.find((u) => u.id === scheduleUnit)!.plural}`}
                   className={modernInputCls}
                 />
-                <input
-                  type="number"
+                <NumberInput
                   min={1}
+                  integer
                   value={entry.count}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     const s = [...schedule];
-                    s[idx].count = Number(e.target.value);
+                    s[idx] = { ...s[idx], count: v };
                     setParam("schedule", s);
                   }}
                   placeholder="How many"
@@ -815,11 +813,11 @@ function ResourceProperties({ params, nodeId, onUpdate, theme, isPriorityNode }:
 
       <div>
         <label className={labelCls}>Number of Staff / Parallel Counters</label>
-        <input
-          type="number"
+        <NumberInput
           min={1}
+          integer
           value={params.capacity ?? 1}
-          onChange={(e) => setParam("capacity", Number(e.target.value))}
+          onChange={(v) => setParam("capacity", v)}
           className={modernInputCls}
         />
       </div>
@@ -1013,15 +1011,14 @@ function DecisionProperties({ params, nodeId, onUpdate, theme, targets = [], nod
             placeholder="Target Station Name"
             className={modernInputCls}
           />
-          <input
-            type="number"
+          <NumberInput
             min={0}
             max={100}
             step={5}
             value={tidy(route.probability * 100)}
-            onChange={(e) => {
+            onChange={(v) => {
               const r = [...routes];
-              r[idx].probability = tidy(Number(e.target.value) / 100);
+              r[idx] = { ...r[idx], probability: tidy(v / 100) };
               onUpdate(nodeId, { params: { ...params, routes: r } });
             }}
             placeholder="Chance %"
@@ -1090,21 +1087,20 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
       </SectionHeading>
       <div>
         <label className={labelCls}>Tank Size (units)</label>
-        <input
-          type="number"
+        <NumberInput
           min={0}
+          valid={(n) => n > 0}
           value={params.capacity ?? 100}
-          onChange={(e) => setParam("capacity", Number(e.target.value))}
+          onChange={(v) => setParam("capacity", v)}
           className={modernInputCls}
         />
       </div>
       <div>
         <label className={labelCls}>Starts With (units)</label>
-        <input
-          type="number"
+        <NumberInput
           min={0}
           value={params.initialLevel ?? 0}
-          onChange={(e) => setParam("initialLevel", Number(e.target.value))}
+          onChange={(v) => setParam("initialLevel", v)}
           className={modernInputCls}
         />
       </div>

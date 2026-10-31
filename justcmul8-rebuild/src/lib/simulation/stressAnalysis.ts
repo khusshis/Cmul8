@@ -1,4 +1,7 @@
-import type { SimResult } from "./types";
+import type { NodeStats, SimResult } from "./types";
+
+// Same rule as analyticsEngine.hasUtilization; kept local because node --test runs this file without a bundler.
+const hasUtilization = (s: NodeStats) => ["resource", "priority_resource", "container", "channel"].includes(s.nodeType);
 import { METRIC_DIRECTION, percentile, runMetrics, summarize, wilsonInterval, type MetricKey, type RunStatistic } from "./monteCarlo";
 
 // ─── Targets / SLA ───────────────────────────────────────────────────────────
@@ -163,7 +166,8 @@ export function blockUtilization(results: SimResult[], riskQ = 0.05): BlockUtili
   const byId = new Map<string, { label: string; nodeType: string; vals: number[] }>();
   for (const r of results) {
     for (const [id, s] of Object.entries(r.nodeStats ?? {})) {
-      if (typeof s?.utilization !== "number") continue;
+      // Only blocks where "% busy" is real (not a service delay's in-progress count).
+      if (typeof s?.utilization !== "number" || !hasUtilization(s)) continue;
       const e = byId.get(id) ?? { label: s.label || id, nodeType: s.nodeType, vals: [] };
       e.vals.push(s.utilization * 100);
       byId.set(id, e);

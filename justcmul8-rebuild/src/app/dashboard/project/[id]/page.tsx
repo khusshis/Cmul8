@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
+import NumberInput from "@/components/ui/NumberInput";
 import Tooltip from "@/components/ui/Tooltip";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -969,12 +970,12 @@ export default function WorkspacePage() {
               <Clock size={13} strokeWidth={2.3} className="text-fg-5742ff shrink-0" />
             </div>
 
-            <input
-              type="number"
+            <NumberInput
               min={1}
               max={99999}
+              integer
               value={durationValue}
-              onChange={(e) => setDurationValue(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={setDurationValue}
               disabled={simState === "running"}
               className="w-12 min-w-[46px] h-6 px-1 text-center font-extrabold text-[12.5px] text-fg-111827 bg-gray-50 rounded-md border border-gray-200 focus:bg-surface focus:border-ln-5742ff focus:outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               title="Simulation Duration"

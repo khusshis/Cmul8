@@ -31,11 +31,15 @@ async function ensurePyodide(): Promise<void> {
 
     // Served from our own origin (scripts/copy-pyodide.mjs), so a CDN or PyPI outage can't stop simulations.
     (self as any).importScripts(`${PYODIDE_BASE}pyodide.js`);
-    pyodide = await (self as any).loadPyodide({ indexURL: PYODIDE_BASE });
+    const py = await (self as any).loadPyodide({ indexURL: PYODIDE_BASE });
 
     emit({ type: "status", phase: "loading_simpy", message: "Installing SimPy..." });
-    await pyodide.loadPackage(`${PYODIDE_BASE}${SIMPY_WHEEL}`);
+    await py.loadPackage(`${PYODIDE_BASE}${SIMPY_WHEEL}`);
 
+    // Only publish the runtime once SimPy is installed: a "start" arriving mid-install used to see
+    // `pyodide` set, skip the wait and fail with "No module named 'simpy'" (the Monte Carlo lab's
+    // fresh engine sends its first run immediately).
+    pyodide = py;
     emit({ type: "status", phase: "ready", message: "Pyodide + SimPy ready" });
   })();
 
