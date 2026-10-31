@@ -705,7 +705,8 @@ function buildRecommendations(result: SimResult, entity: string, littlesLaw: Lit
     const served = pool.reduce((n, s) => n + s.entitiesOut, 0);
     const S = served > 0 ? pool.reduce((n, s) => n + s.avgServiceTime * s.entitiesOut, 0) / served : hot.avgServiceTime;
     const busy = pool.reduce((n, s) => n + (s.utilization || 0) * capOf(s), 0);
-    const arrivals = queue ? queue.entitiesIn - (queue.droppedCount ?? 0) : hot.entitiesIn;
+    // Count those turned away at a full line too: they are demand the extra servers would serve.
+    const arrivals = queue ? queue.entitiesIn : hot.entitiesIn;
     // Offered load in busy servers. Utilization caps at 100% when saturated, so also use the arrival count.
     const a = Math.max(busy, (arrivals / T) * S);
     const waitNow = queue ? queue.avgWaitTime : hot.avgWaitTime;
@@ -765,14 +766,16 @@ function buildRecommendations(result: SimResult, entity: string, littlesLaw: Lit
   }
 
   // 3. Breakdowns eating capacity.
-  const flaky = [...stats].filter((s) => (s.totalDowntime ?? 0) / T > 0.05).sort((x, y) => (y.totalDowntime ?? 0) - (x.totalDowntime ?? 0))[0];
+  // Downtime is summed over every server's failure clock, so share it per server.
+  const downShare = (s: NodeStats) => (s.totalDowntime ?? 0) / (T * Math.max(1, s.capacity ?? 1));
+  const flaky = [...stats].filter((s) => downShare(s) > 0.05).sort((x, y) => downShare(y) - downShare(x))[0];
   if (flaky) {
     out.push({
       title: `Reduce downtime at "${flaky.label}"`,
-      action: `"${flaky.label}" broke down ${flaky.breakdownCount ?? 0} time(s) and was out ${pct((flaky.totalDowntime ?? 0) / T)} of the run. Preventive maintenance or a faster repair crew wins that time back.`,
-      impact: `Up to ${pct((flaky.totalDowntime ?? 0) / T)} more working time at that station.`,
+      action: `"${flaky.label}" broke down ${flaky.breakdownCount ?? 0} time(s); each server was out ${pct(downShare(flaky))} of the run on average. Preventive maintenance or a faster repair crew wins that time back.`,
+      impact: `Up to ${pct(downShare(flaky))} more working time at that station.`,
       confidence: 75,
-      score: 0.6 + (flaky.totalDowntime ?? 0) / T,
+      score: 0.6 + downShare(flaky),
     });
   }
 

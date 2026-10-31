@@ -4,31 +4,10 @@
  * M/M/1 and M/M/c (Erlang C) theory. Skipped when python/simpy are not installed.
  */
 import { describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { generateSimPyScript } from "@/lib/simulation/codeGenerator";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimGraph, SimResult } from "@/lib/simulation/types";
 import { mm1, mmc, queueGraph } from "../helpers";
-
-const PY = process.platform === "win32" ? "python" : "python3";
-const hasSimpy = spawnSync(PY, ["-c", "import simpy"]).status === 0;
-const runner = path.resolve(__dirname, "../../fixtures/run_generated.py");
-const dir = mkdtempSync(path.join(tmpdir(), "jc8-py-"));
-let n = 0;
-
-function runPython(graph: SimGraph, duration: number, seed = 1): { result: SimResult; stdout: string; stderr: string; status: number | null } {
-  const { python } = generateSimPyScript(graph, duration, duration / 1000);
-  const file = path.join(dir, `sim${n++}.py`);
-  writeFileSync(file, python);
-  const r = spawnSync(PY, [runner, file, String(seed)], { encoding: "utf8", timeout: 120_000, maxBuffer: 256 * 1024 * 1024 });
-  const last = r.stdout.trim().split("\n").pop() || "null";
-  let result: any = null;
-  try { result = JSON.parse(last); } catch { /* script failed */ }
-  return { result, stdout: r.stdout, stderr: r.stderr, status: r.status };
-}
+import { hasSimpy, runPython } from "./simpyRunner";
 
 describe.skipIf(!hasSimpy)("SimPy engine (generated script) vs queueing theory", () => {
   it("M/M/1 rho=0.8: utilisation +/-4%, Wq +/-15%", () => {
