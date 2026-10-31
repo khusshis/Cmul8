@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/Toast";
 import TabStrip, { tabPanelProps } from "@/components/ui/TabStrip";
 import { TONES } from "@/components/ui/chartTheme";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { fmtDuration } from "@/lib/simulation/units";
 import { generateExecutiveHtmlReport } from "@/lib/simulation/reportGenerator";
 import { generateExecutivePdfReport } from "@/lib/simulation/pdfReportGenerator";
 import type { OptimizerFix } from "@/app/api/ai/optimize/route";
@@ -167,7 +168,7 @@ export default function AdvancedResultsDashboard({
                   <p className="flex min-w-0 items-center gap-1.5 truncate text-[12px] font-semibold leading-tight text-slate-600">
                     <span className="truncate">{simConfig.label}</span>
                     <span aria-hidden className="text-slate-300">•</span>
-                    <span className="hidden tabular-nums sm:inline">{result.totalSimTime.toFixed(1)}s simulated</span>
+                    <span className="hidden tabular-nums sm:inline">{fmtDuration(result.totalSimTime)} simulated</span>
                     <span aria-hidden className="hidden text-slate-300 sm:inline">•</span>
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-extrabold" style={{ background: healthTone.tint, color: healthTone.text }}>
                       Health {health}/100

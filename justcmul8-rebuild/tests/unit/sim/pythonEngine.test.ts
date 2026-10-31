@@ -50,6 +50,29 @@ describe.skipIf(!hasSimpy)("SimPy engine (generated script) vs queueing theory",
     expect(Math.abs(res.avgWaitTime - th.Wq) / th.Wq).toBeLessThan(0.15);
   });
 
+  // One Queue block feeding three 1-server tellers is ONE shared line, i.e. M/M/3. Picking a teller
+  // round-robin on arrival made it three M/M/1 lines (Wq ~ 4x higher at this load).
+  it("a queue feeding 3 single servers pools them: Erlang-C Wq +/-15%, counts balance", () => {
+    const th = mmc(2.4, 1, 3);
+    const g = queueGraph(2.4, 1);
+    const tellers = ["t1", "t2", "t3"];
+    g.nodes = [
+      ...g.nodes.filter((n) => n.id !== "res"),
+      ...tellers.map((id) => ({ id, nodeType: "resource" as const, label: id, params: { capacity: 1, serviceTimeMean: 1, serviceDistribution: "exponential" } })),
+    ];
+    g.edges = [
+      { id: "a", source: "src", target: "q" },
+      ...tellers.flatMap((id) => [{ id: `q${id}`, source: "q", target: id }, { id: `${id}s`, source: id, target: "sink" }]),
+    ];
+    const { result, stderr } = runPython(g, 40_000, 4);
+    expect(result, stderr).toBeTruthy();
+    expect(Math.abs(result.nodeStats.q.avgWaitTime - th.Wq) / th.Wq).toBeLessThan(0.15);
+    for (const id of tellers) {
+      const s = result.nodeStats[id];
+      expect(s.entitiesIn - s.entitiesOut, id).toBe(s.currentDepth);
+    }
+  });
+
   it("overloaded M/M/1 (rho=2) completes ~mu*T and builds a backlog", () => {
     const { result } = runPython(queueGraph(2, 1), 2000, 5);
     expect(result.totalCompleted / 2000).toBeGreaterThan(0.9);

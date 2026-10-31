@@ -277,6 +277,7 @@ export interface NodeStats {
   droppedCount?: number;      // messages dropped (channel buffer overflow)
   lateCount?: number;         // messages received late (network/signal)
   avgLatency?: number;        // average end-to-end latency (network/signal)
+  fedBy?: string;             // servers only: the Queue block feeding it (servers behind one queue share a line)
 }
 
 export interface SimTick {

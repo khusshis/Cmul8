@@ -652,10 +652,13 @@ export default function AIChatPanel({
               className={`px-2 py-0.5 rounded-md text-[10.5px] font-extrabold shrink-0 ${
                 (simResult.healthScore ?? 100) >= 80
                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : "bg-amber-50 text-amber-700 border border-amber-200"
+                  : (simResult.healthScore ?? 100) >= 60
+                  ? "bg-amber-50 text-amber-700 border border-amber-200"
+                  : "bg-rose-50 text-rose-700 border border-rose-200"
               }`}
             >
-              Grade {(simResult.healthScore ?? 100) >= 80 ? "A" : "B"}
+              {/* Same bands as the results panel: A >= 80, B >= 60, C below. */}
+              Grade {(simResult.healthScore ?? 100) >= 80 ? "A" : (simResult.healthScore ?? 100) >= 60 ? "B" : "C"}
             </span>
           )}
         </div>

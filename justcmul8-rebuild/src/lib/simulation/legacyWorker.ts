@@ -291,7 +291,14 @@ class GraphSimulator {
 
     // Single path or primitive load balancing for multiple edges
     let nextEdge = edges[0];
-    if (edges.length > 1) {
+    const servers = edges.map((e) => this.resources.get(e.target));
+    if (node.nodeType === "queue" && edges.length > 1 && servers.every(Boolean)) {
+      // A queue feeding servers is one shared line: send each entity to the server with the least
+      // work per server. Round-robin made "1 queue -> 3 tellers" three separate lines.
+      // ponytail: join-shortest-queue approximates a pooled line; the SimPy engine pools exactly.
+      const load = (r: DESResource) => (r.users.length + r.waiting.length) / Math.max(1, r.capacity);
+      nextEdge = edges.reduce((best, e, i) => (load(servers[i]!) < load(this.resources.get(best.target)!) ? e : best), edges[0]);
+    } else if (edges.length > 1) {
       if ((node as any)._rr === undefined) (node as any)._rr = 0;
       const idx = (node as any)._rr % edges.length;
       (node as any)._rr++;

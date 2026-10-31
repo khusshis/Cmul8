@@ -8,6 +8,7 @@ import { NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 import MetricCard from "@/components/ui/MetricCard";
 import { EmptyState } from "@/components/ui/ChartCard";
 import { TONES, fmtSeconds } from "@/components/ui/chartTheme";
+import { hasUtilization } from "@/lib/simulation/analyticsEngine";
 
 type SortKey = "label" | "nodeType" | "entitiesIn" | "entitiesOut" | "utilization" | "avgWaitTime";
 
@@ -40,8 +41,10 @@ export default function BlocksTab({ result }: { result: SimResult }) {
       );
     }
     entries.sort(([, a], [, b]) => {
-      const av = a[sortKey] ?? 0;
-      const bv = b[sortKey] ?? 0;
+      // Rows showing "—" for Busy sort below every real value.
+      const val = (s: NodeStats) => (sortKey === "utilization" && !hasUtilization(s) ? -1 : s[sortKey] ?? 0);
+      const av = val(a);
+      const bv = val(b);
       const cmp = typeof av === "string" ? av.localeCompare(String(bv)) : (av as number) - (bv as number);
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -132,7 +135,7 @@ export default function BlocksTab({ result }: { result: SimResult }) {
               <tbody>
                 {rows.map(([id, s], i) => {
                   const isBottleneck = result.bottleneckNodeId === id;
-                  const util = s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
+                  const util = hasUtilization(s) && s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
                   return (
                     <motion.tr
                       key={id}
@@ -220,16 +223,21 @@ export default function BlocksTab({ result }: { result: SimResult }) {
                 <MetricCard size="sm" icon={ArrowDownToLine} tone="info" label="Arrived" value={selectedBlockStats.entitiesIn ?? 0} />
                 <MetricCard size="sm" icon={ArrowUpFromLine} tone="good" label="Finished" value={selectedBlockStats.entitiesOut ?? 0} delay={0.03} />
                 <MetricCard size="sm" icon={Clock} tone="warn" label="Average wait" value={selectedBlockStats.avgWaitTime ?? 0} format={fmtSeconds} delay={0.06} />
-                <MetricCard
-                  size="sm"
-                  icon={Gauge}
-                  tone={selectedBlockStats.utilization === undefined ? "neutral" : selectedBlockStats.utilization > 0.85 ? "bad" : selectedBlockStats.utilization > 0.6 ? "warn" : "good"}
-                  label="Busy"
-                  value={selectedBlockStats.utilization !== undefined ? Math.round(selectedBlockStats.utilization * 100) : "N/A"}
-                  unit={selectedBlockStats.utilization !== undefined ? "%" : undefined}
-                  progress={selectedBlockStats.utilization !== undefined ? selectedBlockStats.utilization * 100 : undefined}
-                  delay={0.09}
-                />
+                {(() => {
+                  const u = hasUtilization(selectedBlockStats) ? selectedBlockStats.utilization : undefined;
+                  return (
+                    <MetricCard
+                      size="sm"
+                      icon={Gauge}
+                      tone={u === undefined ? "neutral" : u > 0.85 ? "bad" : u > 0.6 ? "warn" : "good"}
+                      label={selectedBlockStats.nodeType === "container" ? "Full" : "Busy"}
+                      value={u !== undefined ? Math.round(u * 100) : "N/A"}
+                      unit={u !== undefined ? "%" : undefined}
+                      progress={u !== undefined ? u * 100 : undefined}
+                      delay={0.09}
+                    />
+                  );
+                })()}
               </div>
 
               {(selectedBlockStats.renegeCount ?? 0) > 0 && (

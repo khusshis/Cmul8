@@ -2,6 +2,7 @@ import { withCredits } from "@/lib/billing/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { hasUtilization } from "@/lib/simulation/analyticsEngine";
 import type { SimTypeId } from "@/lib/simulation/types";
 import { AIRouterError, extractJSON, generateJSON } from "@/lib/ai/modelRouter";
 import { buildSystemPrompt, fenceUntrusted } from "@/lib/ai/systemPrompt";
@@ -91,7 +92,7 @@ function summarizeTelemetry(simResult: any) {
       in: s.entitiesIn,
       out: s.entitiesOut,
       inSystemAtEnd: s.currentDepth,
-      utilization: s.utilization,
+      utilization: hasUtilization(s) ? s.utilization : undefined, // never show a delay block as "100% busy"
       avgWaitSeconds: s.avgWaitTime,
       avgServiceSeconds: s.avgServiceTime,
       reneged: s.renegeCount || undefined,

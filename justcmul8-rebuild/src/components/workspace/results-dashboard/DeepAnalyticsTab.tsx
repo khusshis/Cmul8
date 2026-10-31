@@ -45,8 +45,11 @@ export default function DeepAnalyticsTab({
   }));
 
   // Gap between the measured and the expected (λ·W) number inside. Small gap = steady flow.
+  // The card follows the engine's verdict so it can't contradict the badge (a big gap alone means
+  // the run hadn't settled, not that a backlog is growing).
   const gap = littlesLaw?.discrepancyPercent;
-  const gapTone = !isNum(gap) ? "neutral" : gap < 10 ? "good" : gap < 25 ? "warn" : "bad";
+  const verdict = littlesLaw?.verdict;
+  const gapTone = !verdict ? "neutral" : verdict === "accumulating_backlog" ? "bad" : verdict === "transient" ? "warn" : "good";
   const stable = !!littlesLaw?.isStable;
 
   return (
@@ -127,9 +130,9 @@ export default function DeepAnalyticsTab({
               icon={Gauge}
               tone={gapTone}
               label="Flow stability"
-              value={gapTone === "good" ? "Steady" : gapTone === "warn" ? "Drifting" : gapTone === "bad" ? "Backing up" : "—"}
+              value={gapTone === "good" ? "Steady" : gapTone === "warn" ? "Not settled" : gapTone === "bad" ? "Backing up" : "—"}
               caption={isNum(gap) ? `Expected vs measured differ by ${gap.toFixed(0)}%` : undefined}
-              help="Compares the number inside we'd expect from arrival speed × time inside with the number actually measured. Under 10% is steady; over 25% means a backlog is forming."
+              help="Backing up: arrivals outpaced exits and the number inside kept rising. Not settled: the expected (arrival speed × time inside) and measured numbers differ by over 20%, so the run is too short to be in a steady state. Steady: neither."
               delay={0.12}
             />
           </div>

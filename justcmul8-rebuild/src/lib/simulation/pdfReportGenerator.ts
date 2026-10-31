@@ -2,6 +2,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { SimResult } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
+import { fmtDuration } from "./units";
+import { hasUtilization } from "./analyticsEngine";
 
 export async function generateExecutivePdfReport(
   result: SimResult,
@@ -99,7 +101,7 @@ export async function generateExecutivePdfReport(
   doc.setFont("helvetica", "normal").setFontSize(9.5).setTextColor(75, 85, 99);
   const diagText =
     result.aiDiagnosis?.summary ||
-    `Simulation executed for ${result.totalSimTime.toFixed(1)} simulated seconds. System operated at ${efficiency}% completion rate.`;
+    `Simulation ran for ${fmtDuration(result.totalSimTime)} of simulated time. System operated at ${efficiency}% completion rate.`;
   const splitDiag = doc.splitTextToSize(diagText, contentWidth);
   doc.text(splitDiag, margin, y);
   y += splitDiag.length * 13 + 16;
@@ -114,8 +116,8 @@ export async function generateExecutivePdfReport(
     ["Total Volume Inflow", `${result.totalArrived} ${simConfig.entityName}s`],
     ["Total Volume Processed", `${result.totalCompleted} ${simConfig.entityName}s`],
     ["System Completion Rate", `${efficiency}%`],
-    ["Median Delay (p50 Wait Time)", `${(result.waitTimePercentiles?.p50 ?? 0).toFixed(2)}s`],
-    ["Worst-Case Delay (p95 / p99)", `${(result.waitTimePercentiles?.p95 ?? 0).toFixed(2)}s / ${(result.waitTimePercentiles?.p99 ?? 0).toFixed(2)}s`],
+    ["Median Delay (p50 Wait Time)", fmtDuration(result.waitTimePercentiles?.p50 ?? 0)],
+    ["Worst-Case Delay (p95 / p99)", `${fmtDuration(result.waitTimePercentiles?.p95 ?? 0)} / ${fmtDuration(result.waitTimePercentiles?.p99 ?? 0)}`],
     ["Network Stability (Little's Law)", result.littlesLaw?.isStable ? "Stable (L = lambda x W verified)" : "Backlog detected"],
   ];
 
@@ -160,8 +162,8 @@ export async function generateExecutivePdfReport(
       s.nodeType,
       String(s.entitiesIn),
       String(s.entitiesOut),
-      `${Math.round((s.utilization ?? 0) * 100)}%`,
-      `${(s.avgWaitTime ?? 0).toFixed(1)}s`,
+      hasUtilization(s) ? `${Math.round((s.utilization ?? 0) * 100)}%` : "—",
+      fmtDuration(s.avgWaitTime ?? 0),
     ];
   });
 

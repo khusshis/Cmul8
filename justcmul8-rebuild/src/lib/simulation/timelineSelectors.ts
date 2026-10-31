@@ -25,18 +25,25 @@ export interface DepthSeriesPoint {
   [nodeLabel: string]: number;
 }
 
+/**
+ * How many are WAITING at each block over time. A queue/store's depth is all waiting; a server's
+ * depth includes those being served, so its capacity is taken off. Blocks where nobody waits
+ * (service delays, tanks, channels, sources, sinks, routers) are left out.
+ */
 export function buildDepthSeries(result: SimResult): { series: DepthSeriesPoint[]; nodeLabels: string[] } {
-  const labelByNodeId: Record<string, string> = {};
+  const waiting: Record<string, { label: string; inService: number }> = {};
   for (const [id, stat] of Object.entries(result.nodeStats)) {
-    labelByNodeId[id] = stat.label;
+    if (stat.nodeType === "queue" || stat.nodeType === "store") waiting[id] = { label: stat.label, inService: 0 };
+    else if (stat.nodeType === "resource" || stat.nodeType === "priority_resource") waiting[id] = { label: stat.label, inService: Math.max(1, stat.capacity ?? 1) };
   }
   const nodeLabelSet = new Set<string>();
   const series: DepthSeriesPoint[] = result.timeline.map((point) => {
     const row: DepthSeriesPoint = { simTime: Math.round(point.simTime) };
     for (const [nodeId, depth] of Object.entries(point.depth)) {
-      const label = labelByNodeId[nodeId] || nodeId;
-      nodeLabelSet.add(label);
-      row[label] = depth;
+      const w = waiting[nodeId];
+      if (!w) continue;
+      nodeLabelSet.add(w.label);
+      row[w.label] = Math.max(0, depth - w.inService);
     }
     return row;
   });

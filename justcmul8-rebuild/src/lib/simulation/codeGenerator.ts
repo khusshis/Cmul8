@@ -152,6 +152,14 @@ for edge in EDGES:
         out_edges[src] = []
     out_edges[src].append(edge["target"])
 
+# Which Queue block feeds each server: servers behind one queue share a line, so analytics size them as a pool.
+fed_by = {}
+for _src, _targets in out_edges.items():
+    if NODE_CONFIG.get(_src, {}).get("nodeType") == "queue":
+        for _t in _targets:
+            if NODE_CONFIG.get(_t, {}).get("nodeType") in ("resource", "priority_resource"):
+                fed_by[_t] = _src
+
 rr_counters = {}
 def get_next_targets(node_id, routing_mode="round_robin"):
     """Returns a list of target node IDs based on the routing mode."""
@@ -262,6 +270,8 @@ def snapshot_stats(env):
             "lateCount": s.get("lateCount", 0),
             "level": level,
         }
+        if nid in fed_by:
+            snap[nid]["fedBy"] = fed_by[nid]
         if s["latencies"]:
             snap[nid]["avgLatency"] = sum(s["latencies"]) / len(s["latencies"])
         if "breakdownCount" in s:
@@ -438,69 +448,69 @@ def entity_process(env, eid, node_id, resources, entity_attrs=None):
             log_event(env.now, eid, node_id, label, "dropped")
             return
         log_event(env.now, eid, node_id, label, "queued")
-        next_id = get_next_target(node_id)
-        
-        # If queue is connected to a resource, apply patience timeout here
-        if next_id and NODE_CONFIG.get(next_id, {}).get("nodeType") in ("resource", "priority_resource"):
+        targets = out_edges.get(node_id, [])
+        servers = [t for t in targets if NODE_CONFIG.get(t, {}).get("nodeType") in ("resource", "priority_resource")]
+
+        # A queue feeding servers is ONE shared line: the entity asks every connected server at
+        # once and takes whichever frees up first. (Picking a server round-robin on arrival
+        # turned "1 queue -> 3 tellers" into 3 separate lines, with idle tellers beside a line.)
+        if servers and len(servers) == len(targets):
             params = cfg.get("params", {})
             dist = params.get("patienceDistribution", "none")
-            
-            res_node_id = next_id
+            discipline = params.get("discipline", "FIFO")
+            queued_at = env.now
+            reqs = [(t, request_server(env, resources[t], NODE_CONFIG[t], entity_attrs, discipline)) for t in servers]
+            wait_for = env.any_of([r for _, r in reqs])
+            if dist != "none":
+                if dist == "uniform":
+                    patience = random.uniform(params.get("patienceMin", 1), params.get("patienceMax", 3))
+                elif dist == "exponential":
+                    mean = params.get("patienceTimeout", 5)
+                    patience = random.expovariate(1.0 / mean) if mean > 0 else 0
+                elif dist == "deterministic":
+                    patience = params.get("patienceTimeout", 5)
+                else:
+                    patience = 999999
+                wait_for = wait_for | env.timeout(patience)
+            yield wait_for
+
+            granted = [(t, r) for t, r in reqs if r.triggered]
+            # Withdraw every request but the one we use (several servers can free up at once).
+            for t, r in reqs:
+                if granted and r is granted[0][1]:
+                    continue
+                if r.triggered:
+                    resources[t].release(r)
+                else:
+                    r.cancel()
+            if not granted:
+                log_event(env.now, eid, node_id, label, "reneged")
+                s["currentDepth"] -= 1
+                s["renegeCount"] = s.get("renegeCount", 0) + 1
+                return
+
+            res_node_id, req = granted[0]
             res_cfg = NODE_CONFIG[res_node_id]
             res_s = stats[res_node_id]
-            res = resources[res_node_id]
-            
-            queued_at = env.now
+            s["currentDepth"] -= 1
+            s["entitiesOut"] += 1
+            # The queue counted this entity while it waited; the server counts it from service
+            # start, so in - out = in service at the server and WIP isn't double-counted (F-2).
             res_s["entitiesIn"] += 1
-            # F-1/F-15: log the wait against the RESOURCE too. entity_process is
-            # never entered for a queue-fed resource, so without this the journey
-            # reconstructor never closes a step and every served entity reports a
-            # wait of zero.
+            res_s["currentDepth"] += 1
+            # F-1/F-15: the wait is also logged against the server, or the journey
+            # reconstructor never closes the step and every served entity shows zero wait.
             log_event(queued_at, eid, res_node_id, res_cfg["label"], "queued")
-            # F-2: the queue node already counts this entity while it waits.
-            # Incrementing the resource depth here as well double-counts WIP and
-            # breaks Little's Law, so the resource is credited at service start.
             next_after_service = None
-            discipline = params.get("discipline", "FIFO")
-
-            with request_server(env, res, res_cfg, entity_attrs, discipline) as req:
-                if dist != "none":
-                    if dist == "uniform":
-                        p_min = params.get("patienceMin", 1)
-                        p_max = params.get("patienceMax", 3)
-                        patience = random.uniform(p_min, p_max)
-                    elif dist == "exponential":
-                        mean = params.get("patienceTimeout", 5)
-                        patience = random.expovariate(1.0 / mean) if mean > 0 else 0
-                    elif dist == "deterministic":
-                        patience = params.get("patienceTimeout", 5)
-                    else:
-                        patience = 999999
-                        
-                    results = yield req | env.timeout(patience)
-                    
-                    if req in results:
-                        s["currentDepth"] -= 1
-                        s["entitiesOut"] += 1
-                        res_s["currentDepth"] += 1
-                        next_after_service = yield from serve_on(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s, entity_attrs, discipline)
-                    else:
-                        log_event(env.now, eid, node_id, label, "reneged")
-                        s["currentDepth"] -= 1
-                        s["renegeCount"] = s.get("renegeCount", 0) + 1
-                        res_s["entitiesIn"] -= 1
-                        return
-                else:
-                    yield req
-                    s["currentDepth"] -= 1
-                    s["entitiesOut"] += 1
-                    res_s["currentDepth"] += 1
-                    next_after_service = yield from serve_on(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s, entity_attrs, discipline)
-            # Server released here -- only now do we move downstream (F-5),
-            # carrying the entity attributes with us (F-11).
+            try:
+                next_after_service = yield from serve_on(env, eid, res_node_id, res_cfg, res_s, resources, queued_at, s, entity_attrs, discipline)
+            finally:
+                resources[res_node_id].release(req)
+            # Server released -- only now move downstream (F-5), carrying the attributes (F-11).
             if next_after_service:
                 yield env.process(entity_process(env, eid, next_after_service, resources, entity_attrs))
         else:
+            next_id = get_next_target(node_id)
             s["currentDepth"] -= 1
             s["entitiesOut"] += 1
             if next_id:
@@ -944,7 +954,8 @@ def run_simulation():
             "bottleneckLabel": bottleneck_label,
             "nodeStats": snap,
             "timeline": timeline_history,
-            "logs": collect_sampled_logs() or list(log_buffer),
+            # Stable time sort: a shared queue logs the server's "queued" (stamped at join) only once a server is granted.
+            "logs": collect_sampled_logs() or sorted(log_buffer, key=lambda x: x["simTime"]),
         }
     }
     

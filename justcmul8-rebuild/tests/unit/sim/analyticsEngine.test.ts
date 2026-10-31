@@ -10,6 +10,7 @@ import {
   calculateCostAnalysis,
   enrichSimResult,
 } from "@/lib/simulation/analyticsEngine";
+import { mmcWait } from "@/lib/simulation/analyticsEngine";
 import type { SimTypeId } from "@/lib/simulation/types";
 import { log, result, stat } from "../helpers";
 
@@ -112,7 +113,8 @@ describe("calculateLittlesLaw", () => {
 });
 
 describe("calculateResourceOperationalStates", () => {
-  it("splits busy/starved for resources and services only", () => {
+  // A "service" block is an unlimited delay: its utilization is not a busy share, so it is left out.
+  it("splits busy/starved for server blocks only", () => {
     const s = calculateResourceOperationalStates(
       {
         r: stat({ nodeId: "r", nodeType: "resource", utilization: 0.25 }),
@@ -121,9 +123,8 @@ describe("calculateResourceOperationalStates", () => {
       },
       200
     );
-    expect(Object.keys(s).sort()).toEqual(["r", "x"]);
+    expect(Object.keys(s).sort()).toEqual(["r"]);
     expect(s.r).toMatchObject({ busySeconds: 50, starvedSeconds: 150, busyRatio: 0.25, starvedRatio: 0.75 });
-    expect(s.x.busyRatio).toBe(1); // clamped
   });
 });
 
@@ -166,7 +167,7 @@ describe("generateExecutiveDiagnosis", () => {
     const d = generateExecutiveDiagnosis(r, "human_queue", 60, ll, calculatePercentiles([1]));
     expect(d.bottleneckCause).toContain("Teller");
     expect(d.title).toMatch(/Traffic Jam/);
-    expect(d.recommendations.length).toBeGreaterThanOrEqual(2);
+    expect(d.recommendations[0].title).toContain("Teller");
   });
   // A result with an unrecognised simType (old project rows, AI-created projects) should
   // still get a diagnosis instead of crashing the results panel.
@@ -231,9 +232,50 @@ describe("enrichSimResult", () => {
   // DESIGN NOTE (data integrity): with no per-entity samples, enrichSimResult synthesises a
   // 5-point distribution (0.75x..1.4x of the summed node averages) and reports it as percentiles.
   // Documented in verification/AUDIT.md (F-1/F-10). This pins the current behaviour so a change is noticed.
-  it("synthesises wait-time percentiles from node averages when logs are absent (documented fallback)", () => {
+  it("uses the node average as a single sample when logs are absent (no invented spread)", () => {
     const noLogs = result({ logs: [], nodeStats: { res: stat({ nodeId: "res", nodeType: "resource", avgWaitTime: 10 }) } });
     const e = enrichSimResult(noLogs);
-    expect(e.waitTimePercentiles!.max).toBe(14); // 1.4 x 10 — invented, not measured
+    expect(e.waitTimePercentiles!.max).toBe(10);
+    expect(e.waitTimePercentiles!.p50).toBe(10); // 1.4 x 10 — invented, not measured
+  });
+});
+
+describe("bottleneck (picked in enrichSimResult for every engine)", () => {
+  it("blames the server, not the queue in front of it, and ignores stations nobody waited at", () => {
+    const e = enrichSimResult(result({
+      bottleneckNodeId: "q",
+      nodeStats: {
+        q: stat({ nodeId: "q", nodeType: "queue", avgWaitTime: 50 }),
+        r: stat({ nodeId: "r", nodeType: "resource", label: "Desk", avgWaitTime: 50, utilization: 0.9 }),
+        idle: stat({ nodeId: "idle", nodeType: "resource", utilization: 0.3 }),
+      },
+    }));
+    expect(e.bottleneckNodeId).toBe("r");
+    expect(enrichSimResult(result({ nodeStats: { idle: stat({ nodeId: "idle", nodeType: "resource", utilization: 0.3 }) } })).bottleneckNodeId).toBe("");
+  });
+});
+
+describe("computeDomainMetrics uses measured values", () => {
+  it("waited-under-5-min is the real share of samples", () => {
+    const cards = computeDomainMetrics("human_queue", result(), calculatePercentiles([60, 120, 600, 900]), [60, 120, 600, 900]);
+    expect(cards.find((c) => c.id === "sla_compliance")!.value).toBe("50%");
+  });
+  it("network lag and jitter come from end-to-end latency, in ms", () => {
+    const cards = computeDomainMetrics("network_signal", result(), calculatePercentiles([0]), [], calculatePercentiles([0.01, 0.01, 0.01, 0.01]));
+    expect(cards.find((c) => c.id === "p99_latency")!.value).toBe("10ms");
+    expect(cards.find((c) => c.id === "jitter")!.value).toBe("0ms");
+  });
+  it("busiest counter ignores service blocks and tanks", () => {
+    const r = result({ nodeStats: { s: stat({ nodeId: "s", nodeType: "service", utilization: 1 }), r: stat({ nodeId: "r", nodeType: "resource", utilization: 0.4 }) } });
+    expect(computeDomainMetrics("human_queue", r, calculatePercentiles([1]))[2].value).toBe("40%");
+  });
+});
+
+describe("mmcWait (Erlang C)", () => {
+  it("matches textbook values", () => {
+    expect(mmcWait(1, 0.8, 1)).toBeCloseTo(4); // M/M/1: rho/(mu - lambda) = 0.8/0.2
+    expect(mmcWait(2, 1.5, 1)).toBeCloseTo(4.5 / 7 / 0.5); // Erlang C = 4.5/7
+    expect(mmcWait(2, 2, 1)).toBe(Infinity); // saturated
+    expect(mmcWait(3, 0, 1)).toBe(0);
   });
 });

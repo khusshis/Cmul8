@@ -1,5 +1,7 @@
 import type { SimResult, SimTypeId } from "./types";
 import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
+import { fmtDuration } from "./units";
+import { hasUtilization } from "./analyticsEngine";
 
 /** Project names, block labels and AI text are user/collaborator-controlled: never raw HTML. */
 const esc = (v: unknown) =>
@@ -46,7 +48,7 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
   <div class="header">
     <div>
       <h1 class="title">${esc(projectName)}</h1>
-      <div class="meta">Domain: ${simConfig.label} • Simulation Time: ${result.totalSimTime.toFixed(1)}s • Health Score: ${healthScore}/100</div>
+      <div class="meta">Domain: ${simConfig.label} • Simulation Time: ${fmtDuration(result.totalSimTime)} • Health Score: ${healthScore}/100</div>
     </div>
     <button class="no-print" onclick="window.print()" style="background:#5742FF;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;">
       Print / Save PDF
@@ -59,7 +61,7 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
     </div>
     <div style="font-size:18px;font-weight:800;margin-bottom:8px;">${esc(aiDiag?.title || "System Performance Overview")}</div>
     <div style="font-size:14px;color:#4B5563;line-height:1.5;">${esc(aiDiag?.summary)}</div>
-    ${bottleneck ? `<div style="margin-top:12px;padding:10px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;font-size:13px;color:#92400E;"><strong>Identified Bottleneck:</strong> ${esc(bottleneck.label)} (${Math.round((bottleneck.utilization || 0) * 100)}% utilized, ${bottleneck.avgWaitTime.toFixed(1)}s avg wait)</div>` : ""}
+    ${bottleneck ? `<div style="margin-top:12px;padding:10px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;font-size:13px;color:#92400E;"><strong>Identified Bottleneck:</strong> ${esc(bottleneck.label)} (${Math.round((bottleneck.utilization || 0) * 100)}% utilized, ${fmtDuration(bottleneck.avgWaitTime)} avg wait)</div>` : ""}
   </div>
 
   <div class="grid">
@@ -85,19 +87,19 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
   <div class="grid">
     <div class="card">
       <div class="card-label">Median Wait (p50)</div>
-      <div class="card-val">${(waitP?.p50 ?? 0).toFixed(2)}s</div>
+      <div class="card-val">${fmtDuration(waitP?.p50 ?? 0)}</div>
     </div>
     <div class="card">
       <div class="card-label">High-Load Wait (p90)</div>
-      <div class="card-val">${(waitP?.p90 ?? 0).toFixed(2)}s</div>
+      <div class="card-val">${fmtDuration(waitP?.p90 ?? 0)}</div>
     </div>
     <div class="card">
       <div class="card-label">Critical Tail (p99)</div>
-      <div class="card-val" style="color:#EF4444;">${(waitP?.p99 ?? 0).toFixed(2)}s</div>
+      <div class="card-val" style="color:#EF4444;">${fmtDuration(waitP?.p99 ?? 0)}</div>
     </div>
     <div class="card">
       <div class="card-label">Std Deviation (σ)</div>
-      <div class="card-val">${(waitP?.stdDev ?? 0).toFixed(2)}s</div>
+      <div class="card-val">${fmtDuration(waitP?.stdDev ?? 0)}</div>
     </div>
   </div>
 
@@ -120,8 +122,8 @@ export function generateExecutiveHtmlReport(result: SimResult, projectName: stri
           <td>${esc(s.nodeType)}</td>
           <td>${s.entitiesIn}</td>
           <td>${s.entitiesOut}</td>
-          <td>${s.utilization !== undefined ? Math.round(s.utilization * 100) + '%' : '—'}</td>
-          <td>${(s.avgWaitTime ?? 0).toFixed(2)}s</td>
+          <td>${hasUtilization(s) && s.utilization !== undefined ? Math.round(s.utilization * 100) + '%' : '—'}</td>
+          <td>${fmtDuration(s.avgWaitTime ?? 0)}</td>
         </tr>
       `).join('')}
     </tbody>

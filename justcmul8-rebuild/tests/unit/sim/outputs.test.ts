@@ -6,7 +6,7 @@ import { resolveKpiMetrics } from "@/lib/simulation/resolveKpiMetrics";
 import { buildThroughputSeries, buildDepthSeries } from "@/lib/simulation/timelineSelectors";
 import { applyDagreLayout } from "@/lib/simulation/layoutEngine";
 import { toSimulationRunRow } from "@/lib/simulation/resultPersistence";
-import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { enrichSimResult, stillInsideCount, calculateResourceOperationalStates, calculateLittlesLaw } from "@/lib/simulation/analyticsEngine";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { queueGraph, result, stat, log } from "../helpers";
 
@@ -23,7 +23,10 @@ describe("codeGenerator output shape", () => {
 
 describe("jupyterExport.buildJupyterNotebook", () => {
   it("produces a valid nbformat 4 notebook with code + summary cells", () => {
-    const r = enrichSimResult(result({ logs: [log(0, 1, "src", "arrived"), log(2, 1, "sink", "completed")], bottleneckLabel: "Teller" }));
+    const r = enrichSimResult(result({
+      logs: [log(0, 1, "src", "arrived"), log(2, 1, "sink", "completed")],
+      nodeStats: { t: stat({ nodeId: "t", nodeType: "resource", label: "Teller", utilization: 0.9, avgWaitTime: 30 }) },
+    }));
     const nb = buildJupyterNotebook("print('hi')\nx = 1", "My Model", r);
     expect(nb.nbformat).toBe(4);
     expect(nb.metadata.kernelspec.name).toBe("python3");
@@ -40,7 +43,7 @@ describe("jupyterExport.buildJupyterNotebook", () => {
 });
 
 describe("reportGenerator.generateExecutiveHtmlReport", () => {
-  const r = enrichSimResult(result({ bottleneckNodeId: "r", nodeStats: { r: stat({ nodeId: "r", nodeType: "resource", label: "Desk", utilization: 0.5 }) } }));
+  const r = enrichSimResult(result({ nodeStats: { r: stat({ nodeId: "r", nodeType: "resource", label: "Desk", utilization: 0.5, avgWaitTime: 20 }) } }));
   it("renders the summary sections", () => {
     const html = generateExecutiveHtmlReport(r, "Bank Sim");
     for (const s of ["Bank Sim", "Executive Diagnosis", "Block Telemetry Breakdown", "Desk", "BOTTLENECK"]) expect(html).toContain(s);
@@ -87,9 +90,27 @@ describe("resolveKpiMetrics", () => {
   it("bottleneck shows the node label", () => {
     expect(by("bottleneck", "").displayValue).toBe("R");
   });
-  it("no matching nodes -> 0, not a crash", () => {
-    expect(by("level", "units", ["container"]).value).toBe(0);
+  it("no matching nodes -> N/A, not a fake 0", () => {
+    expect(by("level", "units", ["container"]).value).toBeNull();
+    expect(by("level", "units", ["container"]).displayValue).toBe("N/A");
     expect(resolveKpiMetrics(undefined as any, r)).toEqual([]);
+  });
+
+  // A flow with no Queue block keeps its line inside the server; wait and queue length must come from there.
+  const noQueue = result({
+    nodeStats: {
+      a: stat({ nodeId: "a", nodeType: "resource", label: "Triage", capacity: 2, currentDepth: 19, avgWaitTime: 600, avgServiceTime: 120, entitiesOut: 45, utilization: 0.98 }),
+      b: stat({ nodeId: "b", nodeType: "resource", label: "Care", capacity: 2, currentDepth: 11, avgWaitTime: 1200, avgServiceTime: 2400, entitiesOut: 5, utilization: 0.9 }),
+    },
+  });
+  const kpi = (key: any, unit: string, nodeTypes: any[]) => resolveKpiMetrics([{ key, label: "x", unit, chartType: "bar", nodeTypes }], noQueue)[0];
+  it("no Queue block: wait and line length come from the servers", () => {
+    expect(kpi("avgWaitTime", "min", ["queue"]).value).toBeCloseTo((45 * 10 + 5 * 20) / 50); // weighted by finished
+    expect(kpi("currentDepth", "people", ["queue"]).value).toBe(17 + 9); // depth minus those in service
+  });
+  it("averages weight by entities, utilization by servers", () => {
+    expect(kpi("avgServiceTime", "min", ["resource"]).value).toBeCloseTo((45 * 2 + 5 * 40) / 50);
+    expect(kpi("utilization", "%", ["resource"]).value).toBeCloseTo(94);
   });
   // BUG: "Vehicles / hour" (unit "veh") and "Packages / hour" (unit "pkgs") show the raw total,
   // because only the unit string is checked for "/hr".
@@ -120,6 +141,56 @@ describe("timelineSelectors", () => {
     expect(d.nodeLabels).toEqual(["Line"]);
     expect(d.series[1].Line).toBe(5);
   });
+  it("depth series counts only those waiting: servers lose their in-service, delays are dropped", () => {
+    const d = buildDepthSeries(result({
+      nodeStats: {
+        r: stat({ nodeId: "r", nodeType: "resource", label: "Desk", capacity: 2 }),
+        s: stat({ nodeId: "s", nodeType: "service", label: "Delay" }),
+      },
+      timeline: [{ simTime: 60, completed: 0, depth: { r: 5, s: 9 } }],
+    }));
+    expect(d.nodeLabels).toEqual(["Desk"]);
+    expect(d.series[0].Desk).toBe(3);
+  });
+});
+
+describe("capacity suggestion for a shared line", () => {
+  it("sizes all servers behind one queue from the line's arrivals, not one server's share", () => {
+    // 200 arrivals x 5 min over 100 min = 10 servers' worth of work, against 3 tellers.
+    const teller = (id: string) => stat({ nodeId: id, nodeType: "resource", label: id, capacity: 1, utilization: 1, avgServiceTime: 300, entitiesIn: 20, entitiesOut: 19, avgWaitTime: 2000, fedBy: "q" });
+    const e = enrichSimResult(result({
+      totalSimTime: 6000,
+      totalArrived: 200,
+      totalCompleted: 57,
+      nodeStats: { q: stat({ nodeId: "q", nodeType: "queue", label: "Line", entitiesIn: 200, avgWaitTime: 2000 }), t1: teller("t1"), t2: teller("t2"), t3: teller("t3") },
+    }));
+    const rec = e.aiDiagnosis!.recommendations[0] as any;
+    expect(rec.title).toBe('Add 10 servers behind "Line" (3 → 13)');
+    expect(rec.fix.paramPatch.capacity).toBe(11); // all 10 extra on one block of the pool
+  });
+});
+
+describe("counts that leave the system", () => {
+  const r = result({
+    totalSimTime: 100,
+    totalArrived: 100,
+    totalCompleted: 20,
+    nodeStats: {
+      q: stat({ nodeId: "q", nodeType: "queue", droppedCount: 50, renegeCount: 10 }),
+      r: stat({ nodeId: "r", nodeType: "resource", capacity: 4, utilization: 0.5, busySeconds: 200 }),
+    },
+  });
+  it("turned-away and gave-up entities are not 'still inside'", () => {
+    expect(stillInsideCount(r)).toBe(20);
+  });
+  it("busy time covers every parallel server, so per-server costs aren't undercounted", () => {
+    expect(calculateResourceOperationalStates(r.nodeStats, 100).r.busySeconds).toBe(200);
+    expect(calculateResourceOperationalStates({ r: stat({ nodeId: "r", nodeType: "resource", capacity: 4, utilization: 0.5 }) }, 100).r.busySeconds).toBe(200);
+  });
+  it("Little's law expectation uses only arrivals that got in", () => {
+    const ll = calculateLittlesLaw({ ...r, totalCompleted: 0 }, [{ status: "completed", totalCycleTime: 10 } as any]);
+    expect(ll.computedWIP_LambdaW).toBeCloseTo((50 / 100) * 10);
+  });
 });
 
 describe("layoutEngine.applyDagreLayout", () => {
@@ -148,7 +219,7 @@ describe("layoutEngine.applyDagreLayout", () => {
 
 describe("resultPersistence.toSimulationRunRow", () => {
   it("stores a summary without duplicated logs / journeys", () => {
-    const e = enrichSimResult(result({ bottleneckNodeId: "r", logs: [log(0, 1, "a", "arrived")] }));
+    const e = enrichSimResult(result({ logs: [log(0, 1, "a", "arrived")], nodeStats: { r: stat({ nodeId: "r", nodeType: "resource", avgWaitTime: 5 }) } }));
     const row = toSimulationRunRow("p1", "u1", e, 12.6);
     expect(row).toMatchObject({ project_id: "p1", user_id: "u1", duration_seconds: 13, bottleneck_node: "r" });
     expect(row.logs_json).toHaveLength(1);

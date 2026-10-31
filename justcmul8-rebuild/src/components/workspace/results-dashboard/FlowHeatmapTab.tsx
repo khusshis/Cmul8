@@ -8,6 +8,7 @@ import { NODE_LABELS } from "@/lib/simulation/simTypeRegistry";
 import { EmptyState } from "@/components/ui/ChartCard";
 import { HelpTip } from "@/components/ui/MetricCard";
 import { TONES, fmtSeconds } from "@/components/ui/chartTheme";
+import { hasUtilization, isServerNode } from "@/lib/simulation/analyticsEngine";
 
 const LEVELS = [
   { max: 50, label: "Free flow", tone: TONES.good },
@@ -23,25 +24,26 @@ export default function FlowHeatmapTab({
   simType: SimTypeId;
 }) {
   // Congestion heat index (0 to 100) per node
-  const nodesWithHeat = useMemo(
-    () =>
-      Object.entries(result.nodeStats).map(([nodeId, stat]) => {
-        let heat = 0;
-        const util = stat.utilization || 0;
-        const renege = stat.renegeCount || 0;
-        const wait = stat.avgWaitTime || 0;
-
-        if (stat.nodeType === "queue" || stat.nodeType === "store") {
-          heat = Math.min(100, Math.round(((stat.currentDepth || 0) * 15) + (renege * 20) + (wait * 5)));
-        } else if (stat.nodeType === "resource" || stat.nodeType === "service" || stat.nodeType === "priority_resource") {
-          heat = Math.min(100, Math.round(util * 100));
-        } else {
-          heat = stat.entitiesIn > 0 ? 10 : 0;
-        }
-        return { nodeId, stat, heat: Number.isFinite(heat) ? heat : 0 };
-      }),
-    [result.nodeStats]
-  );
+  const nodesWithHeat = useMemo(() => {
+    const all = Object.values(result.nodeStats);
+    const maxWait = Math.max(0, ...all.map((s) => s.avgWaitTime || 0));
+    return Object.entries(result.nodeStats).map(([nodeId, stat]) => {
+      let heat = 0;
+      if (isServerNode(stat)) {
+        heat = (stat.utilization || 0) * 100;
+      } else if (stat.nodeType === "queue" || stat.nodeType === "store") {
+        // Higher of: how full a capped line is, and its wait relative to the longest wait in the run.
+        const cap = stat.capacity ?? 0;
+        const fill = cap > 1 ? (stat.currentDepth || 0) / cap : 0;
+        const relWait = maxWait > 0 ? (stat.avgWaitTime || 0) / maxWait : 0;
+        heat = Math.max(fill, relWait) * 100;
+      } else {
+        heat = stat.entitiesIn > 0 ? 10 : 0;
+      }
+      heat = Math.min(100, Math.round(heat));
+      return { nodeId, stat, heat: Number.isFinite(heat) ? heat : 0 };
+    });
+  }, [result.nodeStats]);
 
   if (nodesWithHeat.length === 0) {
     return (
@@ -63,7 +65,7 @@ export default function FlowHeatmapTab({
               <HelpTip
                 align="start"
                 label="How the heat score works"
-                text="Staff and machines score by how busy they were (90% busy = 90). Waiting lines score by how many are still queued, how many gave up, and how long people waited. Other blocks score low."
+                text="Staff and machines score by how busy they were (90% busy = 90). Waiting lines score by how full they are, or by their wait compared with the longest wait in the run, whichever is higher. Other blocks score low."
               />
             </div>
             <p className="text-[12.5px] text-slate-600">Each station gets a 0–100 congestion score. The bottleneck is outlined in red.</p>
@@ -143,9 +145,9 @@ export default function FlowHeatmapTab({
               </dl>
 
               <dl className="mt-3 space-y-1.5 text-[12px] text-slate-600">
-                {stat.utilization !== undefined && (
+                {hasUtilization(stat) && stat.utilization !== undefined && (
                   <div className="flex items-center justify-between">
-                    <dt>Busy</dt>
+                    <dt>{stat.nodeType === "container" ? "Full" : "Busy"}</dt>
                     <dd className="font-bold tabular-nums text-fg-161622">{Math.round((stat.utilization || 0) * 100)}%</dd>
                   </div>
                 )}

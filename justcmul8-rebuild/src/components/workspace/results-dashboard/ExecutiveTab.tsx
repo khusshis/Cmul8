@@ -1,6 +1,7 @@
 "use client";
 
 import { requestOptimizer } from "@/lib/ai/requestOptimizer";
+import { stillInsideCount } from "@/lib/simulation/analyticsEngine";
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -55,7 +56,7 @@ export default function ExecutiveTab({
     result.totalArrived > 0
       ? Math.round((result.totalCompleted / result.totalArrived) * 100)
       : 100;
-  const stillInside = Math.max(0, result.totalArrived - result.totalCompleted);
+  const stillInside = stillInsideCount(result);
   const simSecs = Math.max(1, result.totalSimTime);
 
   const healthScore = result.healthScore ?? 85;
@@ -276,7 +277,7 @@ export default function ExecutiveTab({
                     tone="brand"
                     label={kpi.label}
                     value={kpi.displayValue}
-                    caption={kpi.series ? `Across ${kpi.series.length} station${kpi.series.length === 1 ? "" : "s"}${kpi.unit ? ` · ${kpi.unit}` : ""}` : kpi.unit || undefined}
+                    caption={kpi.series ? `${kpi.scope ? `${kpi.scope} · ` : ""}${kpi.series.length} station${kpi.series.length === 1 ? "" : "s"}${kpi.unit ? ` · ${kpi.unit}` : ""}` : kpi.unit || undefined}
                     delay={0.05 + idx * 0.03}
                   >
                     {series && (

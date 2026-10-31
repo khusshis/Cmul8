@@ -31,7 +31,7 @@ import { requestOptimizer } from "@/lib/ai/requestOptimizer";
 import type { OptimizerRecommendation } from "@/app/api/ai/optimize/route";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
-import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { enrichSimResult, isServerNode, stillInsideCount } from "@/lib/simulation/analyticsEngine";
 import { resolveKpiMetrics } from "@/lib/simulation/resolveKpiMetrics";
 import MetricCard from "@/components/ui/MetricCard";
 import ChartCard from "@/components/ui/ChartCard";
@@ -172,6 +172,7 @@ export default function SimResultsPanel({
 
   const statsEntries = Object.entries(result.nodeStats);
   const efficiencyRate = result.totalArrived > 0 ? Math.round((result.totalCompleted / result.totalArrived) * 100) : 100;
+  const stillInside = stillInsideCount(result);
   const bottleneck = result.bottleneckNodeId ? result.nodeStats[result.bottleneckNodeId] : null;
   const healthScore = result.healthScore;
   const waitP = result.waitTimePercentiles;
@@ -368,7 +369,7 @@ export default function SimResultsPanel({
                       label={`${simConfig.entityName}s finished`}
                       value={result.totalCompleted}
                       unit={`/ ${result.totalArrived.toLocaleString()}`}
-                      caption={`${efficiencyRate}% done · ${Math.max(0, result.totalArrived - result.totalCompleted).toLocaleString()} still inside`}
+                      caption={`${efficiencyRate}% done · ${stillInside.toLocaleString()} still inside`}
                       progress={efficiencyRate}
                       help="How many made it all the way through, out of everyone who arrived."
                     />
@@ -446,7 +447,7 @@ export default function SimResultsPanel({
                             tone="brand"
                             label={kpi.label}
                             value={kpi.displayValue}
-                            caption={kpi.series && kpi.series.length > 0 ? kpi.series.map((s) => `${s.name}: ${s.value}`).join(" · ") : kpi.unit || undefined}
+                            caption={kpi.series && kpi.series.length > 0 ? `${kpi.scope ? `${kpi.scope}. ` : ""}${kpi.series.map((s) => `${s.name}: ${s.value}`).join(" · ")}` : kpi.unit || undefined}
                             delay={idx * 0.03}
                           />
                         ))}
@@ -478,7 +479,9 @@ export default function SimResultsPanel({
                       </li>
 
                       {statsEntries.map(([id, s], i) => {
-                        const isServer = ["resource", "priority_resource", "service"].includes(s.nodeType);
+                        const isServer = isServerNode(s);
+                        // A "service" block has unlimited capacity: nobody waits, so show how many are in progress.
+                        const isDelay = s.nodeType === "service";
                         const isWaitingNode = ["queue", "store"].includes(s.nodeType);
                         // "% busy" only means something for servers; queues are judged by how many are stuck in them.
                         const util = isServer && s.utilization !== undefined ? Math.round(s.utilization * 100) : null;
@@ -496,6 +499,8 @@ export default function SimResultsPanel({
                           ? util !== null ? `${util}% busy` : "Server"
                           : isWaitingNode
                           ? `${backlog.toLocaleString()} still waiting`
+                          : isDelay
+                          ? `${backlog.toLocaleString()} in progress`
                           : s.nodeType === "source"
                           ? `${(s.entitiesOut ?? 0).toLocaleString()} sent`
                           : s.nodeType === "sink"
@@ -515,6 +520,7 @@ export default function SimResultsPanel({
                               <div className="text-[11.5px] font-extrabold" style={{ color: severity === "none" ? "var(--color-fg-475569)" : tone.text }}>{headlineText}</div>
                               {/* Only steps where people actually queue have a "line"; arrival/exit/router don't. */}
                               {(isServer || isWaitingNode) && <div className="mt-0.5 text-[11px] font-medium text-slate-600" title="Average wait of those who got served; anyone still in line at the end isn't counted">{fmtSeconds(s.avgWaitTime ?? 0)} avg wait</div>}
+                              {isDelay && <div className="mt-0.5 text-[11px] font-medium text-slate-600">{fmtSeconds(s.avgServiceTime ?? 0)} each</div>}
                               {/* A server's depth is in service + waiting; the waiting part is the backlog left at the end of the run. */}
                               {isServer && backlog > (s.capacity ?? 1) && (
                                 <div className="mt-0.5 text-[11px] font-bold" style={{ color: tone.text }}>{(backlog - (s.capacity ?? 1)).toLocaleString()} still in line</div>

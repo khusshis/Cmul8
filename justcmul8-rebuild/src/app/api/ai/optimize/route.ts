@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateJSON, extractJSON, AIRouterError } from "@/lib/ai/modelRouter";
 import type { SimResult, SimTypeId } from "@/lib/simulation/types";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
+import { hasUtilization } from "@/lib/simulation/analyticsEngine";
 import { UNTRUSTED_DATA_RULES, fenceUntrusted } from "@/lib/ai/systemPrompt";
 
 export const maxDuration = 60;
@@ -77,7 +78,7 @@ async function handle(req: Request) {
       id,
       label: stats.label,
       nodeType: stats.nodeType,
-      utilizationPct: Math.round((stats.utilization || 0) * 100),
+      utilizationPct: hasUtilization(stats) ? Math.round((stats.utilization || 0) * 100) : undefined,
       avgWaitTime: Math.round((stats.avgWaitTime || 0) * 10) / 10,
     })),
     littlesLawStable: result.littlesLaw?.isStable,

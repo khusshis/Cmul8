@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requirePaid } from "@/lib/billing/server";
+import { hasUtilization } from "@/lib/simulation/analyticsEngine";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       s.nodeType,
       String(s.entitiesIn ?? ""),
       String(s.entitiesOut ?? ""),
-      s.utilization != null ? String(Math.round(s.utilization * 100)) : "",
+      s.utilization != null && hasUtilization(s) ? String(Math.round(s.utilization * 100)) : "",
       s.avgWaitTime != null ? s.avgWaitTime.toFixed(1) : "",
     ]);
   }

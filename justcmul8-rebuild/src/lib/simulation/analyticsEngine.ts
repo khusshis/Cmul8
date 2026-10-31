@@ -20,6 +20,24 @@ import { SIM_TYPE_REGISTRY } from "./simTypeRegistry";
 import { perTimeParts, fmtDuration } from "./units";
 
 /**
+ * Blocks with a fixed number of servers, where "% busy" means something. A "service" block is an
+ * unlimited-capacity delay (its utilization is "avg in progress", capped at 1) and a container's is
+ * its fill level, so neither may feed busy-ness checks.
+ */
+export const isServerNode = (s: Pick<NodeStats, "nodeType">) => s.nodeType === "resource" || s.nodeType === "priority_resource";
+
+/** Entities turned away (full buffer) or that gave up waiting: they left without finishing. */
+export const lostCount = (r: Pick<SimResult, "nodeStats">) =>
+  Object.values(r.nodeStats || {}).reduce((n, s) => n + (s.droppedCount ?? 0) + (s.renegeCount ?? 0), 0);
+
+/** Arrived, not finished, and not lost: actually inside at the end of the run. */
+export const stillInsideCount = (r: Pick<SimResult, "nodeStats" | "totalArrived" | "totalCompleted">) =>
+  Math.max(0, r.totalArrived - r.totalCompleted - lostCount(r));
+
+/** Blocks whose utilization is worth showing: servers (% busy), tanks (% full), channels (% of buffer in use). */
+export const hasUtilization = (s: Pick<NodeStats, "nodeType">) => isServerNode(s) || s.nodeType === "container" || s.nodeType === "channel";
+
+/**
  * Calculates exact statistical percentiles using Hyndman & Fan Type-7 linear interpolation (numpy / Excel standard).
  */
 export function calculatePercentiles(samples: number[]): PercentileStats {
@@ -287,8 +305,11 @@ export function calculateLittlesLaw(result: SimResult, journeys: EntityJourney[]
     }
   }
 
-  const timeWeightedWIP_L = totalWipArea > 0 ? (totalWipArea / duration) : (result.totalArrived - result.totalCompleted);
-  const computedWIP_LambdaW = lambdaArrivalRate * averageCycleTimeW;
+  // Broadcast blocks complete one copy per consumer, so completed can exceed arrived.
+  const timeWeightedWIP_L = totalWipArea > 0 ? (totalWipArea / duration) : Math.max(0, result.totalArrived - result.totalCompleted);
+  // L = λW holds for what entered the system: arrivals turned away at a full buffer never count.
+  const dropped = Object.values(result.nodeStats || {}).reduce((n, s) => n + (s.droppedCount ?? 0), 0);
+  const computedWIP_LambdaW = (Math.max(0, result.totalArrived - dropped) / duration) * averageCycleTimeW;
 
   const maxVal = Math.max(timeWeightedWIP_L, computedWIP_LambdaW, 0.001);
   const discrepancyPercent = (Math.abs(timeWeightedWIP_L - computedWIP_LambdaW) / maxVal) * 100;
@@ -351,10 +372,13 @@ export function calculateResourceOperationalStates(
   const duration = Math.max(1, totalSimTime);
 
   for (const [nodeId, stat] of Object.entries(nodeStats)) {
-    if (stat.nodeType === "resource" || stat.nodeType === "priority_resource" || stat.nodeType === "service") {
+    if (isServerNode(stat)) {
       const util = Math.min(1.0, Math.max(0, stat.utilization ?? 0));
-      const busySeconds = util * duration;
-      const starvedSeconds = Math.max(0, duration - busySeconds);
+      // Server-seconds across all parallel servers (a 4-server station busy all run = 4 × duration),
+      // so per-server hourly costs aren't undercounted. The engine reports this directly when it can.
+      const servers = Math.max(1, stat.capacity ?? 1);
+      const busySeconds = stat.busySeconds ?? util * duration * servers;
+      const starvedSeconds = Math.max(0, duration * servers - busySeconds);
       const blockedSeconds = 0; // Future extension when downstream queue is full
 
       states[nodeId] = {
@@ -362,7 +386,7 @@ export function calculateResourceOperationalStates(
         starvedSeconds: parseFloat(starvedSeconds.toFixed(1)),
         blockedSeconds: parseFloat(blockedSeconds.toFixed(1)),
         busyRatio: parseFloat(util.toFixed(3)),
-        starvedRatio: parseFloat((starvedSeconds / duration).toFixed(3)),
+        starvedRatio: parseFloat((1 - util).toFixed(3)),
         blockedRatio: 0,
       };
     }
@@ -374,11 +398,20 @@ export function calculateResourceOperationalStates(
 /**
  * Calculates domain-tailored Operations Research KPI tiles based on the simulation domain.
  */
-export function computeDomainMetrics(simType: SimTypeId, result: SimResult, waitStats: PercentileStats): DomainMetricCard[] {
+export function computeDomainMetrics(
+  simType: SimTypeId,
+  result: SimResult,
+  waitStats: PercentileStats,
+  waitSamples: number[] = [],
+  cycleStats?: PercentileStats
+): DomainMetricCard[] {
   const cards: DomainMetricCard[] = [];
   const totalArrived = result.totalArrived;
   const totalCompleted = result.totalCompleted;
   const duration = Math.max(1, result.totalSimTime);
+  const servers = Object.values(result.nodeStats).filter(isServerNode);
+  const maxUtil = Math.max(0, ...servers.map((s) => s.utilization || 0));
+  const completionRatio = totalArrived > 0 ? totalCompleted / totalArrived : 1;
 
   // Total reneged across all nodes
   const totalReneged = Object.values(result.nodeStats).reduce((sum, s) => sum + (s.renegeCount || 0), 0);
@@ -386,17 +419,17 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
 
   switch (simType) {
     case "human_queue": {
-      // 1. Fast Service Rate (Wait < 5s)
-      const targetWait = 5.0;
-      const slaMet = waitStats.p90 <= targetWait;
+      // 1. Share of customers actually served (or still waiting) within the target wait.
+      const targetWait = 300;
+      const share = waitSamples.length > 0 ? waitSamples.filter((w) => w <= targetWait).length / waitSamples.length : null;
       cards.push({
         id: "sla_compliance",
-        label: "Fast Service Rate (Wait < 5s)",
-        value: waitStats.p90 <= targetWait ? "95%+" : `${Math.max(10, Math.round(100 - (waitStats.p90 / targetWait) * 20))}%`,
-        unit: "% served quickly",
-        status: slaMet ? "optimal" : waitStats.p50 <= targetWait ? "warning" : "critical",
-        benchmark: "Target: 90%+ served in <5s",
-        description: "Percentage of customers who got helped without being stuck in a long line.",
+        label: "Waited Under 5 Min",
+        value: share === null ? "N/A" : `${Math.round(share * 100)}%`,
+        unit: "of customers",
+        status: share === null || share >= 0.9 ? "optimal" : share >= 0.7 ? "warning" : "critical",
+        benchmark: "Target: 90%+",
+        description: "Share of customers whose total wait in line was 5 minutes or less (anyone still waiting at the end counts with the wait so far).",
         iconName: "Clock",
       });
 
@@ -413,7 +446,6 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
       });
 
       // 3. Counter Busyness
-      const maxUtil = Math.max(...Object.values(result.nodeStats).map((s) => s.utilization || 0), 0);
       cards.push({
         id: "teller_load",
         label: "Busiest Counter Load",
@@ -428,33 +460,32 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
     }
 
     case "manufacturing": {
-      // 1. Factory Efficiency Score
-      const avgUtil = Object.values(result.nodeStats)
-        .filter((s) => s.nodeType === "resource" || s.nodeType === "service")
-        .reduce((sum, s, _, arr) => sum + (s.utilization || 0) / (arr.length || 1), 0);
-      const oeeScore = Math.round(avgUtil * 92);
-
+      // 1. Machine load, weighted by how many parallel machines each block has.
+      const cap = servers.reduce((n, s) => n + Math.max(1, s.capacity ?? 1), 0);
+      const avgUtil = cap > 0 ? servers.reduce((n, s) => n + (s.utilization || 0) * Math.max(1, s.capacity ?? 1), 0) / cap : 0;
+      const loadPct = Math.round(avgUtil * 100);
       cards.push({
-        id: "oee",
-        label: "Factory Efficiency Score",
-        value: `${oeeScore}%`,
-        unit: "Efficiency",
-        status: oeeScore >= 80 ? "optimal" : oeeScore >= 65 ? "warning" : "critical",
-        benchmark: "Target: 85%+",
-        description: "How smoothly machines operated without breaking down or stalling.",
+        id: "machine_load",
+        label: "Average Machine Load",
+        value: cap > 0 ? `${loadPct}%` : "N/A",
+        unit: "busy",
+        status: cap === 0 || (loadPct >= 60 && loadPct <= 90) ? "optimal" : loadPct > 95 || loadPct < 30 ? "critical" : "warning",
+        benchmark: "Sweet Spot: 60% – 90%",
+        description: "Share of time machines spent working, across all machines. Near 100% means parts pile up; very low means idle machines.",
         iconName: "Factory",
       });
 
-      // 2. Production Speed
-      const taktTime = totalArrived > 0 ? (duration / totalArrived).toFixed(1) : "N/A";
+      // 2. Takt (demand pace) vs the pace the line actually delivered.
+      const takt = totalArrived > 0 ? duration / totalArrived : null;
+      const actual = totalCompleted > 0 ? duration / totalCompleted : null;
       cards.push({
         id: "takt_time",
         label: "Time Needed Per Item",
-        value: taktTime,
-        unit: "seconds / item",
-        status: "optimal",
-        benchmark: "Pacing rate",
-        description: "How fast you need to finish each item to keep up with demand.",
+        value: takt === null ? "N/A" : fmtDuration(takt),
+        unit: "per item (takt)",
+        status: takt === null ? "optimal" : actual === null || actual > takt * 1.25 ? "critical" : actual > takt * 1.05 ? "warning" : "optimal",
+        benchmark: actual === null ? "Nothing finished yet" : `Actual: one every ${fmtDuration(actual)}`,
+        description: "How often an item must finish to keep up with demand, compared with how often one actually finished.",
         iconName: "Timer",
       });
 
@@ -475,22 +506,23 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
 
     case "vehicle": {
       // 1. Traffic Smoothness Grade
+      // HCM signalised-intersection level-of-service bands (control delay per vehicle, seconds).
       const avgDelay = waitStats.mean;
       let los = "A (Clear Road)";
       let status: DomainMetricCard["status"] = "optimal";
-      if (avgDelay > 50) { los = "F (Severe Traffic Jam)"; status = "critical"; }
-      else if (avgDelay > 35) { los = "E (Heavy Congestion)"; status = "critical"; }
-      else if (avgDelay > 20) { los = "D (Slow Moving)"; status = "warning"; }
-      else if (avgDelay > 10) { los = "C (Normal Flow)"; status = "warning"; }
-      else if (avgDelay > 5) { los = "B (Smooth)"; status = "optimal"; }
+      if (avgDelay > 80) { los = "F (Severe Traffic Jam)"; status = "critical"; }
+      else if (avgDelay > 55) { los = "E (Heavy Congestion)"; status = "critical"; }
+      else if (avgDelay > 35) { los = "D (Slow Moving)"; status = "warning"; }
+      else if (avgDelay > 20) { los = "C (Normal Flow)"; status = "warning"; }
+      else if (avgDelay > 10) { los = "B (Smooth)"; status = "optimal"; }
 
       cards.push({
         id: "los",
         label: "Traffic Flow Grade",
         value: los,
-        unit: `${avgDelay.toFixed(1)}s avg delay`,
+        unit: `${fmtDuration(avgDelay)} avg delay`,
         status,
-        benchmark: "Grade A to F",
+        benchmark: "Grade A to F (HCM delay bands)",
         description: "Overall road and intersection smoothness grade based on vehicle waiting time.",
         iconName: "Car",
       });
@@ -502,33 +534,34 @@ export function computeDomainMetrics(simType: SimTypeId, result: SimResult, wait
         label: "Cars Passed Per Hour",
         value: Math.round(throughputRate),
         unit: "cars / hour",
-        status: "optimal",
-        benchmark: "Hourly capacity",
-        description: "Estimated number of vehicles that can pass through each hour.",
+        status: completionRatio >= 0.95 ? "optimal" : completionRatio >= 0.8 ? "warning" : "critical",
+        benchmark: `${Math.round(completionRatio * 100)}% of arriving cars got through`,
+        description: "Vehicles that made it through per hour of the run.",
         iconName: "TrendingUp",
       });
       break;
     }
 
     case "network_signal": {
-      // 1. Worst 1% Lag Spikes
+      // End-to-end latency is the delivered messages' cycle time (send → receive), in ms.
+      const p99 = (cycleStats?.p99 ?? 0) * 1000;
       cards.push({
         id: "p99_latency",
         label: "Worst-Case Lag Spikes (Top 1%)",
-        value: `${waitStats.p99.toFixed(1)}ms`,
+        value: cycleStats ? `${p99.toLocaleString(undefined, { maximumFractionDigits: 1 })}ms` : "N/A",
         unit: "lag delay",
-        status: waitStats.p99 < 15 ? "optimal" : waitStats.p99 < 35 ? "warning" : "critical",
+        status: p99 < 15 ? "optimal" : p99 < 35 ? "warning" : "critical",
         benchmark: "Target: Under 20ms",
-        description: "The biggest delay spike experienced by the unluckiest 1% of data packets.",
+        description: "The end-to-end delay that only the unluckiest 1% of messages exceeded.",
         iconName: "Zap",
       });
 
-      // 2. Connection Delay Bounciness (Jitter)
-      const jitter = waitStats.stdDev * 0.45;
+      // 2. Jitter = standard deviation of end-to-end latency.
+      const jitter = (cycleStats?.stdDev ?? 0) * 1000;
       cards.push({
         id: "jitter",
         label: "Delay Bounciness (Jitter)",
-        value: `${jitter.toFixed(1)}ms`,
+        value: cycleStats ? `${jitter.toLocaleString(undefined, { maximumFractionDigits: 1 })}ms` : "N/A",
         unit: "delay variance",
         status: jitter < 5 ? "optimal" : jitter < 15 ? "warning" : "critical",
         benchmark: "Target: Under 10ms",
@@ -567,7 +600,7 @@ export function calculateSystemHealthScore(result: SimResult, littlesLaw: Little
   const completionScore = completionRate * 35;
 
   // 2. Bottleneck & Utilization Balance (Weight: 30%)
-  const maxUtil = Math.max(...Object.values(result.nodeStats).map((s) => s.utilization || 0), 0);
+  const maxUtil = Math.max(0, ...Object.values(result.nodeStats).filter(isServerNode).map((s) => s.utilization || 0));
   let utilScore = 30;
   if (maxUtil > 0.95) utilScore = 15; // severe bottleneck
   else if (maxUtil > 0.88) utilScore = 22;
@@ -602,15 +635,21 @@ export function generateExecutiveDiagnosis(
   const totalCompleted = result.totalCompleted;
   const efficiency = totalArrived > 0 ? Math.round((totalCompleted / totalArrived) * 100) : 100;
 
+  const entities = `${config.entityName.toLowerCase()}s`;
+  const lost = lostCount(result);
   let title = "System Running Smoothly (No Major Delays)";
-  let summary = `Over the ${result.totalSimTime.toFixed(0)}-second run, ${totalCompleted} out of ${totalArrived} ${config.entityName.toLowerCase()}s finished successfully (${efficiency}% completion rate). Traffic flowed with minimal waiting.`;
+  let summary = `Over the ${fmtDuration(result.totalSimTime)} run, ${totalCompleted.toLocaleString()} of ${totalArrived.toLocaleString()} ${entities} finished (${efficiency}%). The slowest 5% waited ${fmtDuration(waitStats.p95)} or less.`;
 
   if (healthScore < 70) {
     title = "Traffic Jam Alert: Big Lines Are Piling Up";
-    summary = `People are arriving faster than your stations can serve them. Only ${efficiency}% of everyone finished, while lines continued growing at the slowest counter.`;
+    summary = `Only ${efficiency}% of ${entities} finished${lost > 0 ? `, ${lost.toLocaleString()} left without being served` : ""}. ${
+      littlesLaw.isStable
+        ? `The slowest 5% waited ${fmtDuration(waitStats.p95)} or more.`
+        : `${config.entityName}s arrived faster than the stations could serve them, so lines kept growing.`
+    }`;
   } else if (healthScore < 85) {
     title = "Moderate Line Forming During Busy Moments";
-    summary = `The system finished ${efficiency}% of all demand, but busy arrival spikes caused some unlucky people to wait up to ${waitStats.p95.toFixed(1)} seconds in line.`;
+    summary = `The system finished ${efficiency}% of ${entities}, but busy moments made the slowest 5% wait ${fmtDuration(waitStats.p95)} or more.`;
   }
 
   let bottleneckCause = "Everything is well-balanced. No single counter is holding everyone up.";
@@ -648,46 +687,62 @@ function buildRecommendations(result: SimResult, entity: string, littlesLaw: Lit
   const T = Math.max(1e-9, result.totalSimTime);
   const arrived = Math.max(1, result.totalArrived);
   const stats = Object.values(result.nodeStats || {});
-  const servers = stats.filter((s) => (s.utilization || 0) > 0 && s.avgServiceTime > 0);
+  const servers = stats.filter((s) => isServerNode(s) && (s.utilization || 0) > 0);
   const out: Array<Rec & { score: number }> = [];
   const pct = (x: number) => `${Math.round(x * 100)}%`;
 
   // 1. Capacity at the hottest station: size it to ~80% busy and predict the new wait.
-  // Ties (several stations pinned at 100%) go to the flagged bottleneck, so this agrees with the "Biggest bottleneck" card.
-  const isFlagged = (s: NodeStats) => (s.nodeId === result.bottleneckNodeId ? 1 : 0);
-  const hot = [...servers].sort((x, y) => y.utilization - x.utilization || isFlagged(y) - isFlagged(x))[0];
+  // Target the flagged bottleneck so this agrees with the "Biggest bottleneck" card; else the busiest server.
+  const hot = servers.find((s) => s.nodeId === result.bottleneckNodeId) ?? [...servers].sort((x, y) => y.utilization - x.utilization)[0];
   if (hot && hot.utilization >= 0.75) {
-    const c = Math.max(1, hot.capacity ?? 1);
+    // Servers behind one Queue block share its line, so size them together: the line's arrivals are
+    // the demand (a saturated server's own count only shows what it managed to take).
+    const queue = hot.fedBy ? result.nodeStats[hot.fedBy] : undefined;
+    const pool = queue ? stats.filter((s) => isServerNode(s) && s.fedBy === hot.fedBy) : [hot];
+    const shared = !!queue && pool.length > 1;
+    const capOf = (s: NodeStats) => Math.max(1, s.capacity ?? 1);
+    const c = pool.reduce((n, s) => n + capOf(s), 0);
+    const served = pool.reduce((n, s) => n + s.entitiesOut, 0);
+    const S = served > 0 ? pool.reduce((n, s) => n + s.avgServiceTime * s.entitiesOut, 0) / served : hot.avgServiceTime;
+    const busy = pool.reduce((n, s) => n + (s.utilization || 0) * capOf(s), 0);
+    const arrivals = queue ? queue.entitiesIn - (queue.droppedCount ?? 0) : hot.entitiesIn;
     // Offered load in busy servers. Utilization caps at 100% when saturated, so also use the arrival count.
-    const a = Math.max(hot.utilization * c, (hot.entitiesIn / T) * hot.avgServiceTime);
+    const a = Math.max(busy, (arrivals / T) * S);
+    const waitNow = queue ? queue.avgWaitTime : hot.avgWaitTime;
+    const where = shared ? `the "${queue!.label}" line` : `"${hot.label}"`;
     let target = c + 1;
     while (a / target > 0.8 && target < c + 50) target++;
     const add = target - c;
-    const modelNow = mmcWait(c, a, hot.avgServiceTime);
-    const modelNew = mmcWait(target, a, hot.avgServiceTime);
+    const modelNow = mmcWait(c, a, S);
+    const modelNew = mmcWait(target, a, S);
     // Scale the observed wait by the model's ratio so real variability carries over; when saturated, use the model directly.
-    const newWait = Number.isFinite(modelNow) && modelNow > 0 && hot.avgWaitTime > 0 ? hot.avgWaitTime * (modelNew / modelNow) : modelNew;
+    const newWait = Number.isFinite(modelNow) && modelNow > 0 && waitNow > 0 ? waitNow * (modelNew / modelNow) : modelNew;
     const saturated = a >= c;
+    const nServers = (n: number) => `${n} server${n > 1 ? "s" : ""}`;
     out.push({
-      title: `Add ${add} server${add > 1 ? "s" : ""} at "${hot.label}" (${c} → ${target})`,
+      title: shared ? `Add ${nServers(add)} behind "${queue!.label}" (${c} → ${target})` : `Add ${nServers(add)} at "${hot.label}" (${c} → ${target})`,
       action: saturated
-        ? `"${hot.label}" gets about ${a.toFixed(1)} servers' worth of work but has only ${c}, so its line grows without limit. ${target} servers bring it to ~${pct(a / target)} busy.`
-        : `"${hot.label}" is ${pct(hot.utilization)} busy with ${c} server${c > 1 ? "s" : ""}. Going to ${target} brings it to ~${pct(a / target)} busy.`,
-      impact: `Average wait there: ${fmtDuration(hot.avgWaitTime)} → ~${fmtDuration(newWait)} (queueing-model estimate).`,
+        ? `${where[0].toUpperCase()}${where.slice(1)} gets about ${a.toFixed(1)} servers' worth of work but has only ${c}, so the line grows without limit. ${target} servers bring it to ~${pct(a / target)} busy.`
+        : `${where[0].toUpperCase()}${where.slice(1)} is ${pct(busy / c)} busy with ${nServers(c)}. Going to ${target} brings it to ~${pct(a / target)} busy.`,
+      // Without a measured service time (nothing finished there yet) the wait can't be estimated.
+      impact: S > 0
+        ? `Average wait in ${where}: ${fmtDuration(waitNow)} → ~${fmtDuration(newWait)} (queueing-model estimate).`
+        : `Takes ${where} from ${pct(busy / c)} to ~${pct(a / target)} busy.`,
       confidence: saturated ? 85 : hot.utilization > 0.9 ? 80 : 70,
       score: saturated ? 1 : hot.utilization,
-      ...((hot.nodeType === "resource" || hot.nodeType === "priority_resource") && hot.capacity !== undefined
-        ? { fix: { nodeId: hot.nodeId, paramPatch: { capacity: target }, description: `Set ${hot.label} capacity to ${target}` } }
+      // The extra servers can all go on one block of the pool; they share the line either way.
+      ...(hot.capacity !== undefined
+        ? { fix: { nodeId: hot.nodeId, paramPatch: { capacity: capOf(hot) + add }, description: `Set ${hot.label} capacity to ${capOf(hot) + add}` } }
         : {}),
     });
 
     // Alternative: same effect by working faster instead of hiring.
     const faster = (0.8 * c) / a; // service-time multiplier that reaches 80% busy
-    if (faster < 1 && faster > 0.5) {
+    if (S > 0 && faster < 1 && faster > 0.5) {
       out.push({
-        title: `Speed up "${hot.label}" by ${pct(1 - faster)}`,
-        action: `Cut the average service time from ${fmtDuration(hot.avgServiceTime)} to ${fmtDuration(hot.avgServiceTime * faster)} (better tools, prep, fewer steps) instead of adding staff.`,
-        impact: `Brings "${hot.label}" to ~80% busy with the same ${c} server${c > 1 ? "s" : ""}.`,
+        title: `Speed up ${shared ? `the servers behind "${queue!.label}"` : `"${hot.label}"`} by ${pct(1 - faster)}`,
+        action: `Cut the average service time from ${fmtDuration(S)} to ${fmtDuration(S * faster)} (better tools, prep, fewer steps) instead of adding staff.`,
+        impact: `Brings ${where} to ~80% busy with the same ${nServers(c)}.`,
         confidence: 65,
         score: hot.utilization * 0.7,
       });
@@ -744,7 +799,7 @@ function buildRecommendations(result: SimResult, entity: string, littlesLaw: Lit
       impact: `Frees 1 of ${c} servers there with little effect on waiting.`,
       confidence: 70,
       score: 0.4 - s.utilization,
-      ...((s.nodeType === "resource" || s.nodeType === "priority_resource") && s.capacity !== undefined
+      ...(s.capacity !== undefined
         ? { fix: { nodeId: s.nodeId, paramPatch: { capacity: c - 1 }, description: `Set ${s.label} capacity to ${c - 1}` } }
         : {}),
     });
@@ -835,24 +890,29 @@ export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResu
   // Idempotence guard: page.tsx already enriches before storing, and both result
   // panels re-enrich defensively. Re-running costs a full journey reconstruction.
   if (rawResult.entityJourneys !== undefined) {
-    let out = rawResult;
     if (graph && !rawResult.costAnalysis && rawResult.resourceStates) {
-      out = { ...out, costAnalysis: calculateCostAnalysis(graph, rawResult, rawResult.resourceStates) };
+      return {
+        ...rawResult,
+        costAnalysis: calculateCostAnalysis(graph, rawResult, rawResult.resourceStates),
+      };
     }
-    // Saved runs from before data-driven recommendations carry the old fixed template; rebuild them (cheap).
-    const { aiDiagnosis, littlesLaw, waitTimePercentiles } = rawResult;
-    if (aiDiagnosis && littlesLaw && waitTimePercentiles && aiDiagnosis.recommendations.some((r) => r.title === "Keep Line Buffers Big Enough")) {
-      const entity = (SIM_TYPE_REGISTRY[rawResult.simType] || SIM_TYPE_REGISTRY.human_queue).entityName.toLowerCase();
-      out = { ...out, aiDiagnosis: { ...aiDiagnosis, recommendations: buildRecommendations(rawResult, entity, littlesLaw, waitTimePercentiles) } };
-    }
-    return out;
+    return rawResult;
   }
+
+  // One bottleneck rule for both engines (SimPy picked max wait incl. queues, the legacy worker the
+  // deepest line): the server block with the longest wait; a queue only when the flow has no servers.
+  // A queue and the server behind it record the same wait, so letting queues compete blamed the queue.
+  const stats = Object.values(rawResult.nodeStats || {});
+  const pick = (list: NodeStats[]) => list.filter((s) => s.avgWaitTime > 0).sort((a, b) => b.avgWaitTime - a.avgWaitTime || b.utilization - a.utilization)[0];
+  const bn = pick(stats.filter(isServerNode)) ?? pick(stats.filter((s) => s.nodeType === "queue"));
+  rawResult = { ...rawResult, bottleneckNodeId: bn?.nodeId ?? "", bottleneckLabel: bn?.label ?? "" };
 
   const journeys = reconstructEntityJourneys(rawResult.logs || [], rawResult.totalSimTime);
   // F-10: keep zero-wait entities. Dropping them makes every percentile
   // conditional on having waited at all, which overstates the median wait by
   // ~46% at rho=0.8 and gets worse as the system gets less congested.
-  let waitTimes = journeys.map((j) => j.totalWaitTime).filter((w) => Number.isFinite(w) && w >= 0);
+  // Turned-away entities (full buffer) never queued; counting them as 0-wait hid real waits.
+  let waitTimes = journeys.filter((j) => j.status !== "dropped").map((j) => j.totalWaitTime).filter((w) => Number.isFinite(w) && w >= 0);
   let cycleTimes = journeys
     .filter((j) => j.status === "completed")
     .map((j) => j.totalCycleTime)
@@ -866,35 +926,18 @@ export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResu
   // SimPy measured real waiting) — fall back to nodeStats.avgWaitTime, which
   // SimPy computes directly during the run and is unaffected by log gaps.
   const journeyWaitIsDegenerate = waitTimes.length === 0 || waitTimes.every((w) => w === 0);
+  // Only the averages are known then, so use them as a single sample rather than inventing a spread.
+  // Waits come from server blocks only: a queue records the same wait as the server behind it.
   if (journeyWaitIsDegenerate) {
     let totalNodeAvgWait = 0;
     let totalNodeAvgService = 0;
     for (const s of Object.values(rawResult.nodeStats || {})) {
-      if (s.avgWaitTime && s.avgWaitTime > 0) {
-        totalNodeAvgWait += s.avgWaitTime;
-      }
-      if (s.avgServiceTime && s.avgServiceTime > 0) {
-        totalNodeAvgService += s.avgServiceTime;
-      }
+      if (isServerNode(s) && s.avgWaitTime > 0) totalNodeAvgWait += s.avgWaitTime;
+      if (s.avgServiceTime > 0) totalNodeAvgService += s.avgServiceTime;
     }
-    if (totalNodeAvgWait > 0) {
-      waitTimes = [
-        totalNodeAvgWait * 0.75,
-        totalNodeAvgWait * 0.9,
-        totalNodeAvgWait,
-        totalNodeAvgWait * 1.15,
-        totalNodeAvgWait * 1.4,
-      ];
-    }
+    if (totalNodeAvgWait > 0) waitTimes = [totalNodeAvgWait];
     if (cycleTimes.length === 0 && (totalNodeAvgWait > 0 || totalNodeAvgService > 0)) {
-      const baseCycle = totalNodeAvgWait + totalNodeAvgService;
-      cycleTimes = [
-        baseCycle * 0.8,
-        baseCycle * 0.95,
-        baseCycle,
-        baseCycle * 1.15,
-        baseCycle * 1.45,
-      ];
+      cycleTimes = [totalNodeAvgWait + totalNodeAvgService];
     }
   }
 
@@ -902,7 +945,7 @@ export function enrichSimResult(rawResult: SimResult, graph?: SimGraph): SimResu
   const cycleTimePercentiles = calculatePercentiles(cycleTimes);
   const littlesLaw = calculateLittlesLaw(rawResult, journeys);
   const resourceStates = calculateResourceOperationalStates(rawResult.nodeStats || {}, rawResult.totalSimTime);
-  const domainMetrics = computeDomainMetrics(rawResult.simType, rawResult, waitTimePercentiles);
+  const domainMetrics = computeDomainMetrics(rawResult.simType, rawResult, waitTimePercentiles, waitTimes, cycleTimes.length > 0 ? cycleTimePercentiles : undefined);
   const healthScore = calculateSystemHealthScore(rawResult, littlesLaw, waitTimePercentiles);
   const aiDiagnosis = generateExecutiveDiagnosis(rawResult, rawResult.simType, healthScore, littlesLaw, waitTimePercentiles);
   const costAnalysis = graph ? calculateCostAnalysis(graph, rawResult, resourceStates) : rawResult.costAnalysis;
