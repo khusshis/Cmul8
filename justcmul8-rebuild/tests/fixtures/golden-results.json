@@ -1,0 +1,739 @@
+{
+  "human_queue / Bank Tellers": {
+    "arrived": 126,
+    "completed": 44,
+    "bottleneck": "n3",
+    "nodes": {
+      "n1": {
+        "in": 126,
+        "out": 126,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 126,
+        "out": 47,
+        "depth": 79,
+        "util": 0,
+        "wait": 1162.95,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 19,
+        "out": 18,
+        "depth": 1,
+        "util": 0.9988,
+        "wait": 1280.545,
+        "service": 194.718,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 14,
+        "out": 13,
+        "depth": 1,
+        "util": 0.9831,
+        "wait": 1251.327,
+        "service": 264.799,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 14,
+        "out": 13,
+        "depth": 1,
+        "util": 0.9807,
+        "wait": 914.979,
+        "service": 246.087,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 44,
+        "out": 44,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "human_queue / ER Triage": {
+    "arrived": 64,
+    "completed": 29,
+    "bottleneck": "n4",
+    "nodes": {
+      "n1": {
+        "in": 64,
+        "out": 64,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 64,
+        "out": 45,
+        "depth": 19,
+        "util": 0.9779,
+        "wait": 372.264,
+        "service": 143.12,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 45,
+        "out": 45,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 13,
+        "out": 2,
+        "depth": 11,
+        "util": 0.9179,
+        "wait": 1096.661,
+        "service": 2396.014,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 32,
+        "out": 27,
+        "depth": 5,
+        "util": 0.8165,
+        "wait": 113.716,
+        "service": 387.602,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 29,
+        "out": 29,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "vehicle / Fuel Pumps": {
+    "arrived": 190,
+    "completed": 27,
+    "bottleneck": "n3",
+    "nodes": {
+      "n1": {
+        "in": 190,
+        "out": 190,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 190,
+        "out": 29,
+        "depth": 10,
+        "util": 0,
+        "wait": 975.36,
+        "service": 0,
+        "dropped": 151,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 15,
+        "out": 14,
+        "depth": 1,
+        "util": 0.9992,
+        "wait": 982.129,
+        "service": 248.662,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 14,
+        "out": 13,
+        "depth": 1,
+        "util": 0.9888,
+        "wait": 968.108,
+        "service": 272.998,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 27,
+        "out": 27,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "vehicle / Crossroad": {
+    "arrived": 634,
+    "completed": 634,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 252,
+        "out": 252,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 160,
+        "out": 160,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 121,
+        "out": 121,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 101,
+        "out": 101,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 634,
+        "out": 634,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 634,
+        "out": 634,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "liquid / Water Treatment": {
+    "arrived": 599,
+    "completed": 583,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 599,
+        "out": 599,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 599,
+        "out": 599,
+        "depth": 0,
+        "util": 0.1997,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 599,
+        "out": 583,
+        "depth": 16,
+        "util": 1,
+        "wait": 0,
+        "service": 116.711,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 583,
+        "out": 583,
+        "depth": 0,
+        "util": 0.2591,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 583,
+        "out": 583,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "manufacturing / Assembly Line": {
+    "arrived": 298,
+    "completed": 10,
+    "bottleneck": "n2",
+    "nodes": {
+      "n1": {
+        "in": 298,
+        "out": 298,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 298,
+        "out": 40,
+        "depth": 258,
+        "util": 0.9964,
+        "wait": 1486.123,
+        "service": 170.385,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 41,
+        "out": 12,
+        "depth": 19,
+        "util": 0,
+        "wait": 1259.51,
+        "service": 0,
+        "dropped": 10,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 12,
+        "out": 11,
+        "depth": 1,
+        "util": 0.9547,
+        "wait": 1259.51,
+        "service": 307.22,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 11,
+        "out": 11,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 10,
+        "out": 10,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n7": {
+        "in": 1,
+        "out": 1,
+        "depth": 0,
+        "util": 0.0464,
+        "wait": 0,
+        "service": 167.123,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "logistics / Sort Center": {
+    "arrived": 581,
+    "completed": 326,
+    "bottleneck": "n5",
+    "nodes": {
+      "n1": {
+        "in": 581,
+        "out": 581,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n10": {
+        "in": 326,
+        "out": 326,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 581,
+        "out": 577,
+        "depth": 4,
+        "util": 1,
+        "wait": 0,
+        "service": 30,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 577,
+        "out": 577,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 177,
+        "out": 109,
+        "depth": 68,
+        "util": 0,
+        "wait": 743.166,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 211,
+        "out": 118,
+        "depth": 93,
+        "util": 0,
+        "wait": 777.031,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 189,
+        "out": 105,
+        "depth": 84,
+        "util": 0,
+        "wait": 757.26,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n7": {
+        "in": 109,
+        "out": 107,
+        "depth": 2,
+        "util": 0.9829,
+        "wait": 743.166,
+        "service": 65.197,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n8": {
+        "in": 118,
+        "out": 116,
+        "depth": 2,
+        "util": 0.9748,
+        "wait": 777.031,
+        "service": 59.926,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n9": {
+        "in": 105,
+        "out": 103,
+        "depth": 2,
+        "util": 0.9777,
+        "wait": 757.26,
+        "service": 67.577,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "network_signal / Cable / Event Latency": {
+    "arrived": 719,
+    "completed": 717,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 719,
+        "out": 719,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 719,
+        "out": 717,
+        "depth": 2,
+        "util": 1,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 717,
+        "out": 717,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "network_signal / Process Pipe (One-to-One)": {
+    "arrived": 450,
+    "completed": 450,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "network_signal / Broadcast Pipe (One-to-Many)": {
+    "arrived": 450,
+    "completed": 1350,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n7": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n8": {
+        "in": 450,
+        "out": 450,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  },
+  "network_signal / Microservice Pipeline": {
+    "arrived": 17766,
+    "completed": 17752,
+    "bottleneck": "",
+    "nodes": {
+      "n1": {
+        "in": 17766,
+        "out": 17766,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n2": {
+        "in": 17766,
+        "out": 17752,
+        "depth": 14,
+        "util": 0.0983,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n3": {
+        "in": 17752,
+        "out": 17752,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n4": {
+        "in": 7050,
+        "out": 7050,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n5": {
+        "in": 10702,
+        "out": 10702,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n6": {
+        "in": 7050,
+        "out": 7050,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      },
+      "n7": {
+        "in": 10702,
+        "out": 10702,
+        "depth": 0,
+        "util": 0,
+        "wait": 0,
+        "service": 0,
+        "dropped": 0,
+        "reneged": 0
+      }
+    }
+  }
+}

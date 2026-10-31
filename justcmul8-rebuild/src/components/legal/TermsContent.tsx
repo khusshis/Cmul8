@@ -152,6 +152,7 @@ const SECTIONS: LegalSection[] = [
           <li>resell the Service or use the AI features to build a competing product without our written permission.</li>
         </ul>
         <p>We may limit, suspend or close accounts that break these rules, and we&apos;ll tell you why unless the law or safety stops us.</p>
+        <p>Our <Link href="/acceptable-use">Acceptable Use Policy</Link> sets these rules out in more detail and is part of these Terms.</p>
       </>
     ),
   },

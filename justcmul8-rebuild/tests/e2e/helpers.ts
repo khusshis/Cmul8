@@ -1,11 +1,15 @@
 import { Page, expect } from "@playwright/test";
+import { BASE_URL } from "../../playwright.config";
+import { signInWithoutCaptcha } from "./session";
 
-/** Logs a given user in through the UI in a fresh context's page. */
-export async function loginAs(page: Page, email: string, password: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: /log in/i }).click();
+/**
+ * Signs a given user in, in a fresh context's page. The login form is behind Turnstile, which
+ * blocks automated browsers, so the session comes from the admin API (see session.ts).
+ * `password` is kept for call-site compatibility.
+ */
+export async function loginAs(page: Page, email: string, _password?: string) {
+  await signInWithoutCaptcha(page.context(), email, BASE_URL);
+  await page.goto("/dashboard");
   await page.waitForURL(/\/dashboard|\/onboarding/, { timeout: 20_000 });
 }
 

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { captchaOn } from "./session";
 import { hasCreds } from "../../playwright.config";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -52,6 +53,7 @@ test.describe("Auth flows (no credentials required)", () => {
 
   test("signup with an already-registered email is refused with a clear message (TC-02)", async ({ page }) => {
     test.skip(!hasCreds, "needs E2E_EMAIL (an existing account)");
+    test.skip(captchaOn, "the sign-up form is behind Turnstile, which blocks automated browsers");
     await page.goto("/signup");
     await page.getByLabel("Email address").fill(process.env.E2E_EMAIL!);
     await page.getByLabel(/create a password/i).fill("Str0ng-enough-pass!");
@@ -63,6 +65,7 @@ test.describe("Auth flows (no credentials required)", () => {
   });
 
   test("forgot-password form submits and shows a neutral confirmation", async ({ page }) => {
+    test.skip(captchaOn, "the reset form is behind Turnstile, which blocks automated browsers");
     await page.goto("/forgot-password");
     await page.getByLabel("Email address").fill("someone@example.com");
     await page.getByRole("button", { name: /send reset link/i }).click();
