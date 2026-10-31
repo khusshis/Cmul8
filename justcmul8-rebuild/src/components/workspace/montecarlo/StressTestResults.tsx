@@ -9,6 +9,7 @@ import { GRID, AXIS } from "@/components/ui/chartTheme";
 import { metricsOf, riskBandLabel, runMetrics, summarize, welchFromStats, type MetricKey, type MonteCarloResult, type RunStatistic } from "@/lib/simulation/monteCarlo";
 import { runPasses, targetShares, type Target } from "@/lib/simulation/stressAnalysis";
 import type { HistoryEntry } from "@/lib/simulation/mcStorage";
+import type { Outlook } from "@/lib/simulation/runDetails";
 import { BRAND, Chips, FAIL_COLOR, HelpTip, PASS_COLOR, RangeBar, deltaText, focusRing, levelText, niceTicks, pctText, useElementWidth, type MetricMeta } from "./shared";
 
 interface Props {
@@ -21,9 +22,11 @@ interface Props {
   pinned: HistoryEntry | null;
   /** Wraps the main chart, for PNG export. */
   chartRef?: React.Ref<HTMLDivElement>;
+  /** Verdict worked out from the runs (overloaded, losing people, risky, comfortable). */
+  outlook?: Outlook | null;
 }
 
-function StressTestResults({ mc, meta, entity, runLength, conditions, targets, pinned, chartRef }: Props) {
+function StressTestResults({ mc, meta, entity, runLength, conditions, targets, pinned, chartRef, outlook }: Props) {
   const keys = metricsOf(mc);
   const [picked, setSelected] = useState<MetricKey>("throughput");
   const selected = keys.includes(picked) ? picked : "throughput"; // cost may vanish on a re-run
@@ -65,6 +68,8 @@ function StressTestResults({ mc, meta, entity, runLength, conditions, targets, p
             <p className="mt-2 text-[20px] font-black leading-tight tracking-tight sm:text-[24px]">
               {allShare ? (
                 <>Meets {activeTargets.length > 1 ? "all your targets" : "your target"} in <span className="tabular-nums">{pctText(allShare.share)}</span> of runs.</>
+              ) : outlook ? (
+                outlook.headline
               ) : (
                 <>A typical run completes <span className="tabular-nums">{meta.throughput.format(t.mean)}</span> {ent}s.</>
               )}
@@ -75,6 +80,7 @@ function StressTestResults({ mc, meta, entity, runLength, conditions, targets, p
                   We&apos;re {levelText(level)} sure the true rate is between <b className="tabular-nums">{pctText(allShare.lo)}</b> and <b className="tabular-nums">{pctText(allShare.hi)}</b>.{" "}
                 </>
               )}
+              {!allShare && outlook && <>{outlook.detail} </>}
               {middle} out of 100 runs finished between <b className="tabular-nums">{meta.throughput.format(t.bandLo)}</b> and{" "}
               <b className="tabular-nums">{meta.throughput.format(t.bandHi)}</b> {ent}s; the worst run managed <b className="tabular-nums">{meta.throughput.format(t.min)}</b>.
             </p>

@@ -53,6 +53,74 @@ export interface RunDetails {
   topRec: { title: string; action: string; impact: string; share: number } | null;
 }
 
+export interface Outlook {
+  tone: "bad" | "warn" | "good";
+  /** One-line verdict, e.g. "Overloaded on every run: Critical Care can't keep up." */
+  headline: string;
+  /** What that means in numbers. */
+  detail: string;
+}
+
+/**
+ * The stress test's verdict, picked from what the runs actually did (overload, losses, risky bad
+ * days, or comfortable headroom) instead of one fixed sentence with numbers filled in.
+ * `fmtTime` formats seconds; `entity` is singular ("Customer").
+ */
+export function stressOutlook(d: RunDetails, entity: string, fmtTime: (s: number) => string): Outlook {
+  const ent = `${entity.toLowerCase()}s`;
+  const n = (v: number) => (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : String(Number(v.toFixed(1))));
+  const top = [...d.stations].sort((a, b) => b.bottleneckShare - a.bottleneckShare)[0];
+  const neck = top && top.bottleneckShare > 0 ? top : undefined;
+  const busiest = [...d.stations].filter((s) => s.busy).sort((a, b) => b.busy!.mean - a.busy!.mean)[0];
+  const insideShare = d.arrived.mean > 0 ? d.stillInside.mean / d.arrived.mean : 0;
+  const lostShare = d.arrived.mean > 0 ? d.lost.mean / d.arrived.mean : 0;
+  const finished = `${Math.round(d.finishedPct.mean)}% of ${ent} finish`;
+
+  // 1. More arriving than the system can handle: a big share is still inside when the run ends.
+  if (insideShare > 0.2 || (d.finishedPct.mean < 70 && lostShare <= 0.05)) {
+    const maxed = [...d.stations].filter((s) => s.busy && s.busy.mean >= 90).sort((a, b) => b.busy!.mean - a.busy!.mean).slice(0, 2);
+    const who = maxed.length ? maxed : neck ? [neck] : [];
+    const names = who.map((s) => `"${s.label}"${s.busy ? ` (${Math.round(s.busy.mean)}% busy)` : ""}`).join(" and ");
+    const queued = [...d.stations].sort((a, b) => b.inLine.mean - a.inLine.mean)[0];
+    return {
+      tone: "bad",
+      headline: who.length ? `Overloaded: ${who.map((s) => `"${s.label}"`).join(" and ")} can't keep up.` : "Overloaded: more arrive than the system can serve.",
+      detail: `Only ${finished}; about ${n(d.stillInside.mean)} of ${n(d.arrived.mean)} are still inside when the run ends${
+        queued && queued.inLine.mean > 0 ? `, the longest line at "${queued.label}" (${n(queued.inLine.mean)})` : ""
+      }.${names ? ` Busiest: ${names}.` : ""} Waits keep growing the longer it runs.`,
+    };
+  }
+  // 2. People turned away or giving up.
+  if (lostShare > 0.05) {
+    const where = [...d.stations].sort((a, b) => b.lost.mean - a.lost.mean)[0];
+    return {
+      tone: "bad",
+      headline: `About ${Math.round(lostShare * 100)}% of ${ent} leave without being served.`,
+      detail: `${n(d.lost.mean)} per run on average (${n(d.lost.lo)}–${n(d.lost.hi)}), mostly at "${where.label}". ${finished}.`,
+    };
+  }
+  // 3. Fine on average, but bad days are much worse than good ones.
+  const swing = d.slowWait.lo > 0 ? d.slowWait.hi / d.slowWait.lo : 1;
+  if ((neck?.busy && neck.busy.mean >= 85) || swing >= 2 || d.finishedPct.mean < 80) {
+    return {
+      tone: "warn",
+      headline: neck ? `Copes on most runs, but "${neck.label}" is stretched.` : "Copes on most runs, but bad days hurt.",
+      detail: `${finished}. The slowest 5% wait ${fmtTime(d.slowWait.lo)} on a good day and ${fmtTime(d.slowWait.hi)} on a bad one${
+        neck?.busy ? `; "${neck.label}" runs ${Math.round(neck.busy.mean)}% busy` : ""
+      }.`,
+    };
+  }
+  // 4. Comfortable.
+  const room = busiest?.busy && busiest.busy.mean > 0 ? Math.max(0, Math.round((80 / busiest.busy.mean - 1) * 100)) : null;
+  return {
+    tone: "good",
+    headline: `Comfortable on ${d.finishedPct.lo >= 95 ? "every run" : "most runs"}: ${finished}.`,
+    detail: `Typical visit ${fmtTime(d.typicalVisit.mean)}${busiest?.busy ? `; the busiest station, "${busiest.label}", runs ${Math.round(busiest.busy.mean)}% busy` : ""}${
+      room !== null ? `, so demand can grow about ${room}% before lines start building` : ""
+    }.`,
+  };
+}
+
 const waitingAtEnd = (s: NodeStats) =>
   s.nodeType === "queue" || s.nodeType === "store"
     ? s.currentDepth

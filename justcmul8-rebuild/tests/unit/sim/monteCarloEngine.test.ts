@@ -5,12 +5,13 @@
  */
 import { describe, expect, it } from "vitest";
 import { aggregateMonteCarloRuns, compareMetrics, runMetrics, slimRun } from "@/lib/simulation/monteCarlo";
-import { summarizeRuns } from "@/lib/simulation/runDetails";
+import { stressOutlook, summarizeRuns } from "@/lib/simulation/runDetails";
 import { lostCount } from "@/lib/simulation/analyticsEngine";
 import { analyzeSweep, blockUtilization, bottleneckFrequency, targetShares, type SweepPoint } from "@/lib/simulation/stressAnalysis";
 import { applyStress, NEUTRAL_CONDITIONS } from "@/lib/simulation/stressTransforms";
 import { pickWinner, scoreScenarios, WEIGHT_PRESETS } from "@/lib/simulation/decisionScore";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
+import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import type { SimGraph, SimResult } from "@/lib/simulation/types";
 import { queueGraph } from "../helpers";
 import { clinic, run } from "./clinicModel";
@@ -133,6 +134,28 @@ describe.skipIf(!hasSimpy)("Monte Carlo lab on the real engine", () => {
     expect(d.stations.find((s) => s.id === "qdoc")!.lost.mean).toBeGreaterThan(0);
     expect(d.topRec!.share).toBeGreaterThan(0.5);
     expect(d.topRec!.title).toMatch(/Doctor/);
+  });
+
+  it("the outlook is a verdict that matches what the runs did", () => {
+    const sec = (v: number) => `${v.toFixed(0)}s`;
+    const verdict = (g: SimGraph, T: number) => stressOutlook(summarizeRuns(batch(g, 6, T, 70).map(slimRun), "human_queue"), "Customer", sec);
+    const over = verdict(queueGraph(2, 1), 1000); // twice the work one server can do
+    expect(over.tone).toBe("bad");
+    expect(over.headline).toBe(`Overloaded: "Server" can't keep up.`);
+    // ER Triage: ~60% still inside at the end with no station above 97%: still overloaded, not "copes".
+    const er = SIM_TYPE_REGISTRY.human_queue.subScenarios.find((x) => x.label === "ER Triage")!;
+    const erVerdict = verdict({ nodes: er.nodes as any, edges: er.edges }, 6000);
+    expect(erVerdict.tone).toBe("bad");
+    expect(erVerdict.headline).toMatch(/^Overloaded: .*Triage Nurse/);
+    const calm = verdict(queueGraph(0.3, 1), 2000);
+    expect(calm.tone).toBe("good");
+    expect(calm.headline).toMatch(/^Comfortable/);
+    expect(calm.detail).toMatch(/demand can grow about \d+%/);
+    const clinicRuns = Array.from({ length: 6 }, (_, i) => slimRun(run(clinic(2), 500 + i)));
+    const lossy = stressOutlook(summarizeRuns(clinicRuns, "human_queue"), "Customer", sec);
+    expect(lossy.tone).toBe("bad");
+    expect(lossy.headline).toMatch(/leave without being served/); // the capped doctor line turns people away
+    expect(lossy.detail).toMatch(/Doctor Line/);
   });
 
   it("the demand sweep finds the breaking point below the theoretical limit", () => {

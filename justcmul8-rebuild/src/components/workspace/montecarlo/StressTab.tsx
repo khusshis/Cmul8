@@ -16,7 +16,8 @@ import StressTestResults from "./StressTestResults";
 import StressCustomize from "./StressCustomize";
 import { BlocksView, BreakingPointView, HistoryView, TargetsView, type SweepResult } from "./StressExtras";
 import RunDetailsView from "./RunDetailsView";
-import { summarizeRuns } from "@/lib/simulation/runDetails";
+import { stressOutlook, summarizeRuns } from "@/lib/simulation/runDetails";
+import { fmtSeconds } from "@/components/ui/chartTheme";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
 import { graphSignature, validateForRun, type ErrorInfo, type RunEnriched, type StartBatch } from "./graphUtils";
 import { CountPicker, ErrorCard, Explainer, WarningCard, btnGhost, btnPrimary, cardCls, copyText, downloadFile, downloadPng, fileSlug, focusRing, formatDuration, levelText, type MetricMeta } from "./shared";
@@ -76,6 +77,7 @@ export default function StressTab(p: Props) {
     () => (result?.results.length ? summarizeRuns(result.results, result.results[0].simType, settings.riskQ) : null),
     [result, settings.riskQ]
   );
+  const outlook = useMemo(() => (details ? stressOutlook(details, p.entity, fmtSeconds) : null), [details, p.entity]);
   const pinned = p.history.find((h) => h.pinned) ?? null;
   const hasCost = !!mc?.totalCost;
   const sigNow = graphSignature(applyStress(currentGraph, settings.conditions), durationSeconds);
@@ -300,7 +302,7 @@ export default function StressTab(p: Props) {
             {tab === "overview" &&
               (mc ? (
                 <>
-                  <StressTestResults mc={mc} meta={meta} entity={p.entity} runLength={runLength} conditions={result!.conditions} targets={settings.targets} pinned={pinned} chartRef={chartRef} />
+                  <StressTestResults mc={mc} meta={meta} entity={p.entity} runLength={runLength} conditions={result!.conditions} targets={settings.targets} pinned={pinned} chartRef={chartRef} outlook={outlook} />
                   {details && <RunDetailsView d={details} entity={p.entity} domainLabel={(SIM_TYPE_REGISTRY[result!.results[0]?.simType] ?? SIM_TYPE_REGISTRY.human_queue).label} riskQ={settings.riskQ} />}
                 </>
               ) : (
