@@ -306,7 +306,7 @@ export function calculateLittlesLaw(result: SimResult, journeys: EntityJourney[]
   }
 
   // Broadcast blocks complete one copy per consumer, so completed can exceed arrived.
-  const timeWeightedWIP_L = totalWipArea > 0 ? (totalWipArea / duration) : Math.max(0, result.totalArrived - result.totalCompleted);
+  const timeWeightedWIP_L = totalWipArea > 0 ? (totalWipArea / duration) : Math.max(0, result.totalArrived - result.totalCompleted - lostCount(result)); // turned-away entities never entered
   // L = λW holds for what entered the system: arrivals turned away at a full buffer never count.
   const dropped = Object.values(result.nodeStats || {}).reduce((n, s) => n + (s.droppedCount ?? 0), 0);
   const computedWIP_LambdaW = (Math.max(0, result.totalArrived - dropped) / duration) * averageCycleTimeW;
