@@ -125,6 +125,9 @@ export async function optimizeRecommendations(result: SimResult, simType: SimTyp
     prompt: `Simulation Telemetry:\n${fenceUntrusted("simulation_telemetry", JSON.stringify(telemetry, null, 2))}`,
     // 1024 cut off three recommendations with fixes mid-JSON (thinking models spend part of the budget).
     maxOutputTokens: 4096,
+    // The route's maxDuration is 60 s; stop trying fallbacks before Vercel kills it with a non-JSON 504.
+    attemptTimeoutMs: 25_000,
+    deadlineMs: 50_000,
     temperature: 0.25,
   });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { slimSimResult } from "@/lib/ai/requestOptimizer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
@@ -155,16 +156,6 @@ const MAX_WARNINGS_SHOWN = 4;
 
 const LAYOUT_OPTIONS = { direction: "LR" as const, nodeWidth: 210, nodeHeight: 90, rankSep: 90, nodeSep: 60 };
 
-/**
- * The route only reads summary telemetry, so never upload logs or entity
- * journeys: on a long run those are several megabytes per chat message.
- */
-function slimSimResult(r: SimResult | null | undefined) {
-  if (!r) return undefined;
-  const { logs, entityJourneys, topSlowestEntities, timeline, ...summary } = r as any;
-  void logs; void entityJourneys; void topSlowestEntities; void timeline;
-  return summary;
-}
 
 function withWarnings(text: string, warnings: string[] | undefined) {
   if (!warnings || warnings.length === 0) return text;
