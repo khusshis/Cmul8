@@ -73,11 +73,17 @@ ensurePyodide().catch((err) => {
         );
 
         // Register callbacks in Python's global namespace
-        pyodide.globals.set("emit_sim_tick", (tickJson: string) => {
+        // Quiet (batch) runs get None: the script then skips building ticks entirely.
+        pyodide.globals.set("emit_sim_tick", params.quiet ? null : (tickJson: string) => {
             if (!stopped) emit(JSON.parse(tickJson));
         });
         pyodide.globals.set("emit_sim_result", (resultJson: string) => {
-            if (!stopped) emit(JSON.parse(resultJson));
+            if (stopped) return;
+            const msg = JSON.parse(resultJson);
+            // The script labels every result "human_queue"; use the project's real type, or factory,
+            // traffic and network runs got people-queue domain cards and wording.
+            if (msg?.data) msg.data.simType = params.simType;
+            emit(msg);
         });
 
         // Run the simulation synchronously in Python

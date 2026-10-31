@@ -222,6 +222,15 @@ export const METRIC_BOUNDS: Record<MetricKey, [number, number]> = {
   totalCost: [0, Infinity],
 };
 
+/**
+ * A batch keeps every run in memory; after enrichment only the summary is needed, so drop the
+ * event log and per-entity journeys (thousands of entries per run) to keep big batches responsive.
+ */
+export function slimRun(r: SimResult): SimResult {
+  const { entityJourneys: _j, topSlowestEntities: _t, ...rest } = r;
+  return { ...rest, logs: [] };
+}
+
 /** One run's headline numbers. Cost is undefined when the model has no cost settings. */
 export function runMetrics(r: SimResult): Record<MetricKey, number | undefined> {
   return {

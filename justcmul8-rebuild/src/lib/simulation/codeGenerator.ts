@@ -841,6 +841,9 @@ def tick_emitter(env, resources, total_arrived):
             "depth": depth_map,
         })
         
+        # Batch runs set emit_sim_tick to None: nobody watches them live, so skip building the message.
+        if emit_sim_tick is None:
+            continue
         tick = {
             "type": "tick",
             "data": {

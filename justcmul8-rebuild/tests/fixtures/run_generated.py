@@ -1,6 +1,6 @@
 """Executes a script produced by generateSimPyScript() under CPython + SimPy with the
 Pyodide host callbacks stubbed, then prints the emitted result as JSON on the last line.
-Usage: python run_generated.py <script.py> <seed>"""
+Usage: python run_generated.py <script.py> <seed> [quiet]   (quiet: no live ticks, like Monte Carlo batches)"""
 import json
 import random
 import sys
@@ -11,7 +11,7 @@ captured = {}
 ns = {
     "__name__": "__justcmul8_sim__",
     "emit_sim_result": lambda s: captured.__setitem__("result", json.loads(s)),
-    "emit_sim_tick": lambda s: None,
+    "emit_sim_tick": None if len(sys.argv) > 3 and sys.argv[3] == "quiet" else (lambda s: None),
 }
 exec(compile(src, "<generated-simpy>", "exec"), ns)
 print("\n" + json.dumps(captured.get("result", {}).get("data")))

@@ -253,6 +253,8 @@ export interface SimParams {
   durationSeconds: number;   // virtual sim time to run
   speedMultiplier: number;   // 1x, 2x, 5x, 10x wall-clock
   tickIntervalSeconds: number; // how often to emit progress ticks
+  /** Batch runs (Monte Carlo): no live ticks are sent, only the final result. */
+  quiet?: boolean;
   simTimeUnit?: "seconds" | "minutes" | "hours" | "days";
 }
 

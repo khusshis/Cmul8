@@ -9,6 +9,7 @@ import type { PyodideStatus, SimGraph, SimTypeId } from "@/lib/simulation/types"
 import { PyodideSimEngine } from "@/lib/simulation/pyodideEngine";
 import { enrichSimResult } from "@/lib/simulation/analyticsEngine";
 import { runMonteCarlo, isAbortError } from "@/lib/simulation/monteCarloRunner";
+import { slimRun } from "@/lib/simulation/monteCarlo";
 import { mergeScenario } from "@/lib/simulation/scenarioDiff";
 import { loadSettings, pinHistory, runHistory, saveSettings, scenarioLibrary, type HistoryEntry, type LibraryScenario } from "@/lib/simulation/mcStorage";
 import { SIM_TYPE_REGISTRY } from "@/lib/simulation/simTypeRegistry";
@@ -175,9 +176,10 @@ export default function MonteCarloPanel({
     runMonteCarlo(
       getEngine(),
       // speedMultiplier 0 = no wall-clock pacing (the legacy fallback otherwise replays each run in real time).
-      { graph, simType, durationSeconds: seconds, speedMultiplier: 0, tickIntervalSeconds: Math.max(0.05, seconds / 1000) },
+      // quiet: nobody watches batch runs live, so no ticks are built or sent (they made big batches lag).
+      { graph, simType, durationSeconds: seconds, speedMultiplier: 0, tickIntervalSeconds: Math.max(0.05, seconds / 200), quiet: true },
       n,
-      { signal, stopWhen, map: (r) => enrichSimResult(r, graph), onProgress: (pr) => pr.completedRuns > 0 && onProgress?.(pr.completedRuns) }
+      { signal, stopWhen, map: (r) => slimRun(enrichSimResult(r, graph)), onProgress: (pr) => pr.completedRuns > 0 && onProgress?.(pr.completedRuns) }
     );
 
   const startBatch: StartBatch = (kind, title, total, work, onError) => {

@@ -4,7 +4,9 @@
  * scoring and stress code the panel uses, checked against queueing theory and common sense.
  */
 import { describe, expect, it } from "vitest";
-import { aggregateMonteCarloRuns, compareMetrics, runMetrics } from "@/lib/simulation/monteCarlo";
+import { aggregateMonteCarloRuns, compareMetrics, runMetrics, slimRun } from "@/lib/simulation/monteCarlo";
+import { summarizeRuns } from "@/lib/simulation/runDetails";
+import { lostCount } from "@/lib/simulation/analyticsEngine";
 import { analyzeSweep, blockUtilization, bottleneckFrequency, targetShares, type SweepPoint } from "@/lib/simulation/stressAnalysis";
 import { applyStress, NEUTRAL_CONDITIONS } from "@/lib/simulation/stressTransforms";
 import { pickWinner, scoreScenarios, WEIGHT_PRESETS } from "@/lib/simulation/decisionScore";
@@ -94,6 +96,43 @@ describe.skipIf(!hasSimpy)("Monte Carlo lab on the real engine", () => {
       expect(health.lo).toBeLessThanOrEqual(health.share);
       expect(health.hi).toBeGreaterThanOrEqual(health.share);
     });
+  });
+
+  it("quiet batch runs (no live ticks) give exactly the same result as watched runs", () => {
+    const g = queueGraph(0.8, 1);
+    const watched = runPython(g, 500, 9).result;
+    const quiet = runPython(g, 500, 9, true).result;
+    expect(quiet.totalCompleted).toBe(watched.totalCompleted);
+    expect(quiet.nodeStats.res.avgWaitTime).toBe(watched.nodeStats.res.avgWaitTime);
+    expect(quiet.timeline.length).toBe(watched.timeline.length);
+  });
+
+  it("slimmed runs keep every number the lab shows", () => {
+    const full = mm1[0];
+    const slim = slimRun(full);
+    expect(slim.logs).toEqual([]);
+    expect(slim.entityJourneys).toBeUndefined();
+    expect(runMetrics(slim)).toEqual(runMetrics(full));
+    expect(slim.aiDiagnosis).toEqual(full.aiDiagnosis);
+  });
+
+  it("'across all runs' matches the single-run results, averaged", () => {
+    const runs = Array.from({ length: 8 }, (_, i) => slimRun(run(clinic(2), 400 + i)));
+    const d = summarizeRuns(runs, "human_queue");
+    const avg = (f: (r: SimResult) => number) => runs.reduce((a, r) => a + f(r), 0) / runs.length;
+    expect(d.arrived.mean).toBeCloseTo(avg((r) => r.totalArrived), 6);
+    expect(d.lost.mean).toBeCloseTo(avg(lostCount), 6);
+    expect(d.arrived.lo).toBeLessThanOrEqual(d.arrived.mean);
+    expect(d.arrived.hi).toBeGreaterThanOrEqual(d.arrived.mean);
+    expect(d.kpis.map((k) => k.label)).toEqual(["Avg Wait Time", "Staff Utilization", "Total Served", "Queue Length", "Avg Service Time"]);
+    expect(d.kpis.find((k) => k.key === "totalCompleted")!.value.mean).toBeCloseTo(avg((r) => r.totalCompleted), 6);
+    const doc = d.stations.find((s) => s.id === "doc")!;
+    expect(doc.bottleneckShare).toBeGreaterThan(0.9);
+    expect(doc.busy!.mean).toBeCloseTo(avg((r) => r.nodeStats.doc.utilization * 100), 6);
+    expect(d.stations.find((s) => s.id === "pharm")!.busy).toBeUndefined(); // delay block: no busy %
+    expect(d.stations.find((s) => s.id === "qdoc")!.lost.mean).toBeGreaterThan(0);
+    expect(d.topRec!.share).toBeGreaterThan(0.5);
+    expect(d.topRec!.title).toMatch(/Doctor/);
   });
 
   it("the demand sweep finds the breaking point below the theoretical limit", () => {

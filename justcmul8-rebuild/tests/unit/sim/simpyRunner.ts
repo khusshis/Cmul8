@@ -12,11 +12,11 @@ const runner = path.resolve(__dirname, "../../fixtures/run_generated.py");
 const dir = mkdtempSync(path.join(tmpdir(), "jc8-py-"));
 let n = 0;
 
-export function runPython(graph: SimGraph, duration: number, seed = 1): { result: SimResult; stdout: string; stderr: string; status: number | null } {
+export function runPython(graph: SimGraph, duration: number, seed = 1, quiet = false): { result: SimResult; stdout: string; stderr: string; status: number | null } {
   const { python } = generateSimPyScript(graph, duration, duration / 1000);
   const file = path.join(dir, `sim${n++}.py`);
   writeFileSync(file, python);
-  const r = spawnSync(PY, [runner, file, String(seed)], { encoding: "utf8", timeout: 120_000, maxBuffer: 256 * 1024 * 1024 });
+  const r = spawnSync(PY, [runner, file, String(seed), ...(quiet ? ["quiet"] : [])], { encoding: "utf8", timeout: 120_000, maxBuffer: 256 * 1024 * 1024 });
   const last = r.stdout.trim().split("\n").pop() || "null";
   let result: any = null;
   try { result = JSON.parse(last); } catch { /* script failed */ }
