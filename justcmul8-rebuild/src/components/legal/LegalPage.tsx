@@ -16,11 +16,12 @@ const DOCS = [
   { href: "/terms", label: "Terms of Service" },
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/acceptable-use", label: "Acceptable Use" },
+  { href: "/licenses", label: "Open source" },
 ];
 
-/** Shared layout for /terms, /privacy and /acceptable-use: switcher, short-version summary, sticky contents, numbered sections. */
+/** Shared layout for /terms, /privacy, /acceptable-use and /licenses: switcher, short-version summary, sticky contents, numbered sections. */
 export default function LegalPage(props: {
-  current: "/terms" | "/privacy" | "/acceptable-use";
+  current: "/terms" | "/privacy" | "/acceptable-use" | "/licenses";
   title: React.ReactNode;
   intro: string;
   effective: string;

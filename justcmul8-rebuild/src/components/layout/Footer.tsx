@@ -35,6 +35,7 @@ const COLUMNS = [
       { label: "Terms of Service", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Acceptable Use", href: "/acceptable-use" },
+      { label: "Open-source licences", href: "/licenses" },
       { label: "Contact", href: "mailto:hello@justcmul8.com" },
     ],
   },

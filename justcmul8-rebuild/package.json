@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:node": "node tests/run-node-tests.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "licenses": "node scripts/gen-licenses.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -53,5 +54,6 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"
-  }
+  },
+  "license": "UNLICENSED"
 }

@@ -1,0 +1,1498 @@
+{
+  "packages": [
+    {
+      "name": "@babel/runtime",
+      "version": "7.29.7",
+      "license": "MIT",
+      "repository": "https://github.com/babel/babel"
+    },
+    {
+      "name": "@google/generative-ai",
+      "version": "0.24.1",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/google/generative-ai-js"
+    },
+    {
+      "name": "@img/colour",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/lovell/colour"
+    },
+    {
+      "name": "@img/sharp-libvips-linux-x64",
+      "version": "1.3.4",
+      "license": "LGPL-3.0-or-later",
+      "repository": "https://www.npmjs.com/package/@img/sharp-libvips-linux-x64"
+    },
+    {
+      "name": "@img/sharp-libvips-linuxmusl-x64",
+      "version": "1.3.4",
+      "license": "LGPL-3.0-or-later",
+      "repository": "https://www.npmjs.com/package/@img/sharp-libvips-linuxmusl-x64"
+    },
+    {
+      "name": "@img/sharp-linux-x64",
+      "version": "0.35.5",
+      "license": "Apache-2.0",
+      "repository": "https://www.npmjs.com/package/@img/sharp-linux-x64"
+    },
+    {
+      "name": "@img/sharp-linuxmusl-x64",
+      "version": "0.35.5",
+      "license": "Apache-2.0",
+      "repository": "https://www.npmjs.com/package/@img/sharp-linuxmusl-x64"
+    },
+    {
+      "name": "@img/sharp-wasm32",
+      "version": "0.35.5",
+      "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+      "repository": "https://github.com/lovell/sharp"
+    },
+    {
+      "name": "@next/env",
+      "version": "16.4.3",
+      "license": "MIT",
+      "repository": "https://github.com/vercel/next.js"
+    },
+    {
+      "name": "@next/swc-linux-x64-gnu",
+      "version": "16.4.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/@next/swc-linux-x64-gnu"
+    },
+    {
+      "name": "@next/swc-linux-x64-musl",
+      "version": "16.4.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/@next/swc-linux-x64-musl"
+    },
+    {
+      "name": "@pixi/colord",
+      "version": "2.9.6",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/@pixi/colord"
+    },
+    {
+      "name": "@reduxjs/toolkit",
+      "version": "2.12.0",
+      "license": "MIT",
+      "repository": "https://github.com/reduxjs/redux-toolkit"
+    },
+    {
+      "name": "@standard-schema/spec",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/standard-schema/standard-schema"
+    },
+    {
+      "name": "@standard-schema/utils",
+      "version": "0.3.0",
+      "license": "MIT",
+      "repository": "https://github.com/standard-schema/standard-schema"
+    },
+    {
+      "name": "@supabase/auth-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@supabase/functions-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@supabase/phoenix",
+      "version": "0.4.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/phoenix"
+    },
+    {
+      "name": "@supabase/postgrest-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@supabase/realtime-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@supabase/ssr",
+      "version": "0.12.1",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/ssr"
+    },
+    {
+      "name": "@supabase/storage-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@supabase/supabase-js",
+      "version": "2.110.4",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/supabase-js"
+    },
+    {
+      "name": "@swc/helpers",
+      "version": "0.5.23",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/swc-project/swc"
+    },
+    {
+      "name": "@types/d3-array",
+      "version": "3.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-color",
+      "version": "3.1.3",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-drag",
+      "version": "3.0.7",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-ease",
+      "version": "3.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-interpolate",
+      "version": "3.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-path",
+      "version": "3.1.1",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-scale",
+      "version": "4.0.9",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-selection",
+      "version": "3.0.11",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-shape",
+      "version": "3.1.8",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-time",
+      "version": "3.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-timer",
+      "version": "3.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-transition",
+      "version": "3.0.9",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/d3-zoom",
+      "version": "3.0.8",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/dagre",
+      "version": "0.7.54",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/debug",
+      "version": "4.1.13",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/earcut",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/estree",
+      "version": "1.0.9",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/estree-jsx",
+      "version": "1.0.5",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/hast",
+      "version": "3.0.5",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/mdast",
+      "version": "4.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/ms",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/pako",
+      "version": "2.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/prismjs",
+      "version": "1.26.6",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/raf",
+      "version": "3.4.3",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/react",
+      "version": "19.2.17",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/trusted-types",
+      "version": "2.0.7",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/unist",
+      "version": "2.0.11",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/unist",
+      "version": "3.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/use-sync-external-store",
+      "version": "0.0.6",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@ungap/structured-clone",
+      "version": "1.4.0",
+      "license": "ISC",
+      "repository": "https://github.com/ungap/structured-clone"
+    },
+    {
+      "name": "@webgpu/types",
+      "version": "0.1.71",
+      "license": "BSD-3-Clause",
+      "repository": "https://www.npmjs.com/package/@webgpu/types"
+    },
+    {
+      "name": "@xmldom/xmldom",
+      "version": "0.8.15",
+      "license": "MIT",
+      "repository": "https://github.com/xmldom/xmldom"
+    },
+    {
+      "name": "@xyflow/react",
+      "version": "12.11.2",
+      "license": "MIT",
+      "repository": "https://github.com/xyflow/xyflow"
+    },
+    {
+      "name": "@xyflow/system",
+      "version": "0.0.79",
+      "license": "MIT",
+      "repository": "https://github.com/xyflow/xyflow"
+    },
+    {
+      "name": "bail",
+      "version": "2.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/bail"
+    },
+    {
+      "name": "base64-arraybuffer",
+      "version": "1.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/niklasvh/base64-arraybuffer"
+    },
+    {
+      "name": "baseline-browser-mapping",
+      "version": "2.11.33",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/web-platform-dx/baseline-browser-mapping"
+    },
+    {
+      "name": "caniuse-lite",
+      "version": "1.0.30001819",
+      "license": "CC-BY-4.0",
+      "repository": "https://www.npmjs.com/package/caniuse-lite"
+    },
+    {
+      "name": "canvg",
+      "version": "3.0.11",
+      "license": "MIT",
+      "repository": "https://github.com/canvg/canvg"
+    },
+    {
+      "name": "ccount",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/ccount"
+    },
+    {
+      "name": "character-entities",
+      "version": "2.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/character-entities"
+    },
+    {
+      "name": "character-entities-html4",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/character-entities-html4"
+    },
+    {
+      "name": "character-entities-legacy",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/character-entities-legacy"
+    },
+    {
+      "name": "character-reference-invalid",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/character-reference-invalid"
+    },
+    {
+      "name": "classcat",
+      "version": "5.0.5",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/classcat"
+    },
+    {
+      "name": "client-only",
+      "version": "0.0.1",
+      "license": "MIT",
+      "repository": "https://reactjs.org/"
+    },
+    {
+      "name": "clsx",
+      "version": "2.1.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/clsx"
+    },
+    {
+      "name": "comma-separated-tokens",
+      "version": "2.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/comma-separated-tokens"
+    },
+    {
+      "name": "cookie",
+      "version": "1.1.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/cookie"
+    },
+    {
+      "name": "core-js",
+      "version": "3.50.0",
+      "license": "MIT",
+      "repository": "https://github.com/zloirock/core-js"
+    },
+    {
+      "name": "css-line-break",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/css-line-break"
+    },
+    {
+      "name": "csstype",
+      "version": "3.2.3",
+      "license": "MIT",
+      "repository": "https://github.com/frenic/csstype"
+    },
+    {
+      "name": "d3-array",
+      "version": "3.2.4",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-array"
+    },
+    {
+      "name": "d3-color",
+      "version": "3.1.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-color"
+    },
+    {
+      "name": "d3-dispatch",
+      "version": "3.0.1",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-dispatch"
+    },
+    {
+      "name": "d3-drag",
+      "version": "3.0.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-drag"
+    },
+    {
+      "name": "d3-ease",
+      "version": "3.0.1",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/d3/d3-ease"
+    },
+    {
+      "name": "d3-format",
+      "version": "3.1.2",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-format"
+    },
+    {
+      "name": "d3-interpolate",
+      "version": "3.0.1",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-interpolate"
+    },
+    {
+      "name": "d3-path",
+      "version": "3.1.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-path"
+    },
+    {
+      "name": "d3-scale",
+      "version": "4.0.2",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-scale"
+    },
+    {
+      "name": "d3-selection",
+      "version": "3.0.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-selection"
+    },
+    {
+      "name": "d3-shape",
+      "version": "3.2.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-shape"
+    },
+    {
+      "name": "d3-time",
+      "version": "3.1.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-time"
+    },
+    {
+      "name": "d3-time-format",
+      "version": "4.1.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-time-format"
+    },
+    {
+      "name": "d3-timer",
+      "version": "3.0.1",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-timer"
+    },
+    {
+      "name": "d3-transition",
+      "version": "3.0.1",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-transition"
+    },
+    {
+      "name": "d3-zoom",
+      "version": "3.0.0",
+      "license": "ISC",
+      "repository": "https://github.com/d3/d3-zoom"
+    },
+    {
+      "name": "dagre",
+      "version": "0.8.5",
+      "license": "MIT",
+      "repository": "https://github.com/dagrejs/dagre"
+    },
+    {
+      "name": "debug",
+      "version": "4.4.3",
+      "license": "MIT",
+      "repository": "https://github.com/debug-js/debug"
+    },
+    {
+      "name": "decimal.js-light",
+      "version": "2.5.1",
+      "license": "MIT",
+      "repository": "https://github.com/MikeMcl/decimal.js-light"
+    },
+    {
+      "name": "decode-named-character-reference",
+      "version": "1.3.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/decode-named-character-reference"
+    },
+    {
+      "name": "dequal",
+      "version": "2.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/dequal"
+    },
+    {
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/lovell/detect-libc"
+    },
+    {
+      "name": "devlop",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/devlop"
+    },
+    {
+      "name": "dompurify",
+      "version": "3.4.17",
+      "license": "(MPL-2.0 OR Apache-2.0)",
+      "repository": "https://github.com/cure53/DOMPurify"
+    },
+    {
+      "name": "earcut",
+      "version": "3.2.3",
+      "license": "ISC",
+      "repository": "https://github.com/mapbox/earcut"
+    },
+    {
+      "name": "es-toolkit",
+      "version": "1.49.0",
+      "license": "MIT",
+      "repository": "https://github.com/toss/es-toolkit"
+    },
+    {
+      "name": "escape-string-regexp",
+      "version": "5.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/escape-string-regexp"
+    },
+    {
+      "name": "estree-util-is-identifier-name",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/estree-util-is-identifier-name"
+    },
+    {
+      "name": "eventemitter3",
+      "version": "5.0.4",
+      "license": "MIT",
+      "repository": "https://github.com/primus/eventemitter3"
+    },
+    {
+      "name": "extend",
+      "version": "3.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/justmoon/node-extend"
+    },
+    {
+      "name": "fast-png",
+      "version": "6.4.0",
+      "license": "MIT",
+      "repository": "https://github.com/image-js/fast-png"
+    },
+    {
+      "name": "fault",
+      "version": "1.0.4",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/fault"
+    },
+    {
+      "name": "fflate",
+      "version": "0.8.3",
+      "license": "MIT",
+      "repository": "https://github.com/101arrowz/fflate"
+    },
+    {
+      "name": "format",
+      "version": "0.2.2",
+      "license": "MIT",
+      "repository": "https://github.com/samsonjs/format"
+    },
+    {
+      "name": "framer-motion",
+      "version": "12.42.2",
+      "license": "MIT",
+      "repository": "https://github.com/motiondivision/motion/"
+    },
+    {
+      "name": "gifuct-js",
+      "version": "2.1.2",
+      "license": "MIT",
+      "repository": "https://github.com/matt-way/gifuct-js"
+    },
+    {
+      "name": "graphlib",
+      "version": "2.1.8",
+      "license": "MIT",
+      "repository": "https://github.com/dagrejs/graphlib"
+    },
+    {
+      "name": "hast-util-parse-selector",
+      "version": "4.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/hast-util-parse-selector"
+    },
+    {
+      "name": "hast-util-to-jsx-runtime",
+      "version": "2.3.6",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/hast-util-to-jsx-runtime"
+    },
+    {
+      "name": "hast-util-whitespace",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/hast-util-whitespace"
+    },
+    {
+      "name": "hastscript",
+      "version": "9.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/hastscript"
+    },
+    {
+      "name": "highlight.js",
+      "version": "10.7.3",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/highlightjs/highlight.js"
+    },
+    {
+      "name": "highlightjs-vue",
+      "version": "1.0.0",
+      "license": "CC0-1.0",
+      "repository": "https://github.com/highlightjs/highlightjs-vue"
+    },
+    {
+      "name": "html-to-image",
+      "version": "1.11.13",
+      "license": "MIT",
+      "repository": "https://github.com/bubkoo/html-to-image"
+    },
+    {
+      "name": "html-url-attributes",
+      "version": "3.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes"
+    },
+    {
+      "name": "html2canvas",
+      "version": "1.4.1",
+      "license": "MIT",
+      "repository": "https://github.com/niklasvh/html2canvas"
+    },
+    {
+      "name": "iceberg-js",
+      "version": "0.8.1",
+      "license": "MIT",
+      "repository": "https://github.com/supabase/iceberg-js"
+    },
+    {
+      "name": "immer",
+      "version": "11.1.11",
+      "license": "MIT",
+      "repository": "https://github.com/immerjs/immer"
+    },
+    {
+      "name": "inline-style-parser",
+      "version": "0.2.7",
+      "license": "MIT",
+      "repository": "https://github.com/remarkablemark/inline-style-parser"
+    },
+    {
+      "name": "internmap",
+      "version": "2.0.3",
+      "license": "ISC",
+      "repository": "https://github.com/mbostock/internmap"
+    },
+    {
+      "name": "iobuffer",
+      "version": "5.4.0",
+      "license": "MIT",
+      "repository": "https://github.com/image-js/iobuffer"
+    },
+    {
+      "name": "is-alphabetical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/is-alphabetical"
+    },
+    {
+      "name": "is-alphanumerical",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/is-alphanumerical"
+    },
+    {
+      "name": "is-decimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/is-decimal"
+    },
+    {
+      "name": "is-hexadecimal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/is-hexadecimal"
+    },
+    {
+      "name": "is-plain-obj",
+      "version": "4.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/is-plain-obj"
+    },
+    {
+      "name": "ismobilejs",
+      "version": "1.1.1",
+      "license": "MIT",
+      "repository": "https://github.com/kaimallea/isMobile"
+    },
+    {
+      "name": "js-binary-schema-parser",
+      "version": "2.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/matt-way/jsBinarySchemaParser"
+    },
+    {
+      "name": "jspdf",
+      "version": "4.2.1",
+      "license": "MIT",
+      "repository": "https://github.com/parallax/jsPDF"
+    },
+    {
+      "name": "jspdf-autotable",
+      "version": "5.0.8",
+      "license": "MIT",
+      "repository": "https://github.com/simonbengtsson/jsPDF-AutoTable"
+    },
+    {
+      "name": "lenis",
+      "version": "1.3.26",
+      "license": "MIT",
+      "repository": "https://github.com/darkroomengineering/lenis"
+    },
+    {
+      "name": "lodash",
+      "version": "4.18.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/lodash"
+    },
+    {
+      "name": "longest-streak",
+      "version": "3.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/longest-streak"
+    },
+    {
+      "name": "lowlight",
+      "version": "1.20.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/lowlight"
+    },
+    {
+      "name": "lucide-react",
+      "version": "1.24.0",
+      "license": "ISC",
+      "repository": "https://github.com/lucide-icons/lucide"
+    },
+    {
+      "name": "markdown-table",
+      "version": "3.0.4",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/markdown-table"
+    },
+    {
+      "name": "mdast-util-find-and-replace",
+      "version": "3.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-find-and-replace"
+    },
+    {
+      "name": "mdast-util-from-markdown",
+      "version": "2.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-from-markdown"
+    },
+    {
+      "name": "mdast-util-gfm",
+      "version": "3.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm"
+    },
+    {
+      "name": "mdast-util-gfm-autolink-literal",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm-autolink-literal"
+    },
+    {
+      "name": "mdast-util-gfm-footnote",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm-footnote"
+    },
+    {
+      "name": "mdast-util-gfm-strikethrough",
+      "version": "2.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm-strikethrough"
+    },
+    {
+      "name": "mdast-util-gfm-table",
+      "version": "2.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm-table"
+    },
+    {
+      "name": "mdast-util-gfm-task-list-item",
+      "version": "2.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-gfm-task-list-item"
+    },
+    {
+      "name": "mdast-util-mdx-expression",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-mdx-expression"
+    },
+    {
+      "name": "mdast-util-mdx-jsx",
+      "version": "3.2.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-mdx-jsx"
+    },
+    {
+      "name": "mdast-util-mdxjs-esm",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-mdxjs-esm"
+    },
+    {
+      "name": "mdast-util-phrasing",
+      "version": "4.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-phrasing"
+    },
+    {
+      "name": "mdast-util-to-hast",
+      "version": "13.2.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-to-hast"
+    },
+    {
+      "name": "mdast-util-to-markdown",
+      "version": "2.1.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-to-markdown"
+    },
+    {
+      "name": "mdast-util-to-string",
+      "version": "4.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/mdast-util-to-string"
+    },
+    {
+      "name": "micromark",
+      "version": "4.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark"
+    },
+    {
+      "name": "micromark-core-commonmark",
+      "version": "2.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark"
+    },
+    {
+      "name": "micromark-extension-gfm",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm"
+    },
+    {
+      "name": "micromark-extension-gfm-autolink-literal",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-autolink-literal"
+    },
+    {
+      "name": "micromark-extension-gfm-footnote",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-footnote"
+    },
+    {
+      "name": "micromark-extension-gfm-strikethrough",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-strikethrough"
+    },
+    {
+      "name": "micromark-extension-gfm-table",
+      "version": "2.1.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-table"
+    },
+    {
+      "name": "micromark-extension-gfm-tagfilter",
+      "version": "2.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-tagfilter"
+    },
+    {
+      "name": "micromark-extension-gfm-task-list-item",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/micromark-extension-gfm-task-list-item"
+    },
+    {
+      "name": "micromark-factory-destination",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-destination"
+    },
+    {
+      "name": "micromark-factory-label",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-label"
+    },
+    {
+      "name": "micromark-factory-space",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space"
+    },
+    {
+      "name": "micromark-factory-title",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-title"
+    },
+    {
+      "name": "micromark-factory-whitespace",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-whitespace"
+    },
+    {
+      "name": "micromark-util-character",
+      "version": "2.1.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character"
+    },
+    {
+      "name": "micromark-util-chunked",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-chunked"
+    },
+    {
+      "name": "micromark-util-classify-character",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character"
+    },
+    {
+      "name": "micromark-util-combine-extensions",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-combine-extensions"
+    },
+    {
+      "name": "micromark-util-decode-numeric-character-reference",
+      "version": "2.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-numeric-character-reference"
+    },
+    {
+      "name": "micromark-util-decode-string",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-string"
+    },
+    {
+      "name": "micromark-util-encode",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-encode"
+    },
+    {
+      "name": "micromark-util-html-tag-name",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-html-tag-name"
+    },
+    {
+      "name": "micromark-util-normalize-identifier",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-normalize-identifier"
+    },
+    {
+      "name": "micromark-util-resolve-all",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-resolve-all"
+    },
+    {
+      "name": "micromark-util-sanitize-uri",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri"
+    },
+    {
+      "name": "micromark-util-subtokenize",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-subtokenize"
+    },
+    {
+      "name": "micromark-util-symbol",
+      "version": "2.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol"
+    },
+    {
+      "name": "micromark-util-types",
+      "version": "2.0.2",
+      "license": "MIT",
+      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types"
+    },
+    {
+      "name": "motion-dom",
+      "version": "12.42.2",
+      "license": "MIT",
+      "repository": "https://github.com/motiondivision/motion"
+    },
+    {
+      "name": "motion-utils",
+      "version": "12.39.0",
+      "license": "MIT",
+      "repository": "https://github.com/motiondivision/motion"
+    },
+    {
+      "name": "ms",
+      "version": "2.1.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/ms"
+    },
+    {
+      "name": "nanoid",
+      "version": "3.3.20",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/nanoid"
+    },
+    {
+      "name": "next",
+      "version": "16.4.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/next"
+    },
+    {
+      "name": "nodemailer",
+      "version": "10.2.1",
+      "license": "MIT-0",
+      "repository": "https://github.com/nodemailer/nodemailer"
+    },
+    {
+      "name": "pako",
+      "version": "2.2.0",
+      "license": "(MIT AND Zlib)",
+      "repository": "https://www.npmjs.com/package/pako"
+    },
+    {
+      "name": "parse-entities",
+      "version": "4.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/parse-entities"
+    },
+    {
+      "name": "parse-svg-path",
+      "version": "0.2.0",
+      "license": "MIT",
+      "repository": "https://github.com/jkroso/parse-svg-path"
+    },
+    {
+      "name": "performance-now",
+      "version": "2.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/braveg1rl/performance-now"
+    },
+    {
+      "name": "picocolors",
+      "version": "1.1.1",
+      "license": "ISC",
+      "repository": "https://www.npmjs.com/package/picocolors"
+    },
+    {
+      "name": "pixi.js",
+      "version": "8.19.0",
+      "license": "MIT",
+      "repository": "https://github.com/pixijs/pixijs"
+    },
+    {
+      "name": "postcss",
+      "version": "8.5.23",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/postcss"
+    },
+    {
+      "name": "prismjs",
+      "version": "1.30.0",
+      "license": "MIT",
+      "repository": "https://github.com/PrismJS/prism"
+    },
+    {
+      "name": "property-information",
+      "version": "7.2.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/property-information"
+    },
+    {
+      "name": "raf",
+      "version": "3.4.1",
+      "license": "MIT",
+      "repository": "https://github.com/chrisdickinson/raf"
+    },
+    {
+      "name": "react",
+      "version": "19.2.4",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/react"
+    },
+    {
+      "name": "react-dom",
+      "version": "19.2.4",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/react"
+    },
+    {
+      "name": "react-is",
+      "version": "16.13.1",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/react"
+    },
+    {
+      "name": "react-markdown",
+      "version": "10.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/react-markdown"
+    },
+    {
+      "name": "react-redux",
+      "version": "9.3.0",
+      "license": "MIT",
+      "repository": "https://github.com/reduxjs/react-redux"
+    },
+    {
+      "name": "react-syntax-highlighter",
+      "version": "16.1.1",
+      "license": "MIT",
+      "repository": "https://github.com/react-syntax-highlighter/react-syntax-highlighter"
+    },
+    {
+      "name": "recharts",
+      "version": "3.9.2",
+      "license": "MIT",
+      "repository": "https://github.com/recharts/recharts"
+    },
+    {
+      "name": "redux",
+      "version": "5.0.1",
+      "license": "MIT",
+      "repository": "https://github.com/reduxjs/redux"
+    },
+    {
+      "name": "redux-thunk",
+      "version": "3.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/reduxjs/redux-thunk"
+    },
+    {
+      "name": "refractor",
+      "version": "5.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/refractor"
+    },
+    {
+      "name": "regenerator-runtime",
+      "version": "0.13.11",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/regenerator/tree/main/packages/runtime"
+    },
+    {
+      "name": "remark-gfm",
+      "version": "4.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/remark-gfm"
+    },
+    {
+      "name": "remark-parse",
+      "version": "11.0.0",
+      "license": "MIT",
+      "repository": "https://github.com/remarkjs/remark/tree/main/packages/remark-parse"
+    },
+    {
+      "name": "remark-rehype",
+      "version": "11.1.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/remark-rehype"
+    },
+    {
+      "name": "remark-stringify",
+      "version": "11.0.0",
+      "license": "MIT",
+      "repository": "https://github.com/remarkjs/remark/tree/main/packages/remark-stringify"
+    },
+    {
+      "name": "reselect",
+      "version": "5.2.0",
+      "license": "MIT",
+      "repository": "https://github.com/reduxjs/reselect"
+    },
+    {
+      "name": "rgbcolor",
+      "version": "1.0.1",
+      "license": "MIT OR SEE LICENSE IN FEEL-FREE.md",
+      "repository": "https://github.com/yetzt/node-rgbcolor"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.27.0",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/react"
+    },
+    {
+      "name": "semver",
+      "version": "7.8.5",
+      "license": "ISC",
+      "repository": "https://github.com/npm/node-semver"
+    },
+    {
+      "name": "sharp",
+      "version": "0.35.5",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/lovell/sharp"
+    },
+    {
+      "name": "source-map-js",
+      "version": "1.2.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://www.npmjs.com/package/source-map-js"
+    },
+    {
+      "name": "space-separated-tokens",
+      "version": "2.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/space-separated-tokens"
+    },
+    {
+      "name": "stackblur-canvas",
+      "version": "2.7.0",
+      "license": "MIT",
+      "repository": "https://github.com/flozz/StackBlur"
+    },
+    {
+      "name": "stringify-entities",
+      "version": "4.0.4",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/stringify-entities"
+    },
+    {
+      "name": "style-to-js",
+      "version": "1.1.21",
+      "license": "MIT",
+      "repository": "https://github.com/remarkablemark/style-to-js"
+    },
+    {
+      "name": "style-to-object",
+      "version": "1.0.14",
+      "license": "MIT",
+      "repository": "https://github.com/remarkablemark/style-to-object"
+    },
+    {
+      "name": "styled-jsx",
+      "version": "5.1.6",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/styled-jsx"
+    },
+    {
+      "name": "svg-pathdata",
+      "version": "6.0.3",
+      "license": "MIT",
+      "repository": "https://github.com/nfroidure/svg-pathdata"
+    },
+    {
+      "name": "text-segmentation",
+      "version": "1.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/text-segmentation"
+    },
+    {
+      "name": "tiny-invariant",
+      "version": "1.3.3",
+      "license": "MIT",
+      "repository": "https://github.com/alexreardon/tiny-invariant"
+    },
+    {
+      "name": "tiny-lru",
+      "version": "11.4.7",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/avoidwork/tiny-lru"
+    },
+    {
+      "name": "trim-lines",
+      "version": "3.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/trim-lines"
+    },
+    {
+      "name": "trough",
+      "version": "2.2.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/trough"
+    },
+    {
+      "name": "tslib",
+      "version": "2.8.1",
+      "license": "0BSD",
+      "repository": "https://github.com/Microsoft/tslib"
+    },
+    {
+      "name": "unified",
+      "version": "11.0.5",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unified"
+    },
+    {
+      "name": "unist-util-is",
+      "version": "6.0.1",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unist-util-is"
+    },
+    {
+      "name": "unist-util-position",
+      "version": "5.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unist-util-position"
+    },
+    {
+      "name": "unist-util-stringify-position",
+      "version": "4.0.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unist-util-stringify-position"
+    },
+    {
+      "name": "unist-util-visit",
+      "version": "5.1.0",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unist-util-visit"
+    },
+    {
+      "name": "unist-util-visit-parents",
+      "version": "6.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/unist-util-visit-parents"
+    },
+    {
+      "name": "use-sync-external-store",
+      "version": "1.6.0",
+      "license": "MIT",
+      "repository": "https://github.com/facebook/react"
+    },
+    {
+      "name": "utrie",
+      "version": "1.0.2",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/utrie"
+    },
+    {
+      "name": "vfile",
+      "version": "6.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/vfile"
+    },
+    {
+      "name": "vfile-message",
+      "version": "4.0.3",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/vfile-message"
+    },
+    {
+      "name": "victory-vendor",
+      "version": "37.3.6",
+      "license": "MIT AND ISC",
+      "repository": "https://github.com/FormidableLabs/victory"
+    },
+    {
+      "name": "zustand",
+      "version": "4.5.7",
+      "license": "MIT",
+      "repository": "https://github.com/pmndrs/zustand"
+    },
+    {
+      "name": "zustand",
+      "version": "5.0.14",
+      "license": "MIT",
+      "repository": "https://github.com/pmndrs/zustand"
+    },
+    {
+      "name": "zwitch",
+      "version": "2.0.4",
+      "license": "MIT",
+      "repository": "https://www.npmjs.com/package/zwitch"
+    }
+  ]
+}
