@@ -380,7 +380,7 @@ function formatNodeFriendlySubtext(nodeType: string, params: Record<string, any>
       return cap === -1 ? "Infinite storage" : `Max ${cap} items`;
     }
     case "container": {
-      return `Capacity: ${params.capacity ?? 100} units`;
+      return `Capacity: ${params.capacity ?? 1000} units`;
     }
     case "channel": {
       return "Transfer transit link";
@@ -456,7 +456,7 @@ function getNodePoints(nodeType: string, p: Record<string, any>, noun: string): 
     case "store":
       return [{ icon: Package, label: "Storage limit", value: p.capacity === undefined || p.capacity === -1 ? "No limit" : `${p.capacity} ${many}` }];
     case "container":
-      return [{ icon: Package, label: "Tank size", value: `${p.capacity ?? 100} units` }];
+      return [{ icon: Package, label: "Tank size", value: `${p.capacity ?? 1000} units` }];
     case "decision":
       return [];
     default:
