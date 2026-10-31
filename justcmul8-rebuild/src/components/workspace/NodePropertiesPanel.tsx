@@ -1090,7 +1090,7 @@ function ContainerProperties({ params, nodeId, onUpdate, theme }: any) {
         <NumberInput
           min={0}
           valid={(n) => n > 0}
-          value={params.capacity ?? 100}
+          value={params.capacity ?? 1000} // engine default (codeGenerator, legacyWorker)
           onChange={(v) => setParam("capacity", v)}
           className={modernInputCls}
         />
